@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import EditTab from '@/lib/components/EditTab.svelte';
+  import ExportTab from '@/lib/components/ExportTab.svelte';
   import ImportTab from '@/lib/components/ImportTab.svelte';
   import TabBar from '@/lib/components/TabBar.svelte';
   import { t } from '@/lib/i18n/index.svelte';
@@ -36,6 +38,10 @@
 <main>
   {#if getRoute() === 'import'}
     <ImportTab />
+  {:else if getRoute() === 'export'}
+    <ExportTab />
+  {:else if getRoute() === 'edit'}
+    <EditTab />
   {:else}
     <!-- Phases 3-4 fill these in; the routes exist now so the shell is real. -->
     <p class="placeholder">{t('common.comingSoon', { tab: t(`common.${getRoute()}`) })}</p>

@@ -9,10 +9,11 @@
  */
 import { browser } from 'wxt/browser';
 import type { CsvDelimiter } from '../core/serialize/csv';
+import type { MarkdownStyle } from '../core/serialize/markdown';
 import type { Locale } from '../i18n/resolve-locale';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
-type ExportFormat = 'netscape-html' | 'bm-json' | 'csv' | 'markdown';
+export type ExportFormat = 'netscape-html' | 'bm-json' | 'csv' | 'markdown';
 export type ImportMode = 'new-folder' | 'merge' | 'replace';
 
 export interface Settings {
@@ -21,6 +22,7 @@ export interface Settings {
   defaultExportFormat: ExportFormat;
   defaultMergeMode: ImportMode;
   csvDelimiter: CsvDelimiter;
+  markdownStyle: MarkdownStyle;
 }
 
 export interface LegalAcceptance {
@@ -35,6 +37,7 @@ export const DEFAULT_SETTINGS: Settings = {
   defaultExportFormat: 'netscape-html',
   defaultMergeMode: 'new-folder',
   csvDelimiter: ',',
+  markdownStyle: 'nested',
 };
 
 const SETTINGS_KEY = 'settings';
@@ -61,6 +64,7 @@ function coerceSettings(raw: unknown): Settings {
     ]),
     defaultMergeMode: pick('defaultMergeMode', ['new-folder', 'merge', 'replace']),
     csvDelimiter: pick('csvDelimiter', [',', ';']),
+    markdownStyle: pick('markdownStyle', ['nested', 'flat']),
   };
 }
 

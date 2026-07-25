@@ -26,6 +26,7 @@ describe('settings', () => {
       defaultExportFormat: 'csv',
       defaultMergeMode: 'merge',
       csvDelimiter: ';',
+      markdownStyle: 'flat',
     } as const;
     await writeSettings({ ...settings });
     expect(await readSettings()).toEqual(settings);

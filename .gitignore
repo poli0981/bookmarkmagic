@@ -36,3 +36,5 @@ npm-debug.log*
 # Generated fixtures that are too big to commit (tests/fixtures/generate-huge.ts
 # writes here on demand — docs/11 §2)
 tests/fixtures/generated/
+
+.claude/

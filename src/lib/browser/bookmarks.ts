@@ -133,8 +133,78 @@ export async function create(details: {
   return created as LiveNode;
 }
 
-async function removeTree(id: string): Promise<void> {
+export async function update(id: string, changes: { title?: string; url?: string }): Promise<void> {
+  await guard('bookmarks.update', () => browser.bookmarks.update(id, changes));
+}
+
+export async function move(
+  id: string,
+  destination: { parentId?: string; index?: number },
+): Promise<void> {
+  await guard('bookmarks.move', () => browser.bookmarks.move(id, destination));
+}
+
+/** Remove a single bookmark. Folders need `removeTree`. */
+export async function remove(id: string): Promise<void> {
+  await guard('bookmarks.remove', () => browser.bookmarks.remove(id));
+}
+
+export async function removeTree(id: string): Promise<void> {
   await guard('bookmarks.removeTree', () => browser.bookmarks.removeTree(id));
+}
+
+/** Events the #edit tree subscribes to — docs/03 §3 "Live sync". */
+export interface BookmarkEvents {
+  onCreated: (id: string, node: LiveNode) => void;
+  onRemoved: (id: string) => void;
+  onChanged: (id: string, changes: { title?: string; url?: string }) => void;
+  onMoved: (id: string, info: { parentId: string; index: number }) => void;
+}
+
+type Listenable<T extends unknown[]> = {
+  addListener: (fn: (...args: T) => void) => void;
+  removeListener: (fn: (...args: T) => void) => void;
+};
+
+/**
+ * Subscribe to bookmark changes; returns an unsubscribe function.
+ *
+ * Listeners attach on tab enter and detach on leave (docs/03 §3) — an #edit
+ * tab left subscribed while an import runs would otherwise take one event per
+ * created node.
+ */
+export function subscribe(handlers: BookmarkEvents): () => void {
+  const api = browser.bookmarks as unknown as {
+    onCreated: Listenable<[string, LiveNode]>;
+    onRemoved: Listenable<[string, unknown]>;
+    onChanged: Listenable<[string, { title?: string; url?: string }]>;
+    onMoved: Listenable<[string, { parentId: string; index: number }]>;
+  };
+
+  const onCreated = (id: string, node: LiveNode): void => {
+    handlers.onCreated(id, node);
+  };
+  const onRemoved = (id: string): void => {
+    handlers.onRemoved(id);
+  };
+  const onChanged = (id: string, changes: { title?: string; url?: string }): void => {
+    handlers.onChanged(id, changes);
+  };
+  const onMoved = (id: string, info: { parentId: string; index: number }): void => {
+    handlers.onMoved(id, info);
+  };
+
+  api.onCreated.addListener(onCreated);
+  api.onRemoved.addListener(onRemoved);
+  api.onChanged.addListener(onChanged);
+  api.onMoved.addListener(onMoved);
+
+  return () => {
+    api.onCreated.removeListener(onCreated);
+    api.onRemoved.removeListener(onRemoved);
+    api.onChanged.removeListener(onChanged);
+    api.onMoved.removeListener(onMoved);
+  };
 }
 
 /**
