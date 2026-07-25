@@ -8,6 +8,27 @@ approval.
 
 Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 
+### Build progress
+
+| Phase | State | Notes |
+|---|---|---|
+| 0 — Scaffold | ✔ 2026-07-25 | WXT + Svelte 5 + TS 6, `srcDir: 'src'`, guard + icon scripts |
+| 1 — Core library | ✔ 2026-07-25 | 3 parsers, 4 serializers, dedupe/diff/plan; 600 seeded round-trips |
+| 2 — Browser layer + #import | ✔ 2026-07-25 | adapter, write queue, stores, full import flow incl. forced backup |
+| 3 — #export + #edit | ✔ 2026-07-25 | tri-state picker, tree CRUD, search, duplicates, DnD + keyboard parity |
+| 4 — i18n, theming, Settings, About, Legal Gate | next | dictionaries already exist in EN/VI/JA; the switcher UI does not |
+| 5 — Hardening + release prep | pending | CI stubs per `12 §2`, CHANGELOG, README, full QA, `wxt zip` clean install |
+
+**Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
+Until that point every phase had been tested only against a hand-rolled
+`chrome.bookmarks` mock, because WXT's `fakeBrowser` stubs that API with
+"not implemented" throws (`11 §4`).
+
+Each of phases 1–3 was adversarially reviewed after implementation and each
+review found real defects (7, 13 and 14 respectively) — several in the paths
+that delete bookmarks. Budget that review into the remaining phases; a green
+test run has not once meant "done" on this project.
+
 ## v1.0.x — stabilization
 
 - Parser-tolerance fixes from real user files (fixture + test per report).
@@ -70,3 +91,5 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | 2026-07-25 | Legal Gate blocks import/export/edit only; settings+about stay reachable | 03 §4, 14 §2 |
 | 2026-07-25 | Round-trip is a **file-level** guarantee, per-format projected; browser import cannot restore dates | 00 §8, 11 §3 |
 | 2026-07-25 | CI: ops repo has no `browser-extension-*` family; callers use `reusable-chrome-extension.yml` + a local quality job, release is standalone | 12 §2 |
+| 2026-07-25 | Replace deletes nothing until the backup is **proven** — picker `close()` resolving, or an explicit user attestation on the anchor fallback | 03 §1 6b |
+| 2026-07-25 | Every `#edit` mutation resyncs from the browser on rejection; roots and `unmodifiable` nodes offer no destructive affordance at all | 03 §3 |
