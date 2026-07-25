@@ -11,10 +11,18 @@ All in `src/lib/core/` (pure, unit-tested) except the write queue
 parseNetscapeHtml(text):
   doc = new DOMParser().parseFromString(text, 'text/html')
   hasDoctype = /NETSCAPE-Bookmark-file-1/i.test(text.slice(0, 512))
-  dl  = outermostDl(doc)                   // DL with no DL ancestor — NOT querySelector('dl')
-  if !dl and !hasDoctype → BmParseError('NOT_NETSCAPE')
-  if !dl → return { roots: [], stats: emptyStats, warnings: [{ code: 'NO_BOOKMARKS' }] }
-  roots = walkDl(dl, 0)
+  hasEntries = doc has any <DL>, or body has a direct <DT> child
+  if !hasEntries and !hasDoctype → BmParseError('NOT_NETSCAPE')
+  if !hasEntries → return { roots: [], stats: emptyStats, warnings: [{ code: 'NO_BOOKMARKS' }] }
+  roots = collectRoots(doc.body)
+
+collectRoots(body):                        // NOT "the outermost DL" — see 04 §1.2
+  consumed = { nextDlFor(dt) for each direct <DT> child of body }
+  roots = []
+  for el of body.children in document order:
+    if el is DT       → roots.push(readEntry(el, depth 1))
+    if el is DL and el not in consumed → roots.push(...walkDl(el, 1))
+  return roots
 
 walkDl(dl, depth):
   if depth > MAX_DEPTH → BmParseError('TOO_DEEP')
@@ -56,6 +64,11 @@ Use `textContent` (never innerHTML) → titles are inert.
 ## 2. URL normalization — `normalize-url.ts`
 
 Purpose: dedupe/diff keys only — **never rewrites stored URLs**.
+
+The failure mode to guard against is a **false positive**: two different URLs
+producing the same key means one of them is silently dropped on import. Keep
+userinfo, port, host and path all in the key — in particular, do not rebuild a
+bare-origin key from `protocol + host`, which discards `user:pass@`.
 
 ```
 normalizeUrl(raw):
