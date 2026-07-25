@@ -36,6 +36,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
+    "@sveltejs/vite-plugin-svelte": "^7.2.0",
     "@vitest/coverage-v8": "^4.1.10",
     "@wxt-dev/module-svelte": "^2.0.5",
     "jsdom": "^29.1.1",

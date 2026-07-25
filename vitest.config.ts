@@ -1,3 +1,4 @@
+import { svelte } from '@sveltejs/vite-plugin-svelte';
 import { defineConfig } from 'vitest/config';
 import { WxtVitest } from 'wxt/testing';
 
@@ -9,7 +10,9 @@ import { WxtVitest } from 'wxt/testing';
  * there would validate a DOM the browser never produces.
  */
 export default defineConfig({
-  plugins: [WxtVitest()],
+  // The svelte plugin is what compiles runes inside `.svelte.ts` store modules;
+  // without it they throw "$state is not defined" under vitest.
+  plugins: [svelte(), WxtVitest()],
   test: {
     environment: 'jsdom',
     include: ['tests/unit/**/*.test.ts'],
