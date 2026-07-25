@@ -30,10 +30,17 @@ work there). Fewer moving parts, fewer review questions.
 ## 2. Directory layout (WXT conventions)
 
 `wxt.config.ts` sets **`srcDir: 'src'`**, so WXT resolves `entrypoints/`,
-`public/`, `components/` and `assets/` **under `src/`**, and its `@` alias
-points at `src/` — i.e. `@/lib/core/model` → `src/lib/core/model.ts`.
+`components/` and `assets/` **under `src/`**, and its `@` alias points at
+`src/` — i.e. `@/lib/core/model` → `src/lib/core/model.ts`.
 (The WXT default, `srcDir: '.'`, would put `entrypoints/` at the repo root and
 is incompatible with keeping library code under `src/lib/`.)
+
+⚠️ **`publicDir` must also be set explicitly** — WXT resolves it against the
+project *root*, not `srcDir` (`resolve-config.mjs`: `path.resolve(root,
+publicDir ?? 'public')`). Without `publicDir: 'src/public'` the build silently
+omits `_locales/` and `icon/`, and Chrome then refuses to load the extension
+because `__MSG_appName__` and the declared icons resolve to nothing. The build
+log gives no warning — verify the output tree, not just the exit code.
 
 ```
 bookmarkmagic/
