@@ -5,8 +5,10 @@
 > **Owner:** poli0981 (GitHub) / SkullMute
 > **Repo:** `poli0981/bookmarkmagic` ✔
 > **License:** GPL-3.0-or-later
-> **Status:** Pre-development — spec reconciled against the ops repo, the
-> portfolio precedent and live vendor docs; ready for Phase 0 scaffold
+> **Status:** In development — **Phases 0–3 complete** (scaffold, core library,
+> browser layer + import, export + edit). Verified working on real Chrome and
+> Brave, 2026-07-25. Next: Phase 4 (i18n wiring, theming, Settings, About,
+> Legal Gate). Sequencing lives in `/CLAUDE.md`.
 > **Doc suite version:** 1.2 (2026-07-25 — reality pass)
 
 ---
