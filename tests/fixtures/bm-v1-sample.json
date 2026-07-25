@@ -1,0 +1,23 @@
+{
+  "format": "bookmarkmagic",
+  "version": 1,
+  "generator": "BookmarkMagic 0.1.0",
+  "exportedAt": "2026-07-25T00:00:00Z",
+  "roots": [
+    {
+      "title": "Bookmarks bar",
+      "toolbar": true,
+      "addDate": 1700000000,
+      "lastModified": 1751500000,
+      "children": [
+        { "title": "Example", "url": "https://example.com/", "addDate": 1700000001 },
+        {
+          "title": "Dev",
+          "addDate": 1700000002,
+          "children": [{ "title": "GitHub", "url": "https://github.com/", "addDate": 1700000003 }]
+        },
+        { "title": "Empty", "children": [] }
+      ]
+    }
+  ]
+}

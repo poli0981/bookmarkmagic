@@ -43,7 +43,12 @@ HTML. `DOMParser('text/html')` normalizes it fine.
 
 Export rules: 4-space indent per depth (matches Chrome), attributes only when
 values exist, `PERSONAL_TOOLBAR_FOLDER="true"` on the toolbar root folder,
-HTML-escape `& < > "` in titles and hrefs.
+HTML-escape `& < > "` in titles and hrefs — **and `\r` as `&#13;`**. The last
+one is not a markup hazard but a round-trip one: the HTML tokenizer normalizes
+CR and CRLF to LF during input-stream preprocessing, so an unescaped `\r` in a
+title comes back as `\n`. A numeric reference survives, because character
+references are decoded after that normalization. `\r` reaches us from BM JSON
+and from quoted CSV fields, so this is reachable, not theoretical.
 
 ### 1.2 Parse tolerance (import)
 
@@ -71,14 +76,21 @@ Must accept, with a warning where noted:
 - `<HR>` separator elements (Firefox) → skipped, no warning. These are
   *elements*, so "unknown attributes ignored" does not cover them.
 - Empty folders → preserved.
-- **Root list selection.** Take the **outermost** `<DL>` (one with no `<DL>`
-  ancestor), not `document.querySelector('dl')`. Safari has been reported
-  (Mozilla bug 801450) to emit top-level `<DT><H3>` folders with no outer
-  `<DL>` wrapper; against that shape "first DL" grabs the *first folder's
-  inner* list and every later top-level folder is silently discarded. If any
-  `DT > H3` sits outside the chosen `<DL>`, fall back to walking the top-level
-  `<DT>` children of `<body>`. ⚠️ The exact Safari shape is unverified — gate
-  this on a captured Safari export before shipping (`11 §2`).
+- **Root list selection.** Do **not** pick a single root `<DL>` —
+  `document.querySelector('dl')` and "the outermost `<DL>`" are both lossy.
+  Safari has been reported (Mozilla bug 801450) to emit top-level `<DT><H3>`
+  folders with no outer wrapper, and real files can mix the two: one wrapped
+  root list followed by loose `<DT>`s. Either single-root rule silently drops
+  whichever half it did not pick, with no warning.
+
+  Instead walk `<body>`'s children **in document order** and accept both kinds
+  of entry point — a `<DT>` is read as a root entry, a `<DL>` is walked as a
+  root list. One caveat: when a file emits an explicit `</DT>`, a folder's
+  child `<DL>` also lands at body level, so compute each body-level `<DT>`'s
+  child list first and skip any `<DL>` already consumed that way, or the whole
+  subtree is emitted twice. Algorithm in `05 §1`.
+  ⚠️ The exact Safari shape is still unverified against a real export — gate
+  the fixture on a captured one before shipping (`11 §2`).
 
 Hard failures only: no `NETSCAPE-Bookmark-file-1` doctype **and** no `<DL>`
 found; or node/size/depth caps exceeded (`TOO_MANY_NODES`, `FILE_TOO_LARGE`,
@@ -143,7 +155,10 @@ folder_path,title,url,add_date
 ```
 
 - Separator `/` in `folder_path`; literal `/` inside a folder name escaped as
-  `\/` (and `\` as `\\`). Empty path ⇒ top level.
+  `\/` (and `\` as `\\`). Empty path ⇒ top level. A single folder whose title
+  is empty is written as a lone `\` — otherwise it is indistinguishable from
+  "no path" and the folder dissolves on re-import. A lone `\` is unreachable
+  from normal escaping (every literal `\` is doubled), so it is free to use.
 - RFC 4180: quote fields containing `, " \n`; escape `"` as `""`. Accept both
   `,` and `;` delimiters on import (sniff header); export delimiter is a
   Settings option (default `,`).

@@ -1,0 +1,8 @@
+# Default: normalize to LF in the repo, check out native.
+* text=auto
+
+# Fixtures are byte-exact samples of what real browsers and spreadsheets emit.
+# EOL normalization would rewrite the CRLF records in the CSV exports, so a
+# fresh clone would test a different file than the one that was committed.
+# NOTE: last matching rule wins, so this block must stay BELOW the `*` line.
+tests/fixtures/** -text
