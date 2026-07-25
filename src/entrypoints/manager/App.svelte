@@ -1,27 +1,113 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import ImportTab from '@/lib/components/ImportTab.svelte';
+  import TabBar from '@/lib/components/TabBar.svelte';
   import { t } from '@/lib/i18n/index.svelte';
+  import { isWriting } from '@/lib/stores/import-session.svelte';
+  import { getRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
+  import { loadSettings } from '@/lib/stores/settings.svelte';
+
+  onMount(() => {
+    void loadSettings();
+    const stopRouting = startRouting();
+
+    // Leaving mid-write would kill the queue with the tab (docs/03 §5).
+    const onBeforeUnload = (event: BeforeUnloadEvent): void => {
+      if (!isWriting()) return;
+      event.preventDefault();
+    };
+    globalThis.addEventListener('beforeunload', onBeforeUnload);
+
+    return () => {
+      stopRouting();
+      globalThis.removeEventListener('beforeunload', onBeforeUnload);
+    };
+  });
 </script>
 
+<header>
+  <div class="brand">
+    <span class="mark" aria-hidden="true">◆</span>
+    <strong>{t('common.appName')}</strong>
+  </div>
+  <TabBar />
+</header>
+
 <main>
-  <h1>{t('common.appName')}</h1>
-  <p>hello — manager</p>
+  {#if getRoute() === 'import'}
+    <ImportTab />
+  {:else}
+    <!-- Phases 3-4 fill these in; the routes exist now so the shell is real. -->
+    <p class="placeholder">{t('common.comingSoon', { tab: t(`common.${getRoute()}`) })}</p>
+  {/if}
 </main>
 
+<footer>
+  <span>v0.1.0 · GPL-3.0</span>
+  <nav>
+    <button onclick={() => navigate('settings')}>{t('common.settings')}</button>
+    <button onclick={() => navigate('about')}>{t('common.about')}</button>
+  </nav>
+</footer>
+
 <style>
-  main {
+  header,
+  footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--sp-4);
     max-width: 960px;
     margin: 0 auto;
-    padding: var(--sp-6) var(--sp-4);
+    padding: var(--sp-3) var(--sp-4);
   }
 
-  h1 {
-    margin: 0 0 var(--sp-2);
-    font-size: var(--fs-4);
+  header {
+    border-bottom: 1px solid var(--border);
+  }
+
+  footer {
+    border-top: 1px solid var(--border);
+    color: var(--fg-muted);
+    font-size: var(--fs-0);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
+  .mark {
     color: var(--accent);
   }
 
-  p {
-    margin: 0;
+  main {
+    max-width: 960px;
+    margin: 0 auto;
+    padding: var(--sp-5) var(--sp-4);
+    min-height: 60vh;
+  }
+
+  .placeholder {
     color: var(--fg-muted);
+  }
+
+  footer nav {
+    display: flex;
+    gap: var(--sp-3);
+  }
+
+  footer button {
+    font: inherit;
+    background: none;
+    border: none;
+    color: var(--fg-muted);
+    cursor: pointer;
+    padding: 0;
+  }
+
+  footer button:hover {
+    color: var(--accent);
   }
 </style>

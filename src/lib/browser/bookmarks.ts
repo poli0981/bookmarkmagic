@@ -1,0 +1,161 @@
+/**
+ * `chrome.bookmarks` adapter — docs/02 §3 rule 3, docs/03 §2.
+ *
+ * Purpose: the single audited surface where the extension talks to the
+ *   bookmarks API. Components never call `chrome.*` directly.
+ * Inputs / guarantees: raw rejections are mapped to `BmBrowserError`; the live
+ *   tree is converted into the pure `BookmarkNode` file model here, including
+ *   the millisecond→second conversion (`chrome.bookmarks` reports `dateAdded`
+ *   in ms; `BookmarkNode.addDate` is seconds — docs/05 §4).
+ */
+import { browser } from 'wxt/browser';
+import type { BookmarkNode } from '../core/model';
+import { millisToSeconds } from '../core/timestamps';
+import { BmAborted, BmBrowserError } from './errors';
+
+/** The live-tree node. Unlike `BookmarkNode` it carries browser identity. */
+export interface LiveNode {
+  id: string;
+  parentId?: string;
+  index?: number;
+  title: string;
+  url?: string;
+  dateAdded?: number;
+  dateGroupModified?: number;
+  /** Set by Chrome on policy-managed nodes; such nodes reject writes. */
+  unmodifiable?: string;
+  children?: LiveNode[];
+}
+
+export interface BookmarkRoots {
+  /** Bookmarks Bar. */
+  toolbarId: string;
+  /** Other Bookmarks. */
+  otherId: string;
+  /** Mobile Bookmarks, when the profile has one. */
+  mobileId: string | undefined;
+  /** Writable top-level folders, in tree order, excluding managed ones. */
+  writable: LiveNode[];
+}
+
+async function guard<T>(operation: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (cause) {
+    throw new BmBrowserError(operation, cause);
+  }
+}
+
+/** Fetch the whole tree. Returns the synthetic root's children (the real roots). */
+export async function getRootChildren(): Promise<LiveNode[]> {
+  const tree = await guard('bookmarks.getTree', () => browser.bookmarks.getTree());
+  return (tree[0]?.children ?? []) as LiveNode[];
+}
+
+/**
+ * Resolve the destination roots.
+ *
+ * Ids "1"/"2"/"3" are stable in Chromium but resolving through `getTree()`
+ * keeps a future Firefox target working, where roots are named ids. Nodes
+ * carrying `unmodifiable` (the enterprise/supervised "Managed bookmarks"
+ * folder) are excluded everywhere — writing to or removing them rejects.
+ */
+export async function getRoots(): Promise<BookmarkRoots> {
+  const children = await getRootChildren();
+  const writable = children.filter((node) => node.unmodifiable === undefined);
+
+  const byId = (id: string): LiveNode | undefined => writable.find((node) => node.id === id);
+  const toolbar = byId('1') ?? writable[0];
+  const other = byId('2') ?? writable.find((node) => node !== toolbar);
+  const mobile = byId('3') ?? writable.find((node) => node !== toolbar && node !== other);
+
+  if (toolbar === undefined || other === undefined) {
+    throw new BmBrowserError('bookmarks.getTree', 'no writable bookmark roots found');
+  }
+
+  return {
+    toolbarId: toolbar.id,
+    otherId: other.id,
+    mobileId: mobile?.id,
+    writable,
+  };
+}
+
+export interface ToNodesOptions {
+  /**
+   * Id of the Bookmarks Bar. The matching node is marked `toolbar: true`.
+   *
+   * Without this the marker is lost, and re-importing the file (including the
+   * Replace safety backup) lands the entire toolbar under Other Bookmarks —
+   * `03 §1` routes purely on that flag.
+   */
+  toolbarId?: string;
+}
+
+/** Convert the live tree into the pure file model (ms → s, ids dropped). */
+export function toBookmarkNodes(
+  nodes: readonly LiveNode[],
+  options: ToNodesOptions = {},
+): BookmarkNode[] {
+  return nodes.map((node) => {
+    const addDate = millisToSeconds(node.dateAdded);
+    const isFolderNode = node.url === undefined;
+    // dateGroupModified is a FOLDER field — Chrome does not set it on
+    // bookmarks, and our HTML serializer only emits LAST_MODIFIED on <H3>.
+    const lastModified = isFolderNode ? millisToSeconds(node.dateGroupModified) : undefined;
+    return {
+      title: node.title,
+      ...(!isFolderNode && { url: node.url as string }),
+      ...(addDate !== undefined && { addDate }),
+      ...(lastModified !== undefined && { lastModified }),
+      ...(options.toolbarId !== undefined && node.id === options.toolbarId && { toolbar: true }),
+      ...(isFolderNode && { children: toBookmarkNodes(node.children ?? [], options) }),
+    };
+  });
+}
+
+/** Flatten a live tree, parents before children. Used by dedupe and #edit. */
+export function flattenLive(nodes: readonly LiveNode[], into: LiveNode[] = []): LiveNode[] {
+  for (const node of nodes) {
+    into.push(node);
+    if (node.children !== undefined) flattenLive(node.children, into);
+  }
+  return into;
+}
+
+export async function create(details: {
+  parentId: string;
+  title: string;
+  url?: string;
+  index?: number;
+}): Promise<LiveNode> {
+  const created = await guard('bookmarks.create', () => browser.bookmarks.create(details));
+  return created as LiveNode;
+}
+
+async function removeTree(id: string): Promise<void> {
+  await guard('bookmarks.removeTree', () => browser.bookmarks.removeTree(id));
+}
+
+/**
+ * Delete the CHILDREN of the given roots, never the roots themselves (the API
+ * forbids that anyway). Managed nodes are skipped — docs/05 §6.
+ */
+export async function clearRoots(
+  roots: readonly LiveNode[],
+  signal?: AbortSignal,
+): Promise<number> {
+  let removed = 0;
+  for (const root of roots) {
+    if (root.unmodifiable !== undefined) continue;
+    for (const child of root.children ?? []) {
+      if (child.unmodifiable !== undefined) continue;
+      // Checked per node so a cancel arriving mid-deletion stops promptly
+      // rather than running the whole tree to completion.
+      if (signal?.aborted === true) throw new BmAborted(0);
+      await removeTree(child.id);
+      removed++;
+    }
+  }
+  return removed;
+}

@@ -67,19 +67,30 @@ deliberately no `downloads` permission) gives no success signal — if the user
 has "Ask where to save each file" on and cancels, the file is never written and
 we would then delete every bookmark they own. So:
 
-1. **Serialize** the current tree to BM JSON in memory. Any throw aborts the
-   whole operation with `BmBackupError { code: 'BACKUP_SERIALIZE_FAILED' }`
-   and never reaches step 7.
-2. **Persist.** Prefer `window.showSaveFilePicker()` — available in extension
-   pages, needs no extra permission, and throws `AbortError` on cancel, which
-   is the definite signal the anchor form cannot give. It requires transient
-   user activation, so call it directly from the confirm-dialog click, never
-   after an `await`. Fall back to the `<a download>` path when the picker is
-   unavailable.
+1. **Open the save target first.** `showSaveFilePicker()` is the only
+   activation-gated call, so it must run *before anything is awaited* in the
+   click handler — reading the tree first burns the activation window on
+   exactly the largest profiles. Only the handle is acquired here; writing is
+   not activation-gated. Cancel ⇒ `BmBackupError { code: 'BACKUP_CANCELLED' }`.
+2. **Read the live tree ONCE, and serialize from that read.** The same
+   `LiveNode[]` that gets serialized is the one handed to the delete step, so
+   the backup is provably a superset of what is removed. Serializing the
+   *preview-time* snapshot instead loses anything bookmarked between preview
+   and Start — with no copy on disk. Any serialize throw aborts with
+   `BACKUP_SERIALIZE_FAILED` and never reaches step 7.
+   The snapshot must carry `toolbar: true` on the Bookmarks Bar, or restoring
+   the backup nests the whole toolbar under Other Bookmarks.
 3. **Attest.** Picker path: writer `close()` resolving proves the backup —
-   proceed. Fallback path: no signal exists, so show a blocking confirm
-   ("Check your downloads folder for `bookmarkmagic-backup-….json`, then
-   confirm to continue") and require an explicit click before any deletion.
+   proceed. Fallback `<a download>` path: **no signal exists**, so the import
+   enters an `attesting` state and shows a blocking confirm ("Check your
+   downloads folder for `bookmarkmagic-backup-….json`, then confirm") —
+   anything other than an explicit confirmation is treated as
+   `BACKUP_CANCELLED` and nothing is deleted.
+4. **Delete.** Only now. The UI enters a `clearing` state that offers **no
+   Cancel button**: the deletion loop is abortable, but presenting a cancel
+   affordance mid-delete let a user cancel and then be told "0 items created"
+   after their tree was already gone. Cancel becomes available again once the
+   write phase starts.
 
 ## 2. EXPORT pipeline
 
@@ -129,7 +140,14 @@ import) appear without reload. Listeners attach on tab enter, detach on leave.
 
 ## 5. State machines (informal)
 
-Import session: `idle → validating → parsed → configuring → (backup) →
-writing → done | error | cancelled`. Stored in
-`import-session.svelte.ts`; leaving #import mid-`writing` prompts
-"Import in progress — cancel it?".
+Import session: `idle → validating → parsed → (backing-up → attesting? →
+clearing) → writing → done | error | cancelled`. Stored in
+`import-session.svelte.ts`, together with the parsed file itself — the Manager
+unmounts the tab on every route change, so component-local state would be lost
+while the session still said `parsed`, leaving a preview with no badges and a
+dead Import button.
+
+`attesting` and `clearing` occur in Replace mode only. While any of
+`backing-up`/`attesting`/`clearing`/`writing` is active the other tabs are
+disabled, so an in-app route change cannot orphan the queue — `beforeunload`
+only covers closing or reloading the tab, not internal navigation.
