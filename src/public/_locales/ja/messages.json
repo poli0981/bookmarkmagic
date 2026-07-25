@@ -1,0 +1,6 @@
+{
+  "appName": { "message": "BookmarkMagic" },
+  "appDesc": {
+    "message": "ブラウザ間でブックマークをインポート・エクスポート・編集。オフライン、アカウント不要、クラウド不要。"
+  }
+}

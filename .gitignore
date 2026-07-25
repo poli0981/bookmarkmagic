@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# WXT build output + generated types
+.output/
+.wxt/
+stats.html
+stats-*.json
+
+# Test / coverage
+coverage/
+*.tsbuildinfo
+
+# Editors
+.idea/
+.vs/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+
+# OS
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+
+# Local env
+.env
+.env.local
+.env.*.local
+
+# Generated fixtures that are too big to commit (tests/fixtures/generate-huge.ts
+# writes here on demand — docs/11 §2)
+tests/fixtures/generated/
