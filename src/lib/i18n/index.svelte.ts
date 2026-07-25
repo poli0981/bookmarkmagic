@@ -1,0 +1,42 @@
+import en from './locales/en';
+import ja from './locales/ja';
+import vi from './locales/vi';
+import type { Locale } from './resolve-locale';
+
+/**
+ * Runtime UI i18n (docs/07 §2).
+ *
+ * chrome.i18n always follows the browser UI language and cannot be switched at
+ * runtime, so every in-app string resolves through this store instead. The
+ * dictionaries are static imports, not fetched — `fetch` is banned repo-wide
+ * (docs/08 §3), and bundling three small dicts costs nothing at our size.
+ */
+const dicts = { en, vi, ja };
+
+let locale = $state<Locale>('en');
+
+export function setLocale(next: Locale): void {
+  locale = next;
+}
+
+/**
+ * Resolve a dotted key path, falling back to English, then to the key itself.
+ * Interpolation is `{token}` replacement only — never concatenate sentence
+ * fragments, or VI/JA word order breaks (docs/07 §2).
+ */
+export function t(path: string, params?: Record<string, string | number>): string {
+  const raw = lookup(dicts[locale], path) ?? lookup(dicts.en, path) ?? path;
+  if (params === undefined) return raw;
+  return raw.replace(/\{(\w+)\}/g, (match, token: string) =>
+    Object.hasOwn(params, token) ? String(params[token]) : match,
+  );
+}
+
+function lookup(dict: unknown, path: string): string | undefined {
+  let node: unknown = dict;
+  for (const key of path.split('.')) {
+    if (typeof node !== 'object' || node === null) return undefined;
+    node = (node as Record<string, unknown>)[key];
+  }
+  return typeof node === 'string' ? node : undefined;
+}

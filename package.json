@@ -1,0 +1,49 @@
+{
+  "name": "bookmarkmagic",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Import, export & edit bookmarks between browsers — offline, no account, no cloud.",
+  "license": "GPL-3.0-or-later",
+  "author": "skullmute (poli0981)",
+  "homepage": "https://github.com/poli0981/bookmarkmagic",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/poli0981/bookmarkmagic.git"
+  },
+  "bugs": {
+    "url": "https://github.com/poli0981/bookmarkmagic/issues"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "postinstall": "wxt prepare",
+    "dev": "wxt",
+    "dev:firefox": "wxt -b firefox",
+    "build": "wxt build",
+    "zip": "wxt zip",
+    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "knip": "knip",
+    "guard": "node scripts/guard.mjs",
+    "icons": "node scripts/gen-icons.mjs",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "coverage": "vitest run --coverage",
+    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run test"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.5",
+    "@vitest/coverage-v8": "^4.1.10",
+    "@wxt-dev/module-svelte": "^2.0.5",
+    "jsdom": "^29.1.1",
+    "knip": "^6.29.0",
+    "svelte": "^5.56.8",
+    "svelte-check": "^4.7.3",
+    "typescript": "~6.0.3",
+    "vitest": "^4.1.10",
+    "wxt": "^0.20.27"
+  }
+}

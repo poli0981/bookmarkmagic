@@ -1,0 +1,58 @@
+/* Design tokens — docs/06 §1. Theme via data-theme on <html>; default follows
+   prefers-color-scheme, manual override persisted in Settings. */
+
+:root {
+  --bg: #ffffff;
+  --bg-raised: #f6f7f9;
+  --border: #e2e5ea;
+  --fg: #1b1e24;
+  --fg-muted: #5b6472;
+  --accent: #6d4aff; /* violet — "magic" identity */
+  --accent-fg: #ffffff;
+  --danger: #d8384a;
+  --success: #1f9d55;
+  --warn: #b7791f;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+
+  --font: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --fs-0: 12px;
+  --fs-1: 13.5px;
+  --fs-2: 15px;
+  --fs-3: 18px;
+  --fs-4: 24px;
+
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 24px;
+  --sp-6: 32px;
+}
+
+[data-theme='dark'] {
+  --bg: #16181d;
+  --bg-raised: #1e2128;
+  --border: #2b3039;
+  --fg: #e8eaee;
+  --fg-muted: #9aa3b0;
+  --accent: #8b6dff;
+  --danger: #ff6b7d;
+  --success: #3ecf8e;
+  --warn: #e2b93b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --bg: #16181d;
+    --bg-raised: #1e2128;
+    --border: #2b3039;
+    --fg: #e8eaee;
+    --fg-muted: #9aa3b0;
+    --accent: #8b6dff;
+    --danger: #ff6b7d;
+    --success: #3ecf8e;
+    --warn: #e2b93b;
+  }
+}

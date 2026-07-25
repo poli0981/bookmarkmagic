@@ -1,0 +1,11 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": [
+    "src/entrypoints/**/main.ts",
+    "src/entrypoints/**/index.html",
+    "tests/**/*.test.ts",
+    "scripts/*.mjs"
+  ],
+  "project": ["src/**/*.{ts,svelte}", "tests/**/*.ts"],
+  "ignoreDependencies": []
+}
