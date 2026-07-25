@@ -91,16 +91,26 @@ rather than assign `undefined`. Build nodes with conditional spreads
 ```jsonc
 {
   "$schema": "https://unpkg.com/knip@6/schema.json",
-  "entry": ["src/entrypoints/**/main.ts", "src/entrypoints/**/index.html", "wxt.config.ts", "vitest.config.ts", "scripts/*.mjs"],
-  "project": ["src/**/*.{ts,svelte}"],
-  "ignoreDependencies": [],
-  "compilers": { "svelte": true }
+  "entry": ["src/entrypoints/**/main.ts", "src/entrypoints/**/index.html", "tests/**/*.test.ts", "scripts/*.mjs"],
+  "project": ["src/**/*.{ts,svelte}", "tests/**/*.ts"],
+  "ignoreDependencies": []
 }
 ```
 
-Knip is on **v6** (`01 §2`). v6 replaced the TypeScript backend with
-oxc-parser; verify `compilers.svelte` is still the supported hook at scaffold
-time and adjust here if it moved.
+Knip is on **v6** (`01 §2`). Two things v6 changed, both verified at scaffold:
+
+- **Do not set `compilers: { svelte: true }`.** v6 dropped Svelte from its
+  built-in compiler list (only `.mdx`, `.scss`, `.less`, `.styl`, `.tsrx`
+  remain), so the boolean shorthand leaves a literal `true` where a function is
+  expected and knip crashes with `TypeError: compiler is not a function`.
+  v6's **Svelte plugin** registers the `.svelte` compiler automatically
+  whenever `svelte` is a dependency — omit the key entirely.
+- `wxt.config.ts` and `vitest.config.ts` do not belong in `entry`; the wxt and
+  vitest plugins already declare them, and listing them again is reported as a
+  redundant-pattern hint.
+
+Tests are in both `entry` and `project` so that a constant used only by its own
+test does not read as dead code.
 
 CI fails on any unused file, export, or dependency. Intentional keep-arounds
 require an explicit `"ignore"` entry **with a comment** in the config, never
