@@ -123,7 +123,8 @@ Derived identifiers (canonical across docs and code):
    `scripts/gen-icons.mjs` (ported from the portfolio precedent, zero-dep) emits
    placeholder PNGs in the accent violet so the manifest loads from Phase 0.
 4. ✔ Donate URLs resolved from `.github/FUNDING.yml` (`14 §5`).
-   Still open: contact email in `legal/PRIVACY.md`.
+   ✔ Contact email filled in and confirmed live: `contact@poli0981.dev`
+   (`legal/PRIVACY.md`), alongside the GitHub Issues link.
 5. Chrome Web Store: developer account already paid ✔ — create the item,
    fill the Privacy tab per `08_MV3_COMPLIANCE.md`.
 6. Repo secrets + settings per `12 §5` (incl. disabling CodeQL "Default setup").
