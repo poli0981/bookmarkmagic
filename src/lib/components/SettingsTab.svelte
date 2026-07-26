@@ -19,6 +19,8 @@
 
   const settings = $derived(getSettings());
   let confirmingReset = $state(false);
+  /** Raw browser error behind the last failed save, if any. */
+  let saveDetail = $state<string | undefined>();
 
   /**
    * Every write reports what actually happened. The toast used to be the only
@@ -27,8 +29,17 @@
    */
   function save(patch: Partial<Settings>, successKey = 'settings.saved'): void {
     void updateSettings(patch).then((outcome) => {
-      if (outcome.ok) pushToast(t(successKey), 'success');
-      else pushToast(outcome.detail ?? t('settings.saveFailed'), 'danger');
+      if (outcome.ok) {
+        pushToast(t(successKey), 'success');
+        saveDetail = undefined;
+        return;
+      }
+      // The LOCALIZED sentence is the message; the raw browser error is the
+      // separate technical detail docs/02 §7 asks for. Putting `detail` first
+      // made every translation of settings.saveFailed dead code and showed a
+      // VI/JA user an untranslated Chrome string.
+      pushToast(t('settings.saveFailed'), 'danger');
+      saveDetail = outcome.detail;
     });
   }
 
@@ -48,8 +59,13 @@
   function confirmReset(): void {
     confirmingReset = false;
     void resetSettings().then((outcome) => {
-      if (outcome.ok) pushToast(t('settings.resetDone'), 'success');
-      else pushToast(outcome.detail ?? t('settings.saveFailed'), 'danger');
+      if (outcome.ok) {
+        pushToast(t('settings.resetDone'), 'success');
+        saveDetail = undefined;
+        return;
+      }
+      pushToast(t('settings.saveFailed'), 'danger');
+      saveDetail = outcome.detail;
     });
   }
 </script>
@@ -139,6 +155,10 @@
     {/snippet}
   </SettingRow>
 
+  {#if saveDetail !== undefined}
+    <pre class="detail">{saveDetail}</pre>
+  {/if}
+
   <footer>
     <Button onclick={() => (confirmingReset = true)}>{t('settings.reset')}</Button>
   </footer>
@@ -176,6 +196,18 @@
 
   select:hover {
     border-color: var(--accent);
+  }
+
+  .detail {
+    margin: var(--sp-3) 0 0;
+    padding: var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    color: var(--fg-muted);
+    font-size: var(--fs-0);
+    white-space: pre-wrap;
+    overflow-x: auto;
   }
 
   footer {

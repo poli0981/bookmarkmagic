@@ -18,7 +18,8 @@
 
   let checked = $state(false);
   let saving = $state(false);
-  let saveError = $state<string | undefined>();
+  let saveFailed = $state(false);
+  let saveDetail = $state<string | undefined>();
   let closeFailed = $state(false);
   let heading: HTMLHeadingElement | undefined = $state();
   let closeTimer: ReturnType<typeof setTimeout> | undefined;
@@ -35,13 +36,22 @@
   function accept(): void {
     if (!checked || saving) return;
     saving = true;
-    saveError = undefined;
+    saveFailed = false;
+    saveDetail = undefined;
     // Timestamp taken at click time and passed down, so the store stays free of
     // ambient time. Nothing is dismissed until the write resolves.
     void acceptLegal(new Date().toISOString()).then((outcome) => {
       saving = false;
-      if (outcome.ok) onaccepted();
-      else saveError = outcome.detail ?? t('legal.saveFailed');
+      if (outcome.ok) {
+        onaccepted();
+        return;
+      }
+      // The localized recovery sentence is the message; the raw browser error
+      // is the separate technical detail (docs/02 §7). Showing `detail` in its
+      // place made legal.saveFailed dead in all three locales — at the one
+      // moment a first-run user most needs an actionable instruction.
+      saveFailed = true;
+      saveDetail = outcome.detail;
     });
   }
 
@@ -95,8 +105,11 @@
     <span>{t('legal.accept')}</span>
   </label>
 
-  {#if saveError !== undefined}
-    <Callout tone="danger">{saveError}</Callout>
+  {#if saveFailed}
+    <Callout tone="danger">{t('legal.saveFailed')}</Callout>
+    {#if saveDetail !== undefined}
+      <pre class="detail">{saveDetail}</pre>
+    {/if}
   {/if}
 
   <div class="actions">
@@ -167,6 +180,18 @@
     gap: var(--sp-2);
     margin-top: var(--sp-2);
     font-size: var(--fs-1);
+  }
+
+  .detail {
+    margin: 0;
+    padding: var(--sp-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    color: var(--fg-muted);
+    font-size: var(--fs-0);
+    white-space: pre-wrap;
+    overflow-x: auto;
   }
 
   .actions {
