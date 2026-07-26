@@ -44,6 +44,8 @@
   .danger {
     background: var(--danger);
     border-color: var(--danger);
-    color: #fff;
+    /* Not #fff: dark mode lightens --danger, where white ink measures 2.74:1
+       against the 4.5:1 docs/06 §5 requires. */
+    color: var(--danger-fg);
   }
 </style>
