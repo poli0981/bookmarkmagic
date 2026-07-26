@@ -38,6 +38,10 @@
   --fg: #e8eaee;
   --fg-muted: #9aa3b0;
   --accent: #8b6dff;
+  /* Dark mode lightens --accent for contrast against --bg, which drops white
+     ink on it to 3.67:1 — under the 4.5:1 docs/06 §5 requires. --accent-fg must
+     be redefined alongside it; dark ink on #8b6dff measures 4.84:1. */
+  --accent-fg: #16181d;
   --danger: #ff6b7d;
   --success: #3ecf8e;
   --warn: #e2b93b;
@@ -51,6 +55,8 @@
     --fg: #e8eaee;
     --fg-muted: #9aa3b0;
     --accent: #8b6dff;
+    /* Keep in step with the [data-theme='dark'] block above. */
+    --accent-fg: #16181d;
     --danger: #ff6b7d;
     --success: #3ecf8e;
     --warn: #e2b93b;

@@ -21,6 +21,10 @@ const dict = {
     about: 'About',
     busy: 'An import is in progress',
     cancel: 'Cancel',
+    // Distinct from `cancel`: this only hides a notification about something
+    // that already finished — there is nothing left to call off.
+    dismiss: 'Dismiss',
+    sections: 'Sections',
   },
   popup: {
     import: 'Import bookmarks…',
@@ -31,6 +35,7 @@ const dict = {
   import: {
     dropHint: 'Drop a bookmark file or click to browse — .html, .json, .csv · max {size}',
     reading: 'Reading {name}…',
+    preview: 'Preview',
     folderName: 'Imported {date}',
     start: 'Import {n} bookmarks',
     backingUp:

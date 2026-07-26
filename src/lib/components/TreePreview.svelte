@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { BookmarkNode } from '../core/model';
   import type { NodeStatus } from '../core/diff';
+  import { t } from '../i18n/index.svelte';
   import TreePreviewNode from './TreePreviewNode.svelte';
 
   interface Props {
@@ -13,7 +14,7 @@
 
 <!-- Read-only preview. Folders below depth 2 start collapsed and mount their
      children lazily, so the DOM never holds the whole tree (docs/05 §9). -->
-<ul class="tree" role="tree" aria-label="Preview">
+<ul class="tree" role="tree" aria-label={t('import.preview')}>
   {#each roots as node, i (i)}
     <TreePreviewNode {node} {status} depth={1} />
   {/each}

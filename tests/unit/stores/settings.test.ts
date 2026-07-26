@@ -154,6 +154,18 @@ describe('settings store', () => {
     expect(getLocale()).toBe('ja');
   });
 
+  it('keeps <html lang> in step with the UI language', async () => {
+    // Both entrypoint documents ship lang="en"; without this a screen reader
+    // reads VI/JA text with an English voice and pronunciation rules.
+    await updateSettings({ locale: 'vi' });
+    expect(document.documentElement.lang).toBe('vi');
+    await updateSettings({ locale: 'ja' });
+    expect(document.documentElement.lang).toBe('ja');
+    vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockReturnValue('en-GB');
+    await updateSettings({ locale: 'auto' });
+    expect(document.documentElement.lang).toBe('en');
+  });
+
   it('still loads when the browser i18n lookup throws', async () => {
     vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockImplementation(() => {
       throw new Error('not implemented');
