@@ -24,6 +24,16 @@ Until that point every phase had been tested only against a hand-rolled
 `chrome.bookmarks` mock, because WXT's `fakeBrowser` stubs that API with
 "not implemented" throws (`11 §4`).
 
+**Phase 4 verified on a real browser 2026-07-26**, after the review fixes
+landed. Covered: the Legal Gate (appears once, blocks the three routes, leaves
+`#settings`/`#about` reachable pre-accept, re-renders in the language chosen
+before accepting, and persists across a restart); EN→VI→JA live switching with
+localized numbers and dates, and the header and `#settings` controls staying in
+agreement; theme system/light/dark; settings surviving an immediate tab close —
+the path the `$state`-proxy `DataCloneError` would have broken; and the Phase
+2–3 import/export/edit flows still working after Phase 4 touched their tabs and
+the settings store.
+
 Each of phases 1–4 was adversarially reviewed after implementation and each
 review found real defects (7, 13 and 14 in phases 1–3) — several in the paths
 that delete bookmarks. Budget that review into the remaining phases; a green
