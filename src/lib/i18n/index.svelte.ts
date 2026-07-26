@@ -1,4 +1,4 @@
-import { formatCount, formatDateTime, localeTag } from './format';
+import { formatCount, formatDateTime, localeTag, selectPluralForm } from './format';
 import en from './locales/en';
 import ja from './locales/ja';
 import vi from './locales/vi';
@@ -48,6 +48,33 @@ export function dateTime(iso: string): string | undefined {
  */
 export function t(path: string, params?: Record<string, string | number>): string {
   const raw = lookup(dicts[locale], path) ?? lookup(dicts.en, path) ?? path;
+  return interpolate(raw, params);
+}
+
+/**
+ * Resolve a plural key — an object of `{ one, other }` per docs/07 §5.
+ *
+ * `{n}` is supplied automatically, already grouped for the locale, so callers
+ * pass the raw count and never have to format it themselves. VI and JA carry
+ * both forms with the same text (one grammatical form), which is what keeps the
+ * `satisfies Dict` shape check meaningful.
+ */
+export function tPlural(
+  path: string,
+  count: number,
+  params?: Record<string, string | number>,
+): string {
+  const form = selectPluralForm(count, localeTag(locale));
+  const raw =
+    lookup(dicts[locale], `${path}.${form}`) ??
+    lookup(dicts[locale], `${path}.other`) ??
+    lookup(dicts.en, `${path}.${form}`) ??
+    lookup(dicts.en, `${path}.other`) ??
+    path;
+  return interpolate(raw, { n: num(count), ...params });
+}
+
+function interpolate(raw: string, params?: Record<string, string | number>): string {
   if (params === undefined) return raw;
   return raw.replace(/\{(\w+)\}/g, (match, token: string) =>
     Object.hasOwn(params, token) ? String(params[token]) : match,

@@ -7,7 +7,7 @@
  *   loses nothing).
  */
 
-import { getAppVersion } from '../browser/app-info';
+import { getGeneratorVersion } from '../browser/app-info';
 import { getRootChildren, getRoots, type LiveNode, toBookmarkNodes } from '../browser/bookmarks';
 import { sanitizeFilename, timestampSuffix, triggerDownload } from '../browser/download';
 import type { ExportFormat } from '../browser/storage';
@@ -117,7 +117,7 @@ function serialize(nodes: ReturnType<typeof toBookmarkNodes>, options: ExportOpt
       return serializeNetscapeHtml(nodes);
     case 'bm-json':
       return serializeBmJson(nodes, {
-        version: getAppVersion(),
+        version: getGeneratorVersion(),
         exportedAt: options.now.toISOString(),
       });
     case 'csv':

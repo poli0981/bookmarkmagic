@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { LiveNode } from '../browser/bookmarks';
   import type { CheckState } from '../core/select';
-  import { t } from '../i18n/index.svelte';
+  import { num, t } from '../i18n/index.svelte';
   import Self from './FolderPickNode.svelte';
 
   interface Props {
@@ -53,7 +53,7 @@
         onchange={(e) => ontoggle(node, (e.currentTarget as HTMLInputElement).checked)}
       />
       <span class="title">{node.title}</span>
-      {#if bookmarks > 0}<span class="count">{bookmarks}</span>{/if}
+      {#if bookmarks > 0}<span class="count">{num(bookmarks)}</span>{/if}
     </label>
   </div>
 

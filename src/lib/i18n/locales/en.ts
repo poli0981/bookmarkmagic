@@ -72,7 +72,8 @@ const dict = {
       replace: 'Replace everything',
     },
     warnings: {
-      title: '{n} warning(s)',
+      // Plural keys are `{ one, other }` objects in EVERY locale (docs/07 §5).
+      title: { one: '{n} warning', other: '{n} warnings' },
     },
   },
   export: {
@@ -200,15 +201,41 @@ const dict = {
       'Your acceptance could not be saved, so nothing was recorded. Check that this browser allows extension storage, then try again.',
     blocked: 'Accept the terms to use the Import, Export and Edit tabs.',
   },
+  /**
+   * Every code is a plural key, including the two that interpolate no count —
+   * `ParseWarning` always carries one, so a uniform shape lets `WarningList`
+   * call `tPlural` unconditionally instead of maintaining a list of which
+   * codes count things.
+   */
   warnings: {
-    NO_BOOKMARKS: 'This file contains no bookmarks.',
-    DESCRIPTIONS_DROPPED:
-      '{n} description(s) were dropped — they have no place in the bookmark model.',
-    FAVICONS_IGNORED: '{n} favicon(s) ignored — the bookmarks API cannot set favicons.',
-    INVALID_DATE: '{n} unreadable date(s) were left blank.',
-    MISSING_URL: '{n} entries had no address and were skipped.',
-    NEWER_VERSION: 'This file was written by a newer version — reading it as best we can.',
-    EMPTY_TITLE: '{n} bookmark(s) had no title; their address is shown instead.',
+    NO_BOOKMARKS: {
+      one: 'This file contains no bookmarks.',
+      other: 'This file contains no bookmarks.',
+    },
+    DESCRIPTIONS_DROPPED: {
+      one: '{n} description was dropped — it has no place in the bookmark model.',
+      other: '{n} descriptions were dropped — they have no place in the bookmark model.',
+    },
+    FAVICONS_IGNORED: {
+      one: '{n} favicon ignored — the bookmarks API cannot set favicons.',
+      other: '{n} favicons ignored — the bookmarks API cannot set favicons.',
+    },
+    INVALID_DATE: {
+      one: '{n} unreadable date was left blank.',
+      other: '{n} unreadable dates were left blank.',
+    },
+    MISSING_URL: {
+      one: '{n} entry had no address and was skipped.',
+      other: '{n} entries had no address and were skipped.',
+    },
+    NEWER_VERSION: {
+      one: 'This file was written by a newer version — reading it as best we can.',
+      other: 'This file was written by a newer version — reading it as best we can.',
+    },
+    EMPTY_TITLE: {
+      one: '{n} bookmark had no title; its address is shown instead.',
+      other: '{n} bookmarks had no title; their address is shown instead.',
+    },
   },
   errors: {
     NOT_NETSCAPE: 'This does not look like a bookmark HTML file.',

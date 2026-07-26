@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { num, t } from '../i18n/index.svelte';
+  import { tPlural } from '../i18n/index.svelte';
   import type { ParseWarning } from '../core/model';
 
   interface Props {
@@ -11,10 +11,10 @@
 
 {#if warnings.length > 0}
   <details>
-    <summary>{t('import.warnings.title', { n: num(warnings.length) })}</summary>
+    <summary>{tPlural('import.warnings.title', warnings.length)}</summary>
     <ul>
       {#each warnings as warning (warning.code)}
-        <li>{t(`warnings.${warning.code}`, { n: num(warning.count) })}</li>
+        <li>{tPlural(`warnings.${warning.code}`, warning.count)}</li>
       {/each}
     </ul>
   </details>
