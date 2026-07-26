@@ -14,7 +14,6 @@ export default {
     about: '概要',
     busy: 'インポートを実行中です',
     cancel: 'キャンセル',
-    comingSoon: '{tab}は今後のビルドで利用できます。',
   },
   popup: {
     import: 'ブックマークをインポート…',

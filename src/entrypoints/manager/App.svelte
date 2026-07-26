@@ -1,5 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { getAppVersion } from '@/lib/browser/app-info';
+  import AboutTab from '@/lib/components/AboutTab.svelte';
   import EditTab from '@/lib/components/EditTab.svelte';
   import ExportTab from '@/lib/components/ExportTab.svelte';
   import ImportTab from '@/lib/components/ImportTab.svelte';
@@ -10,12 +12,14 @@
   import Toast from '@/lib/components/Toast.svelte';
   import { t } from '@/lib/i18n/index.svelte';
   import { isWriting } from '@/lib/stores/import-session.svelte';
+  import { REPO_URL } from '@/lib/links';
   import { getRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
   import { flushSettings, getSettings, updateSettings } from '@/lib/stores/settings.svelte';
   import { pushToast } from '@/lib/stores/toast.svelte';
 
   // Settings are loaded and awaited in main.ts, before this ever mounts.
   const settings = $derived(getSettings());
+  const version = getAppVersion();
 
   onMount(() => {
     const stopRouting = startRouting();
@@ -74,13 +78,15 @@
   {:else if getRoute() === 'settings'}
     <SettingsTab />
   {:else}
-    <!-- Phase 4's About tab lands in the next commit. -->
-    <p class="placeholder">{t('common.comingSoon', { tab: t(`common.${getRoute()}`) })}</p>
+    <AboutTab />
   {/if}
 </main>
 
 <footer>
-  <span>v0.1.0 · GPL-3.0</span>
+  <span>
+    {#if version !== ''}v{version} · {/if}GPL-3.0 ·
+    <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+  </span>
   <nav>
     <!-- Gated like TabBar's tabs: navigating away mid-write unmounts ImportTab
          and strands the attestation resolver, deadlocking the import
@@ -145,10 +151,6 @@
     margin: 0 auto;
     padding: var(--sp-5) var(--sp-4);
     min-height: 60vh;
-  }
-
-  .placeholder {
-    color: var(--fg-muted);
   }
 
   footer nav {

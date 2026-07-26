@@ -6,6 +6,8 @@
  *   anchor path is enough here — unlike the Replace backup, a failed export
  *   loses nothing).
  */
+
+import { getAppVersion } from '../browser/app-info';
 import { getRootChildren, getRoots, type LiveNode, toBookmarkNodes } from '../browser/bookmarks';
 import { sanitizeFilename, timestampSuffix, triggerDownload } from '../browser/download';
 import type { ExportFormat } from '../browser/storage';
@@ -14,8 +16,6 @@ import { serializeBmJson } from '../core/serialize/bm-json';
 import { type CsvDelimiter, serializeCsv } from '../core/serialize/csv';
 import { type MarkdownStyle, serializeMarkdown } from '../core/serialize/markdown';
 import { serializeNetscapeHtml } from '../core/serialize/netscape-html';
-
-const APP_VERSION = '0.1.0';
 
 export const FORMAT_META: Record<
   ExportFormat,
@@ -117,7 +117,7 @@ function serialize(nodes: ReturnType<typeof toBookmarkNodes>, options: ExportOpt
       return serializeNetscapeHtml(nodes);
     case 'bm-json':
       return serializeBmJson(nodes, {
-        version: APP_VERSION,
+        version: getAppVersion(),
         exportedAt: options.now.toISOString(),
       });
     case 'csv':

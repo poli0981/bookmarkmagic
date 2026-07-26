@@ -21,7 +21,6 @@ const dict = {
     about: 'About',
     busy: 'An import is in progress',
     cancel: 'Cancel',
-    comingSoon: '{tab} arrives in a later build.',
   },
   popup: {
     import: 'Import bookmarks…',
