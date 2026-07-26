@@ -55,6 +55,9 @@
    * permission, which docs/08 §2 forbids.
    */
   function closeTab(): void {
+    // Clear first: repeated clicks would otherwise stack timers, and only the
+    // last one would ever be cleaned up.
+    if (closeTimer !== undefined) clearTimeout(closeTimer);
     globalThis.close();
     closeTimer = setTimeout(() => {
       closeTimer = undefined;

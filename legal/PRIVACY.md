@@ -41,5 +41,5 @@ inside the Extension.
 
 ## Contact
 
-⚠️ contact email — or open an issue at
+Email: contact@poli0981.dev — or open an issue at
 <https://github.com/poli0981/bookmarkmagic/issues>
