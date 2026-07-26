@@ -50,7 +50,17 @@ jobs:
     # passing a named secret to it is a workflow-compile error.
     uses: poli0981/.github/.github/workflows/reusable-chrome-extension.yml@main
     permissions:
-      contents: read
+      # `contents: write`, not `read`, even though nothing here writes.
+      #
+      # The reusable has two mutually exclusive jobs: `build` (contents: read,
+      # `if: !inputs.release`) and `release` (contents: write, `if:
+      # inputs.release`). GitHub validates the caller's grant against EVERY job
+      # the reusable declares, BEFORE evaluating any `if:` — so passing
+      # `release: false` does not exempt us from the release job's requirement.
+      # Granting only `contents: read` makes the whole run fail at startup with
+      # no jobs and no log, which is how this was found (docs/12 §2.1's sample
+      # had the same too-narrow grant).
+      contents: write
     with:
       # All four are required in practice. Leaving package-manager at its
       # 'none' default skips install and build, then fails on

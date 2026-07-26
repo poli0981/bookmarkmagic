@@ -71,7 +71,7 @@ jobs:
     needs: quality
     uses: poli0981/.github/.github/workflows/reusable-chrome-extension.yml@main
     permissions:
-      contents: read
+      contents: write      # see the warning below — `read` fails at startup
     with:
       package-manager: 'npm'          # 01 §6 commits package-lock.json
       node-version: '24'
@@ -83,6 +83,16 @@ jobs:
 All four `with:` values are required. Omitting `package-manager` defaults it to
 `'none'`, which skips install/build entirely and then fails on
 `test -f ./manifest.json` — a file WXT never writes to the repo root.
+
+⚠️ **`contents: write` on the `build` job is not a mistake.** The reusable
+declares two mutually exclusive jobs — `build` (`contents: read`,
+`if: !inputs.release`) and `release` (`contents: write`, `if: inputs.release`).
+GitHub validates the caller's grant against **every job the reusable declares,
+before evaluating any `if:`**, so `release: false` does not exempt the caller
+from the release job's requirement. Granting `contents: read` makes the entire
+run fail with `startup_failure`: no jobs, no log, and only the generic "this run
+likely failed because of a workflow file issue" in the UI. Verified 2026-07-26
+on the first real run of this workflow.
 
 `npm run guard` runs the same script locally and in CI, so the gate cannot
 drift between the two (`10 §3`). It is the single canonical pattern defined in
