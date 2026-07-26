@@ -123,6 +123,79 @@ const dict = {
     keepFirstBody:
       'Keep the first copy of each link and delete the other {n}? This cannot be undone.',
   },
+  settings: {
+    autosave: 'Changes are saved as you make them.',
+    language: 'Language',
+    languageNote: 'Applies to this extension only, not to the browser.',
+    localeAuto: 'Automatic (follow the browser)',
+    lang: {
+      // Endonyms, deliberately identical in all three dictionaries: a Japanese
+      // user hunting for Vietnamese looks for "Tiếng Việt", not "ベトナム語".
+      en: 'English',
+      vi: 'Tiếng Việt',
+      ja: '日本語',
+    },
+    theme: 'Theme',
+    themes: {
+      system: 'System',
+      light: 'Light',
+      dark: 'Dark',
+    },
+    defaultExportFormat: 'Default export format',
+    defaultExportFormatNote: 'Pre-selected when you open the Export tab.',
+    defaultImportMode: 'Default import mode',
+    defaultImportModeNote: 'Pre-selected when you open the Import tab.',
+    csvDelimiter: 'CSV delimiter',
+    csvDelimiterNote: 'Use semicolons if your spreadsheet expects them.',
+    markdownStyle: 'Markdown layout',
+    markdownStyleNote: 'How exported Markdown arranges your folders.',
+    saved: 'Settings saved',
+    saveFailed: 'Your settings could not be saved.',
+    reset: 'Reset to defaults',
+    resetTitle: 'Reset all settings?',
+    resetBody:
+      'Language, theme and every default choice go back to how they started. Your bookmarks are not touched.',
+    resetConfirm: 'Reset',
+    resetDone: 'Settings reset to defaults',
+  },
+  about: {
+    tagline:
+      'Import, export and edit bookmarks between browsers — offline, no account, no cloud. Your data never leaves your device.',
+    version: 'Version {version}',
+    links: 'Links',
+    repo: 'GitHub repository',
+    issues: 'Report an issue',
+    changelog: 'Releases and changelog',
+    thirdParty: 'Third-party dependencies: None',
+    thirdPartyNote: 'BookmarkMagic ships no runtime libraries at all.',
+    donate: 'Support development',
+    donateNote: 'Entirely optional — BookmarkMagic is free software either way.',
+    legal: 'Legal',
+    accepted: 'Legal terms accepted on {date} · version {version}',
+    acceptedUndated: 'Legal terms accepted · version {version}',
+    notAccepted: 'You have not accepted the legal terms yet.',
+  },
+  legal: {
+    title: 'Before you start',
+    summary:
+      'BookmarkMagic runs entirely on your device. It has no servers, makes no network requests, and collects nothing — your bookmarks and settings never leave this browser. It is free software under the GPL-3.0 licence and comes with no warranty of any kind. Bookmark operations change your browser data, and the "Replace everything" mode deletes your current bookmarks, so keep your own backups of anything you care about.',
+    updatedTitle: 'The terms have been updated',
+    updatedBody:
+      'These documents changed since you accepted them. Please read them again to continue.',
+    documents: 'Documents',
+    eula: 'End User License Agreement',
+    license: 'License (GPL-3.0)',
+    disclaimer: 'Disclaimer',
+    privacy: 'Privacy Policy',
+    englishNote: 'The legally binding documents are in English.',
+    accept: 'I have read and accept the terms above',
+    continue: 'Accept & continue',
+    close: 'Close tab',
+    closeManually: 'You can close this tab now.',
+    saveFailed:
+      'Your acceptance could not be saved, so nothing was recorded. Check that this browser allows extension storage, then try again.',
+    blocked: 'Accept the terms to use the Import, Export and Edit tabs.',
+  },
   warnings: {
     NO_BOOKMARKS: 'This file contains no bookmarks.',
     DESCRIPTIONS_DROPPED:
