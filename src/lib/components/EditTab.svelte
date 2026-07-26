@@ -1,10 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { browser } from 'wxt/browser';
   import {
     create,
     getRootChildren,
-    type LiveNode,
     move,
     remove,
     removeTree,
@@ -12,8 +10,17 @@
     update,
   } from '../browser/bookmarks';
   import { BmBrowserError } from '../browser/errors';
+  import { openBookmarkUrl } from '../browser/open-url';
   import { findDuplicateGroups } from '../core/dedupe';
   import { searchTree } from '../core/search';
+  import {
+    countDescendants,
+    extraCopyIds,
+    flattenTree,
+    isEditable as canEdit,
+    resolveNewFolderParent,
+    toEditNode,
+  } from '../edit/edit-node';
   import {
     changeNode,
     type EditNode,
@@ -25,10 +32,11 @@
   import { canMoveInto, moveTargets } from '../edit/move-target';
   import { resolveKey, visibleRows } from '../edit/tree-keyboard';
   import { num, t } from '../i18n/index.svelte';
-  import Button from './Button.svelte';
   import Callout from './Callout.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import DuplicatePanel from './DuplicatePanel.svelte';
+  import EditToolbar from './EditToolbar.svelte';
+  import MoveToDialog from './MoveToDialog.svelte';
   import TreeRow from './TreeRow.svelte';
 
   let roots = $state<EditNode[]>([]);
@@ -78,16 +86,8 @@
     };
   });
 
-  function toEditNode(node: LiveNode): EditNode {
-    return {
-      id: node.id,
-      ...(node.parentId !== undefined && { parentId: node.parentId }),
-      title: node.title,
-      ...(node.url !== undefined && { url: node.url }),
-      ...(node.url === undefined && { children: (node.children ?? []).map(toEditNode) }),
-      ...(node.unmodifiable !== undefined && { unmodifiable: node.unmodifiable }),
-    };
-  }
+  /** Bound to the current tree, so callers pass only the node. */
+  const isEditable = (node: EditNode): boolean => canEdit(roots, node);
 
   async function load(): Promise<void> {
     try {
@@ -121,26 +121,8 @@
   const rows = $derived(visibleRows(roots, expanded, filtering ? search.visible : undefined));
 
   const duplicateGroups = $derived(
-    findDuplicateGroups(flatten(roots).filter((node) => node.url !== undefined)),
+    findDuplicateGroups(flattenTree(roots).filter((node) => node.url !== undefined)),
   );
-
-  function flatten(nodes: readonly EditNode[], into: EditNode[] = []): EditNode[] {
-    for (const node of nodes) {
-      into.push(node);
-      flatten(node.children ?? [], into);
-    }
-    return into;
-  }
-
-  /**
-   * Permanent roots and policy-managed nodes reject every write, so the UI must
-   * not offer the affordance at all — optimistically mutating first and finding
-   * out on rejection is how the tree ends up disagreeing with the browser.
-   */
-  function isEditable(node: EditNode): boolean {
-    if (node.unmodifiable !== undefined) return false;
-    return !roots.some((root) => root.id === node.id);
-  }
 
   /**
    * Run a mutation, and on failure resync from the browser — the only source of
@@ -199,27 +181,11 @@
       }
       case 'activate': {
         const node = findNode(roots, action.id);
-        if (node?.url !== undefined) void openUrl(node.url);
+        if (node?.url !== undefined) void openBookmarkUrl(node.url);
         else if (node !== undefined) toggle(node.id);
         break;
       }
     }
-  }
-
-  /**
-   * Only http(s) reach the browser. `javascript:` and `data:` are display-only
-   * (docs/09 T3) — Chromium also rejects them, but the app-side allowlist is
-   * the authoritative control.
-   */
-  async function openUrl(url: string): Promise<void> {
-    let scheme = '';
-    try {
-      scheme = new URL(url).protocol;
-    } catch {
-      return;
-    }
-    if (scheme !== 'http:' && scheme !== 'https:') return;
-    await browser.tabs.create({ url });
   }
 
   async function commitRename(id: string, title: string): Promise<void> {
@@ -246,17 +212,7 @@
   }
 
   async function newFolder(): Promise<void> {
-    // Into the focused FOLDER, or alongside the focused bookmark. Using the
-    // focused node's parent unconditionally meant selecting a root resolved to
-    // the synthetic root "0", which every create rejects.
-    const focused = findNode(roots, focusedId ?? '');
-    const writableRoot = roots.find((root) => root.unmodifiable === undefined)?.id;
-    const parentId =
-      focused === undefined
-        ? writableRoot
-        : focused.url === undefined
-          ? focused.id
-          : (focused.parentId ?? writableRoot);
+    const parentId = resolveNewFolderParent(roots, findNode(roots, focusedId ?? ''));
     if (parentId === undefined) return;
 
     await guardEdit(async () => {
@@ -273,7 +229,7 @@
     pendingKeepFirst = false;
     // Snapshot the ids first: duplicateGroups is $derived from `roots`, so
     // reading it inside the loop would recompute mid-iteration.
-    const doomed = duplicateGroups.flatMap((group) => group.nodes.slice(1).map((n) => n.id));
+    const doomed = extraCopyIds(duplicateGroups);
     await guardEdit(async () => {
       for (const id of doomed) {
         roots = removeNode(roots, id);
@@ -319,30 +275,21 @@
     searchInput?.select();
   }
 
-  const descendantCount = $derived(
-    pendingDelete === undefined ? 0 : flatten(pendingDelete.children ?? []).length,
-  );
+  const descendantCount = $derived(countDescendants(pendingDelete));
 </script>
 
 {#if loadError !== undefined}
   <Callout tone="danger">{loadError}</Callout>
 {:else}
-  <div class="toolbar">
-    <input
-      bind:this={searchInput}
-      type="search"
-      placeholder={t('edit.search')}
-      aria-label={t('edit.search')}
-      value={query}
-      oninput={(e) => onQuery((e.currentTarget as HTMLInputElement).value)}
-    />
-    <Button onclick={() => void newFolder()}>{t('edit.newFolder')}</Button>
-    <Button onclick={() => (showDuplicates = !showDuplicates)}>{t('edit.findDuplicates')}</Button>
-    <Button onclick={() => (expanded = new Set(flatten(roots).map((n) => n.id)))}
-      >{t('edit.expandAll')}</Button
-    >
-    <Button onclick={() => (expanded = new Set())}>{t('edit.collapseAll')}</Button>
-  </div>
+  <EditToolbar
+    bind:input={searchInput}
+    {query}
+    onquery={onQuery}
+    onnewFolder={() => void newFolder()}
+    ontoggleDuplicates={() => (showDuplicates = !showDuplicates)}
+    onexpandAll={() => (expanded = new Set(flattenTree(roots).map((node) => node.id)))}
+    oncollapseAll={() => (expanded = new Set())}
+  />
 
   {#if actionError !== undefined}
     <div class="action-error">
@@ -387,7 +334,7 @@
             onrename={(title) => void commitRename(row.node.id, title)}
             oncancelRename={() => (renamingId = undefined)}
             ondelete={() => (pendingDelete = row.node)}
-            onopen={() => void openUrl(row.node.url ?? '')}
+            onopen={() => void openBookmarkUrl(row.node.url ?? '')}
             onmoveTo={() => (movingNode = row.node)}
             ondragstart={() => (draggingId = row.node.id)}
             ondropinto={() => onDrop(row.node.id)}
@@ -416,26 +363,16 @@
 {/if}
 
 {#if movingNode !== undefined}
-  <div class="move-to" role="dialog" aria-label={t('edit.moveTo')}>
-    <p>{t('edit.moveToBody', { title: movingNode.title })}</p>
-    <ul>
-      {#each targets as target (target.id)}
-        <li>
-          <button
-            onclick={() => {
-              const id = movingNode?.id;
-              movingNode = undefined;
-              if (id !== undefined) void moveInto(id, target.id);
-            }}>{target.label}</button
-          >
-        </li>
-      {/each}
-      {#if targets.length === 0}
-        <li class="muted">{t('edit.noMoveTargets')}</li>
-      {/if}
-    </ul>
-    <Button onclick={() => (movingNode = undefined)}>{t('common.cancel')}</Button>
-  </div>
+  <MoveToDialog
+    node={movingNode}
+    {targets}
+    onpick={(parentId) => {
+      const id = movingNode?.id;
+      movingNode = undefined;
+      if (id !== undefined) void moveInto(id, parentId);
+    }}
+    oncancel={() => (movingNode = undefined)}
+  />
 {/if}
 
 <ConfirmDialog
@@ -465,24 +402,6 @@
 />
 
 <style>
-  .toolbar {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
-    margin-bottom: var(--sp-3);
-  }
-
-  .toolbar input {
-    font: inherit;
-    flex: 1;
-    min-width: 12ch;
-    padding: var(--sp-2) var(--sp-3);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg);
-    color: var(--fg);
-  }
-
   .split {
     display: grid;
     grid-template-columns: 1fr;
@@ -537,53 +456,4 @@
     text-align: center;
   }
 
-  .move-to {
-    position: fixed;
-    inset-block-end: var(--sp-4);
-    inset-inline-end: var(--sp-4);
-    width: min(360px, calc(100vw - var(--sp-6)));
-    max-height: 60vh;
-    overflow: auto;
-    background: var(--bg);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius);
-    padding: var(--sp-3);
-    box-shadow: 0 8px 32px rgb(0 0 0 / 0.25);
-  }
-
-  .move-to p {
-    margin: 0 0 var(--sp-2);
-    font-size: var(--fs-1);
-    color: var(--fg-muted);
-  }
-
-  .move-to ul {
-    list-style: none;
-    margin: 0 0 var(--sp-3);
-    padding: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .move-to button {
-    font: inherit;
-    width: 100%;
-    text-align: left;
-    background: none;
-    border: none;
-    border-radius: var(--radius-sm);
-    color: var(--fg);
-    cursor: pointer;
-    padding: var(--sp-1) var(--sp-2);
-  }
-
-  .move-to button:hover {
-    background: var(--bg-raised);
-  }
-
-  .muted {
-    color: var(--fg-muted);
-    font-size: var(--fs-1);
-  }
 </style>
