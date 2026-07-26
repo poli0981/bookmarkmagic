@@ -1,5 +1,10 @@
 /* Design tokens — docs/06 §1. Theme via data-theme on <html>; default follows
-   prefers-color-scheme, manual override persisted in Settings. */
+   prefers-color-scheme, manual override persisted in Settings.
+
+   Every `*-fg`/`*` pair and every token used as TEXT clears 4.5:1 against both
+   --bg and --bg-raised, in both themes (docs/06 §5). The numbers are not a
+   matter of taste: tests/unit/styles/contrast.test.ts parses this file and
+   fails the build if any pair drops below. Re-run it after changing a colour. */
 
 :root {
   --bg: #ffffff;
@@ -9,9 +14,13 @@
   --fg-muted: #5b6472;
   --accent: #6d4aff; /* violet — "magic" identity */
   --accent-fg: #ffffff;
-  --danger: #d8384a;
-  --success: #1f9d55;
-  --warn: #b7791f;
+  /* danger/success/warn are darker than an eyeball would pick, because all
+     three are used as text on --bg-raised: at the original values they measured
+     4.27, 3.26 and 3.40 against a 4.5 requirement. */
+  --danger: #ce3547;
+  --danger-fg: #ffffff;
+  --success: #198045;
+  --warn: #99651a;
 
   --radius: 10px;
   --radius-sm: 6px;
@@ -37,12 +46,13 @@
   --border: #2b3039;
   --fg: #e8eaee;
   --fg-muted: #9aa3b0;
-  --accent: #8b6dff;
+  --accent: #8f72ff;
   /* Dark mode lightens --accent for contrast against --bg, which drops white
-     ink on it to 3.67:1 — under the 4.5:1 docs/06 §5 requires. --accent-fg must
-     be redefined alongside it; dark ink on #8b6dff measures 4.84:1. */
+     ink on it under the 4.5:1 docs/06 §5 requires. --accent-fg must be
+     redefined alongside it, in the opposite direction. */
   --accent-fg: #16181d;
   --danger: #ff6b7d;
+  --danger-fg: #16181d;
   --success: #3ecf8e;
   --warn: #e2b93b;
 }
@@ -54,10 +64,11 @@
     --border: #2b3039;
     --fg: #e8eaee;
     --fg-muted: #9aa3b0;
-    --accent: #8b6dff;
+    --accent: #8f72ff;
     /* Keep in step with the [data-theme='dark'] block above. */
     --accent-fg: #16181d;
     --danger: #ff6b7d;
+    --danger-fg: #16181d;
     --success: #3ecf8e;
     --warn: #e2b93b;
   }

@@ -77,6 +77,6 @@
   .danger {
     background: var(--danger);
     border-color: var(--danger);
-    color: #fff;
+    color: var(--danger-fg);
   }
 </style>
