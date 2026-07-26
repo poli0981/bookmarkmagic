@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatCount, formatDateTime, localeTag } from '@/lib/i18n/format';
-import { dateTime, getLocale, num, setLocale } from '@/lib/i18n/index.svelte';
+import { formatCount, formatDateTime, localeTag, selectPluralForm } from '@/lib/i18n/format';
+import { dateTime, getLocale, num, setLocale, tPlural } from '@/lib/i18n/index.svelte';
 
 afterEach(() => {
   setLocale('en');
@@ -60,6 +60,48 @@ describe('formatDateTime', () => {
     expect(formatDateTime('', 'en-US')).toBeUndefined();
     expect(formatDateTime('not-a-date', 'en-US')).toBeUndefined();
     expect(() => formatDateTime('', 'ja-JP')).not.toThrow();
+  });
+});
+
+describe('selectPluralForm', () => {
+  it('distinguishes one from other in English', () => {
+    expect(selectPluralForm(1, 'en-US')).toBe('one');
+    expect(selectPluralForm(0, 'en-US')).toBe('other');
+    expect(selectPluralForm(2, 'en-US')).toBe('other');
+  });
+
+  it('always returns other for vi and ja, which have one grammatical form', () => {
+    for (const count of [0, 1, 2, 100]) {
+      expect(selectPluralForm(count, 'vi-VN')).toBe('other');
+      expect(selectPluralForm(count, 'ja-JP')).toBe('other');
+    }
+  });
+});
+
+describe('tPlural', () => {
+  it('picks the singular form and supplies a formatted {n}', () => {
+    setLocale('en');
+    expect(tPlural('warnings.INVALID_DATE', 1)).toBe('1 unreadable date was left blank.');
+  });
+
+  it('picks the plural form and groups the count', () => {
+    setLocale('en');
+    expect(tPlural('warnings.INVALID_DATE', 1234)).toBe('1,234 unreadable dates were left blank.');
+  });
+
+  it('resolves in vi and ja without falling back to English', () => {
+    for (const locale of ['vi', 'ja'] as const) {
+      setLocale(locale);
+      const text = tPlural('warnings.INVALID_DATE', 3);
+      expect(text).not.toBe('warnings.INVALID_DATE');
+      expect(text).not.toContain('unreadable');
+      expect(text).toContain('3');
+    }
+  });
+
+  it('returns the path itself for an unknown key rather than throwing', () => {
+    setLocale('en');
+    expect(tPlural('warnings.NOT_A_REAL_CODE', 2)).toBe('warnings.NOT_A_REAL_CODE');
   });
 });
 

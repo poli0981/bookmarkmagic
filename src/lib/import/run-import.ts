@@ -8,7 +8,7 @@
  *   picker resolving, or by the user explicitly confirming the fallback
  *   download (docs/03 §1 step 6b).
  */
-import { getAppVersion } from '../browser/app-info';
+import { getGeneratorVersion } from '../browser/app-info';
 import { clearRoots, getRootChildren, getRoots, toBookmarkNodes } from '../browser/bookmarks';
 import {
   isPickerAvailable,
@@ -160,7 +160,7 @@ export async function proveBackup(
   let content: string;
   try {
     content = serializeBmJson(snapshot, {
-      version: getAppVersion(),
+      version: getGeneratorVersion(),
       exportedAt: now.toISOString(),
     });
   } catch (cause) {

@@ -32,7 +32,15 @@ export type ImportState =
   | { kind: 'writing'; filename: string; progress: WriteProgress }
   | { kind: 'done'; filename: string; created: number; plan: ImportPlan }
   | { kind: 'cancelled'; filename: string; created: number }
-  | { kind: 'error'; filename: string; message: string; detail: string | undefined };
+  /**
+   * `messageKey` is a dotted i18n path, NOT a resolved string.
+   *
+   * `t()` is only reactive where it is called, and this state outlives the
+   * component; storing the translated sentence froze it in whatever language
+   * was active when the error happened, so switching language left the error
+   * message behind in the old one.
+   */
+  | { kind: 'error'; filename: string; messageKey: string; detail: string | undefined };
 
 let state = $state<ImportState>({ kind: 'idle' });
 let options = $state<ImportOptionsState>({ mode: 'new-folder', dedupe: true });

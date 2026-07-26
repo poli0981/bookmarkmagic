@@ -60,7 +60,9 @@ export default {
       replace: 'Thay thế toàn bộ',
     },
     warnings: {
-      title: '{n} cảnh báo',
+      // Tiếng Việt chỉ có một dạng số, nhưng vẫn phải mang đủ hai khóa
+      // (docs/07 §5) để phép kiểm tra `satisfies Dict` còn ý nghĩa.
+      title: { one: '{n} cảnh báo', other: '{n} cảnh báo' },
     },
   },
   export: {
@@ -189,13 +191,34 @@ export default {
     blocked: 'Hãy chấp nhận điều khoản để dùng các thẻ Nhập, Xuất và Chỉnh sửa.',
   },
   warnings: {
-    NO_BOOKMARKS: 'Tệp này không chứa bookmark nào.',
-    DESCRIPTIONS_DROPPED: 'Đã bỏ {n} phần mô tả — mô hình bookmark không có chỗ cho chúng.',
-    FAVICONS_IGNORED: 'Đã bỏ qua {n} favicon — API bookmark không thể đặt favicon.',
-    INVALID_DATE: 'Đã để trống {n} ngày không đọc được.',
-    MISSING_URL: 'Đã bỏ qua {n} mục không có địa chỉ.',
-    NEWER_VERSION: 'Tệp này được tạo bởi phiên bản mới hơn — đang đọc ở mức tốt nhất có thể.',
-    EMPTY_TITLE: '{n} bookmark không có tiêu đề; địa chỉ được hiển thị thay thế.',
+    NO_BOOKMARKS: {
+      one: 'Tệp này không chứa bookmark nào.',
+      other: 'Tệp này không chứa bookmark nào.',
+    },
+    DESCRIPTIONS_DROPPED: {
+      one: 'Đã bỏ {n} phần mô tả — mô hình bookmark không có chỗ cho chúng.',
+      other: 'Đã bỏ {n} phần mô tả — mô hình bookmark không có chỗ cho chúng.',
+    },
+    FAVICONS_IGNORED: {
+      one: 'Đã bỏ qua {n} favicon — API bookmark không thể đặt favicon.',
+      other: 'Đã bỏ qua {n} favicon — API bookmark không thể đặt favicon.',
+    },
+    INVALID_DATE: {
+      one: 'Đã để trống {n} ngày không đọc được.',
+      other: 'Đã để trống {n} ngày không đọc được.',
+    },
+    MISSING_URL: {
+      one: 'Đã bỏ qua {n} mục không có địa chỉ.',
+      other: 'Đã bỏ qua {n} mục không có địa chỉ.',
+    },
+    NEWER_VERSION: {
+      one: 'Tệp này được tạo bởi phiên bản mới hơn — đang đọc ở mức tốt nhất có thể.',
+      other: 'Tệp này được tạo bởi phiên bản mới hơn — đang đọc ở mức tốt nhất có thể.',
+    },
+    EMPTY_TITLE: {
+      one: '{n} bookmark không có tiêu đề; địa chỉ được hiển thị thay thế.',
+      other: '{n} bookmark không có tiêu đề; địa chỉ được hiển thị thay thế.',
+    },
   },
   errors: {
     NOT_NETSCAPE: 'Đây có vẻ không phải tệp HTML bookmark.',

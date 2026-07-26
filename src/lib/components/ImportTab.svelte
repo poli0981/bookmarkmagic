@@ -41,17 +41,26 @@
     attestResolve = undefined;
   }
 
-  function describeError(err: unknown): { message: string; detail: string | undefined } {
+  /**
+   * Map an error onto an i18n KEY plus a raw detail — never a resolved string.
+   * The session store outlives this component, and `t()` only re-runs where it
+   * is called, so a translated sentence stored here would never follow a
+   * language switch.
+   */
+  function describeError(err: unknown): { messageKey: string; detail: string | undefined } {
     if (err instanceof BmParseError) {
-      return { message: t(`errors.${err.code}`), detail: err.detail };
+      return { messageKey: `errors.${err.code}`, detail: err.detail };
     }
     if (err instanceof BmBackupError) {
-      return { message: t(`errors.${err.code}`), detail: err.message };
+      return { messageKey: `errors.${err.code}`, detail: err.message };
     }
     if (err instanceof BmBrowserError) {
-      return { message: t('errors.BROWSER'), detail: err.detail };
+      return { messageKey: 'errors.BROWSER', detail: err.detail };
     }
-    return { message: t('errors.UNKNOWN'), detail: err instanceof Error ? err.message : undefined };
+    return {
+      messageKey: 'errors.UNKNOWN',
+      detail: err instanceof Error ? err.message : undefined,
+    };
   }
 
   async function onFile(file: File): Promise<void> {
@@ -209,7 +218,7 @@
     onclick={resetImport}>{t('import.another')}</Button
   >
 {:else if session.kind === 'error'}
-  <Callout tone="danger">{session.message}</Callout>
+  <Callout tone="danger">{t(session.messageKey)}</Callout>
   {#if session.detail !== undefined}
     <pre class="detail">{session.detail}</pre>
   {/if}

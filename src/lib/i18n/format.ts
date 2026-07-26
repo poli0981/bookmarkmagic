@@ -22,6 +22,27 @@ const TAGS: Record<Locale, LocaleTag> = {
 // StatsCard alone formats four counts per paint — so cache per tag.
 const numberFormats = new Map<LocaleTag, Intl.NumberFormat>();
 const dateFormats = new Map<LocaleTag, Intl.DateTimeFormat>();
+const pluralRules = new Map<LocaleTag, Intl.PluralRules>();
+
+/** The two forms docs/07 §5 requires every plural key to carry. */
+export type PluralForm = 'one' | 'other';
+
+/**
+ * Pick a plural form for a count.
+ *
+ * Narrowed to `one`/`other` deliberately: `Intl.PluralRules` can return `zero`,
+ * `two`, `few` and `many` for other languages, but en yields only one/other and
+ * vi/ja only ever yield other — so the two-form dictionaries docs/07 §5
+ * specifies are sufficient for exactly the locales we ship.
+ */
+export function selectPluralForm(count: number, tag: LocaleTag): PluralForm {
+  let rules = pluralRules.get(tag);
+  if (rules === undefined) {
+    rules = new Intl.PluralRules(tag);
+    pluralRules.set(tag, rules);
+  }
+  return rules.select(count) === 'one' ? 'one' : 'other';
+}
 
 export function localeTag(locale: Locale): LocaleTag {
   return TAGS[locale];

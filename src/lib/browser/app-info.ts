@@ -24,3 +24,16 @@ export function getAppVersion(): string {
     return '';
   }
 }
+
+/**
+ * The `generator` string written into exported and backup BM JSON.
+ *
+ * Separate from `getAppVersion` because the UI and a file want different
+ * fallbacks: the UI hides an unknown version, but a file field cannot be
+ * hidden, and `"BookmarkMagic "` with a trailing space is a worse artifact
+ * than the bare product name.
+ */
+export function getGeneratorVersion(): string {
+  const version = getAppVersion();
+  return version === '' ? 'unknown' : version;
+}

@@ -72,13 +72,29 @@ describe('dictionary completeness', () => {
     expect(empty).toEqual([]);
   });
 
-  it('has no plural keys yet, so no plural helper is owed', () => {
-    // docs/07 §5: a plural key is an object `{ one, other }` in EVERY locale and
-    // needs a selector helper. None exist today, and knip would fail an unused
-    // helper — so this fails loudly the day someone adds the first one.
-    const plurals = [...branches(en as Node)]
-      .filter(([, keys]) => keys.length === 2 && keys.includes('one') && keys.includes('other'))
+  it('carries every plural key as { one, other } in all three locales', () => {
+    // docs/07 §5. VI/JA have one grammatical form and repeat the same string,
+    // but they must still carry both keys or the `satisfies Dict` shape check
+    // §2 relies on for completeness stops proving anything.
+    const pluralPaths = [...branches(en as Node)]
+      .filter(([, keys]) => keys.includes('one') && keys.includes('other'))
       .map(([path]) => path);
-    expect(plurals).toEqual([]);
+
+    expect(pluralPaths.length).toBeGreaterThan(0);
+    for (const [name, dict] of LOCALES) {
+      const leaves = flatten(dict);
+      for (const path of pluralPaths) {
+        expect(leaves.get(`${path}.one`), `${name}: ${path}.one`).toBeTypeOf('string');
+        expect(leaves.get(`${path}.other`), `${name}: ${path}.other`).toBeTypeOf('string');
+      }
+    }
+  });
+
+  it('gives every plural key exactly the two forms, and no stray siblings', () => {
+    const malformed = [...branches(en as Node)]
+      .filter(([, keys]) => keys.includes('one') || keys.includes('other'))
+      .filter(([, keys]) => keys.length !== 2)
+      .map(([path]) => path);
+    expect(malformed).toEqual([]);
   });
 });
