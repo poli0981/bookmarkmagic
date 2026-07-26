@@ -1,16 +1,15 @@
 import { mount } from 'svelte';
-import { browser } from 'wxt/browser';
-import { setLocale } from '@/lib/i18n/index.svelte';
-import { resolveLocale } from '@/lib/i18n/resolve-locale';
+import { loadSettings } from '@/lib/stores/settings.svelte';
 import '@/styles/base.css';
 import App from './App.svelte';
-
-// Phase 0: browser UI language only. Phase 4 hydrates from the persisted
-// Settings value first, falling back to this (docs/07 §2).
-setLocale(resolveLocale(browser.i18n.getUILanguage()));
 
 // SAFETY: the element is declared in this entrypoint's own index.html, so it
 // always exists by the time this module runs.
 const target = document.getElementById('app') as HTMLElement;
+
+// Awaited before mount for the same reason as the Manager: the popup is small
+// and fast, so a locale or theme flip here is proportionally more visible.
+// The popup is never gated (docs/14 §2), so there is no legal read to make.
+await loadSettings();
 
 export default mount(App, { target });

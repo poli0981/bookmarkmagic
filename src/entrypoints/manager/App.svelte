@@ -3,15 +3,21 @@
   import EditTab from '@/lib/components/EditTab.svelte';
   import ExportTab from '@/lib/components/ExportTab.svelte';
   import ImportTab from '@/lib/components/ImportTab.svelte';
+  import LanguageSwitcher from '@/lib/components/LanguageSwitcher.svelte';
+  import SettingsTab from '@/lib/components/SettingsTab.svelte';
   import TabBar from '@/lib/components/TabBar.svelte';
+  import ThemeToggle from '@/lib/components/ThemeToggle.svelte';
   import Toast from '@/lib/components/Toast.svelte';
   import { t } from '@/lib/i18n/index.svelte';
   import { isWriting } from '@/lib/stores/import-session.svelte';
   import { getRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
-  import { loadSettings } from '@/lib/stores/settings.svelte';
+  import { flushSettings, getSettings, updateSettings } from '@/lib/stores/settings.svelte';
+  import { pushToast } from '@/lib/stores/toast.svelte';
+
+  // Settings are loaded and awaited in main.ts, before this ever mounts.
+  const settings = $derived(getSettings());
 
   onMount(() => {
-    void loadSettings();
     const stopRouting = startRouting();
 
     // Leaving mid-write would kill the queue with the tab (docs/03 §5).
@@ -19,13 +25,31 @@
       if (!isWriting()) return;
       event.preventDefault();
     };
+
+    // Fires on tab close, navigation and backgrounding — unlike beforeunload it
+    // cannot be cancelled, so it is the right place to shorten the 200 ms
+    // window in which a just-changed setting is still unwritten.
+    const onVisibilityChange = (): void => {
+      if (globalThis.document?.visibilityState === 'hidden') void flushSettings();
+    };
+
     globalThis.addEventListener('beforeunload', onBeforeUnload);
+    globalThis.document?.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       stopRouting();
       globalThis.removeEventListener('beforeunload', onBeforeUnload);
+      globalThis.document?.removeEventListener('visibilitychange', onVisibilityChange);
     };
   });
+
+  /** Shared by the header controls so a silent failure there is impossible. */
+  function save(patch: Parameters<typeof updateSettings>[0]): void {
+    void updateSettings(patch).then((outcome) => {
+      if (outcome.ok) pushToast(t('settings.saved'), 'success');
+      else pushToast(outcome.detail ?? t('settings.saveFailed'), 'danger');
+    });
+  }
 </script>
 
 <header>
@@ -34,6 +58,10 @@
     <strong>{t('common.appName')}</strong>
   </div>
   <TabBar />
+  <div class="controls">
+    <LanguageSwitcher compact value={settings.locale} onchange={(locale) => save({ locale })} />
+    <ThemeToggle compact value={settings.theme} onchange={(theme) => save({ theme })} />
+  </div>
 </header>
 
 <main>
@@ -43,8 +71,10 @@
     <ExportTab />
   {:else if getRoute() === 'edit'}
     <EditTab />
+  {:else if getRoute() === 'settings'}
+    <SettingsTab />
   {:else}
-    <!-- Phases 3-4 fill these in; the routes exist now so the shell is real. -->
+    <!-- Phase 4's About tab lands in the next commit. -->
     <p class="placeholder">{t('common.comingSoon', { tab: t(`common.${getRoute()}`) })}</p>
   {/if}
 </main>
@@ -52,8 +82,19 @@
 <footer>
   <span>v0.1.0 · GPL-3.0</span>
   <nav>
-    <button onclick={() => navigate('settings')}>{t('common.settings')}</button>
-    <button onclick={() => navigate('about')}>{t('common.about')}</button>
+    <!-- Gated like TabBar's tabs: navigating away mid-write unmounts ImportTab
+         and strands the attestation resolver, deadlocking the import
+         (docs/03 §5). The footer used to be the one way around that. -->
+    <button
+      disabled={isWriting()}
+      title={isWriting() ? t('common.busy') : undefined}
+      onclick={() => navigate('settings')}>{t('common.settings')}</button
+    >
+    <button
+      disabled={isWriting()}
+      title={isWriting() ? t('common.busy') : undefined}
+      onclick={() => navigate('about')}>{t('common.about')}</button
+    >
   </nav>
 </footer>
 
@@ -89,6 +130,12 @@
     gap: var(--sp-2);
   }
 
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: var(--sp-2);
+  }
+
   .mark {
     color: var(--accent);
   }
@@ -118,7 +165,12 @@
     padding: 0;
   }
 
-  footer button:hover {
+  footer button:hover:not(:disabled) {
     color: var(--accent);
+  }
+
+  footer button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 </style>

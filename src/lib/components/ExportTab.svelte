@@ -7,6 +7,11 @@
   import type { MarkdownStyle } from '../core/serialize/markdown';
   import { countSelected, FORMAT_META, runExport } from '../export/run-export';
   import { num, t } from '../i18n/index.svelte';
+  import {
+    CSV_DELIMITER_CHOICES,
+    MARKDOWN_STYLE_CHOICES,
+    parseChoice,
+  } from '../settings/options';
   import { getSettings } from '../stores/settings.svelte';
   import { pushToast } from '../stores/toast.svelte';
   import Button from './Button.svelte';
@@ -85,10 +90,14 @@
           <span>{t('export.csvDelimiter')}</span>
           <select
             value={csvDelimiter}
-            onchange={(e) => (csvDelimiter = (e.currentTarget as HTMLSelectElement).value as CsvDelimiter)}
+            onchange={(e) => {
+              const next = parseChoice(e.currentTarget.value, CSV_DELIMITER_CHOICES);
+              if (next !== undefined) csvDelimiter = next;
+            }}
           >
-            <option value=",">{t('export.comma')}</option>
-            <option value=";">{t('export.semicolon')}</option>
+            {#each CSV_DELIMITER_CHOICES as choice (choice.value)}
+              <option value={choice.value}>{t(choice.labelKey)}</option>
+            {/each}
           </select>
         </label>
       {/if}
@@ -98,10 +107,14 @@
           <span>{t('export.markdownStyle')}</span>
           <select
             value={markdownStyle}
-            onchange={(e) => (markdownStyle = (e.currentTarget as HTMLSelectElement).value as MarkdownStyle)}
+            onchange={(e) => {
+              const next = parseChoice(e.currentTarget.value, MARKDOWN_STYLE_CHOICES);
+              if (next !== undefined) markdownStyle = next;
+            }}
           >
-            <option value="nested">{t('export.nested')}</option>
-            <option value="flat">{t('export.flat')}</option>
+            {#each MARKDOWN_STYLE_CHOICES as choice (choice.value)}
+              <option value={choice.value}>{t(choice.labelKey)}</option>
+            {/each}
           </select>
         </label>
       {/if}
