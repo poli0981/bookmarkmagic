@@ -90,11 +90,12 @@ install, privacy summary, donate), full manual QA (docs/11 §5), `wxt zip`
 clean-install test. Also carried in from the Phase 4 review:
 - point About's "Changelog" link at `CHANGELOG.md` once it exists
   (`src/lib/links.ts` currently targets `/releases`);
-- split `EditTab.svelte`, which is past the 500-line hard limit;
-- `Button.svelte`'s `.danger`/`.success` variants hardcode `color: #fff`, which
-  measures **2.75:1** on dark-theme `--danger` (#ff6b7d) — under the 4.5:1
-  docs/06 §5 requires. Phase 4 fixed the same class of bug for `--accent-fg`;
-  these need `--danger-fg`/`--success-fg` tokens and a visual decision.
+- ✔ `EditTab.svelte` split (589 → 459, under the hard limit). Its script block
+  is still 279 lines against the 150-line guidance; the remainder is the
+  mutation layer, which is genuinely coupled to reactive state and was left
+  whole rather than split behind accessors on the app's delete paths;
+- ✔ contrast tokens fixed, and `tests/unit/styles/contrast.test.ts` now fails
+  the build on any text pair under 4.5:1.
 **Exit:** ready for the docs/13 §1 runbook (human performs store submission).
 
 ## Working style

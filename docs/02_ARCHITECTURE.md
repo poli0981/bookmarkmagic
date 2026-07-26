@@ -89,10 +89,11 @@ bookmarkmagic/
 │   │   │   ├── download.ts          # Blob → <a download>
 │   │   │   ├── app-info.ts          # manifest version — the ONE source (06 §3.5)
 │   │   │   ├── errors.ts            # BmBrowserError / BmBackupError / BmAborted (§7)
+│   │   │   ├── open-url.ts          # http(s) allowlist before tabs.create (09 T3)
 │   │   │   └── open-manager.ts      # getContexts() focus-or-create
 │   │   ├── import/run-import.ts     # the import pipeline (03 §1)
 │   │   ├── export/run-export.ts     # the export pipeline (03 §2)
-│   │   ├── edit/                    # patch-tree, move-target, tree-keyboard (03 §3)
+│   │   ├── edit/                    # edit-node, patch-tree, move-target, tree-keyboard (03 §3)
 │   │   ├── settings/options.ts      # the six Settings choice tables (06 §3.4)
 │   │   ├── links.ts                 # repo / legal / donate URLs (14 §4, §5)
 │   │   ├── stores/                  # Svelte 5 runes state (.svelte.ts)
