@@ -109,6 +109,12 @@ describe('resolveNewFolderParent', () => {
   it('treats a focused root as the target folder itself', () => {
     expect(resolveNewFolderParent(ROOTS, BAR)).toBe('1');
   });
+
+  it('falls back rather than targeting a focused UNMODIFIABLE folder', () => {
+    // A managed folder rejects every create, so returning its id made "New
+    // folder" silently do nothing whenever one happened to be selected.
+    expect(resolveNewFolderParent(ROOTS, MANAGED)).toBe('1');
+  });
 });
 
 describe('countDescendants', () => {

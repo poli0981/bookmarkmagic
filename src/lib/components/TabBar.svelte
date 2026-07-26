@@ -69,11 +69,12 @@
     cursor: not-allowed;
   }
 
-  /* Reachable, but visibly not yet usable — clicking shows the gate. */
-  .locked {
-    opacity: 0.65;
-  }
-
+  /* Reachable, but visibly not yet usable — clicking shows the gate.
+     Deliberately NOT `opacity`, which composites the label against the page and
+     dropped --fg-muted from 5.98:1 to 2.83:1. The contrast test reads token
+     values out of tokens.css, so it cannot see an alpha applied on top: this
+     kind of dimming has to be avoided by hand. The padlock and the `title`
+     already carry the signal. */
   .locked::after {
     content: ' 🔒';
     font-size: var(--fs-0);

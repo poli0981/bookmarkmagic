@@ -55,10 +55,14 @@ const TEXT_PAIRS: [fg: string, bg: string][] = [
   ['--accent', '--bg'],
   ['--accent', '--bg-raised'],
   // Rendered as text: DuplicatePanel counts, TreePreviewNode badges,
-  // WarningList's summary.
+  // WarningList's summary, TreeRow's ⚠ unsafe-scheme marker. Checked against
+  // BOTH surfaces — a row sits on --bg until it is hovered or focused.
   ['--danger', '--bg-raised'],
+  ['--danger', '--bg'],
   ['--success', '--bg-raised'],
+  ['--success', '--bg'],
   ['--warn', '--bg-raised'],
+  ['--warn', '--bg'],
   // Ink on a filled control: Button .primary/.danger, ConfirmDialog .danger,
   // ThemeToggle .selected.
   ['--accent-fg', '--accent'],

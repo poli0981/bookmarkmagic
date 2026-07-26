@@ -103,6 +103,7 @@ export default {
     rename: 'Đổi tên',
     open: 'Mở',
     copyUrl: 'Sao chép liên kết',
+    unsafeUrl: 'Địa chỉ này dùng lược đồ mà BookmarkMagic sẽ không mở.',
     copied: 'Đã sao chép liên kết',
     copyFailed: 'Không sao chép được liên kết.',
     moveTo: 'Chuyển tới…',

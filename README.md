@@ -35,8 +35,10 @@ This is the whole point of the project, so it is worth being precise.
   There is no server. A grep gate (`npm run guard`) fails the build if anyone
   adds `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource` or `sendBeacon`.
 - **Exactly two permissions**: `bookmarks` and `storage`. No host permissions,
-  no content scripts, no background worker. A test asserts the built manifest
-  against that list.
+  no content scripts, no background worker. Two gates enforce it: a unit test
+  over `wxt.config.ts`, and `npm run check:manifest`, which CI runs against the
+  **built** `manifest.json` — because a build can add what the config never
+  asked for.
 - **Zero runtime dependencies.** Nothing third-party ships in the extension.
 - Settings use `chrome.storage.local`, never `storage.sync`, so even your
   preferences stay off any vendor cloud.

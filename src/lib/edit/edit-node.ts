@@ -63,6 +63,9 @@ export function resolveNewFolderParent(
 ): string | undefined {
   const writableRoot = roots.find((root) => root.unmodifiable === undefined)?.id;
   if (focused === undefined) return writableRoot;
+  // A policy-managed folder rejects every create, so falling back is the only
+  // way "New folder" does anything at all while one is selected.
+  if (focused.unmodifiable !== undefined) return writableRoot;
   if (focused.url === undefined) return focused.id;
   return focused.parentId ?? writableRoot;
 }

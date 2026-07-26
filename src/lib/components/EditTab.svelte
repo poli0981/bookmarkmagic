@@ -183,11 +183,23 @@
       }
       case 'activate': {
         const node = findNode(roots, action.id);
-        if (node?.url !== undefined) void openBookmarkUrl(node.url);
+        if (node?.url !== undefined) void openUrl(node.url);
         else if (node !== undefined) toggle(node.id);
         break;
       }
     }
+  }
+
+  /**
+   * Open a bookmark, saying so when the scheme is refused.
+   *
+   * The boolean was previously discarded with `void`, so clicking ↗ on a
+   * `javascript:` bookmark did nothing at all and looked like a broken button
+   * rather than a deliberate refusal (docs/09 T3).
+   */
+  async function openUrl(url: string): Promise<void> {
+    if (url === '') return;
+    if (!(await openBookmarkUrl(url))) pushToast(t('edit.unsafeUrl'), 'danger');
   }
 
   /** docs/06 §3.3's "Copy URL". Write-only, on an explicit click (docs/09 T8). */
@@ -343,7 +355,7 @@
             onrename={(title) => void commitRename(row.node.id, title)}
             oncancelRename={() => (renamingId = undefined)}
             ondelete={() => (pendingDelete = row.node)}
-            onopen={() => void openBookmarkUrl(row.node.url ?? '')}
+            onopen={() => void openUrl(row.node.url ?? '')}
             oncopyUrl={() => void copyUrl(row.node.url ?? '')}
             onmoveTo={() => (movingNode = row.node)}
             ondragstart={() => (draggingId = row.node.id)}

@@ -111,6 +111,7 @@ const dict = {
     rename: 'Rename',
     open: 'Open',
     copyUrl: 'Copy link',
+    unsafeUrl: 'This address uses a scheme BookmarkMagic will not open.',
     copied: 'Link copied',
     copyFailed: 'Could not copy the link.',
     moveTo: 'Move to…',

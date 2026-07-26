@@ -32,22 +32,32 @@
 |---|---|
 | T1 | `tests/unit/core/fixtures.test.ts` parses `malformed/script-injection.html` and asserts the payloads survive as inert text. `DOMParser('text/html')` never executes scripts, and `{@html}` is barred by `npm run guard`. |
 | T2 | `tests/unit/core/limits.test.ts` plus the caps in `core/limits.ts`. Measured: a 100k-node file parses without exhausting anything (`11 §6`). |
-| T3 | `malformed/js-url.html` at parse level, **and now** `tests/unit/browser/open-url.test.ts` at the point of use — `javascript:`, `data:`, `file:`, `chrome:`, `vbscript:` and case-shouted variants are all refused before `tabs.create`. |
+| T3 | `malformed/js-url.html` at parse level, `tests/unit/browser/open-url.test.ts` at the point of use — `javascript:`, `data:`, `file:`, `chrome:`, `vbscript:` and case-shouted variants are refused before `tabs.create` — and the ⚠ badge this row has always specified, which `isBlockedUrl` now drives in `TreeRow`. A refused open also raises a toast; it used to do nothing at all, which read as a broken button rather than a deliberate refusal. |
 | T4 | `tests/unit/import/safety-backup.test.ts`. |
 | T5 | `npm audit --omit=dev` reports **0** — every open Dependabot alert is `development` scope. |
 | T6 | Human; nothing in code. |
 | T7 | `sanitizeFilename` (`tests/unit/browser/download.test.ts`); everything else reaches the DOM through Svelte text interpolation. |
 | T8 | `browser/clipboard.ts` — write-only, click-only, never reads. Implemented in Phase 5; it had been specified in `06 §3.3` and here since the start but never built. |
 
-Two gaps this pass closed, both of which had gone unnoticed because nothing
+Three gaps this pass closed, all of which had gone unnoticed because nothing
 mechanical was watching:
 
-- **The permission list had no test at all.** `tests/unit/manifest.test.ts` now
-  asserts `['bookmarks', 'storage']` exactly against `wxt.config.ts`, plus the
-  absence of `host_permissions`, `content_scripts`, a background worker and
-  eight other reach-widening keys. Verified to fail by adding `'tabs'`.
-- **"Copy URL" did not exist**, so T8 above described the mitigation for a
-  feature that was never shipped.
+- **The permission list had no gate at all.** Two now exist, and both are
+  needed. `tests/unit/manifest.test.ts` asserts `['bookmarks', 'storage']`
+  against `wxt.config.ts` — what we *ask* for. `scripts/check-manifest.mjs`
+  asserts the **built** artifact, which is not the same thing: a dev build of
+  this identical config emits
+  `"permissions": ["bookmarks","storage","tabs","scripting"]` and
+  `"host_permissions": ["http://localhost/*"]`, because WXT injects them.
+  Production is clean today, but that is WXT's behaviour, not our enforcement.
+  Both were verified to fail — one by adding `'tabs'` to the config, the other
+  by editing the built manifest.
+- **"Copy URL" did not exist**, so T8 described the mitigation for a feature
+  that was never shipped.
+- **T3's ⚠ badge did not exist either.** The blocking half was real and tested;
+  the "mark dangerous schemes in the UI" half was not, so a `javascript:`
+  bookmark titled "Your bank" rendered exactly like a safe one and its Open
+  button silently did nothing.
 
 ## 3. Secure coding rules (enforced)
 

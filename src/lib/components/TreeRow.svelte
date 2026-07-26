@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { isBlockedUrl } from '../browser/open-url';
   import type { EditNode } from '../edit/patch-tree';
   import { t } from '../i18n/index.svelte';
 
@@ -53,6 +54,7 @@
 
   const isFolder = $derived(node.url === undefined);
   const domain = $derived(hostOf(node.url));
+  const blocked = $derived(!isFolder && isBlockedUrl(node.url));
 
   function hostOf(url: string | undefined): string {
     if (url === undefined) return '';
@@ -119,47 +121,57 @@
   {:else}
     <span class="title">{node.title}</span>
     {#if domain !== ''}<span class="domain">{domain}</span>{/if}
+    {#if blocked}
+      <!-- docs/09 T3: a javascript:/data: bookmark must not look like an
+           ordinary link that merely does nothing when clicked. -->
+      <span class="unsafe" title={t('edit.unsafeUrl')} aria-label={t('edit.unsafeUrl')}>⚠</span>
+    {/if}
 
     <span class="actions">
       {#if editable}
         <button
           title={t('edit.rename')}
+          aria-label={t('edit.rename')}
         onclick={(e) => {
           e.stopPropagation();
           onstartRename();
-          }}>✎</button
+          }}><span aria-hidden="true">✎</span></button
         >
       {/if}
       {#if !isFolder}
         <button
           title={t('edit.open')}
+          aria-label={t('edit.open')}
           onclick={(e) => {
             e.stopPropagation();
             onopen();
-          }}>↗</button
+          }}><span aria-hidden="true">↗</span></button
         >
         <button
           title={t('edit.copyUrl')}
+          aria-label={t('edit.copyUrl')}
           onclick={(e) => {
             e.stopPropagation();
             oncopyUrl();
-          }}>⧉</button
+          }}><span aria-hidden="true">⧉</span></button
         >
       {/if}
       {#if editable}
         <button
           title={t('edit.moveTo')}
+          aria-label={t('edit.moveTo')}
           onclick={(e) => {
             e.stopPropagation();
             onmoveTo();
-          }}>⇄</button
+          }}><span aria-hidden="true">⇄</span></button
         >
         <button
           title={t('edit.delete')}
+          aria-label={t('edit.delete')}
           onclick={(e) => {
             e.stopPropagation();
             ondelete();
-          }}>🗑</button
+          }}><span aria-hidden="true">🗑</span></button
         >
       {/if}
     </span>
@@ -219,6 +231,13 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .unsafe {
+    flex-shrink: 0;
+    font-size: var(--fs-0);
+    color: var(--warn);
+    cursor: help;
   }
 
   .rename {
