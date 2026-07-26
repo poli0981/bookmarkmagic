@@ -6,7 +6,7 @@
   import type { CsvDelimiter } from '../core/serialize/csv';
   import type { MarkdownStyle } from '../core/serialize/markdown';
   import { countSelected, FORMAT_META, runExport } from '../export/run-export';
-  import { t } from '../i18n/index.svelte';
+  import { num, t } from '../i18n/index.svelte';
   import { getSettings } from '../stores/settings.svelte';
   import Button from './Button.svelte';
   import Callout from './Callout.svelte';
@@ -109,7 +109,7 @@
         disabled={bookmarkCount === 0}
         onclick={download}
       >
-        {t('export.start', { n: bookmarkCount })}
+        {t('export.start', { n: num(bookmarkCount) })}
       </Button>
 
       {#if toast !== undefined}

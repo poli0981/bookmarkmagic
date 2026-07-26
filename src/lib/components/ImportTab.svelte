@@ -2,7 +2,7 @@
   import { timestampSuffix } from '../browser/download';
   import { BmAborted, BmBackupError, BmBrowserError } from '../browser/errors';
   import { BmParseError } from '../core/model';
-  import { t } from '../i18n/index.svelte';
+  import { num, t } from '../i18n/index.svelte';
   import { prepareImport, runImport } from '../import/run-import';
   import { getSettings } from '../stores/settings.svelte';
   import {
@@ -122,7 +122,14 @@
     }
   }
 
-  /** ISO date + local time, matching the `import.folderName` key (docs/07 §3). */
+  /**
+   * ISO date + local time, matching the `import.folderName` key (docs/07 §3).
+   *
+   * Deliberately NOT run through Intl, unlike every count in this file: docs/07
+   * §3 pins the folder name to the localized *word* plus an ISO date
+   * (`Đã nhập 2026-07-03`). Localizing it here would change the names of
+   * bookmark folders this extension creates in the user's browser.
+   */
   function formatFolderDate(now: Date): string {
     const pad = (n: number): string => String(n).padStart(2, '0');
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
@@ -152,7 +159,7 @@
         variant={options.mode === 'replace' ? 'danger' : 'primary'}
         onclick={() => void start(session.filename)}
       >
-        {t('import.start', { n: session.result.stats.bookmarks })}
+        {t('import.start', { n: num(session.result.stats.bookmarks) })}
       </Button>
     </section>
   </div>
@@ -176,18 +183,18 @@
       label={t('common.import')}
     />
     <p class="muted">
-      {t('import.progress', { done: session.progress.done, total: session.progress.total })}
+      {t('import.progress', { done: num(session.progress.done), total: num(session.progress.total) })}
       {#if session.progress.currentPath !== ''}<span class="path">{session.progress.currentPath}</span>{/if}
     </p>
     <Callout tone="warn">{t('import.keepTabOpen')}</Callout>
     <Button onclick={cancelWrite}>{t('common.cancel')}</Button>
   </div>
 {:else if session.kind === 'done'}
-  <Callout tone="success">{t('import.doneSummary', { created: session.created })}</Callout>
+  <Callout tone="success">{t('import.doneSummary', { created: num(session.created) })}</Callout>
   <p class="muted">
     {t('import.skipped', {
-      existing: session.plan.stats.skippedExisting,
-      inFile: session.plan.stats.skippedInFile,
+      existing: num(session.plan.stats.skippedExisting),
+      inFile: num(session.plan.stats.skippedInFile),
     })}
   </p>
   <div class="actions">
@@ -197,7 +204,7 @@
     >
   </div>
 {:else if session.kind === 'cancelled'}
-  <Callout tone="warn">{t('import.cancelledSummary', { created: session.created })}</Callout>
+  <Callout tone="warn">{t('import.cancelledSummary', { created: num(session.created) })}</Callout>
   <Button
     onclick={resetImport}>{t('import.another')}</Button
   >
