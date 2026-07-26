@@ -10,6 +10,9 @@
   const percent = $derived(total === 0 ? 0 : Math.round((done / total) * 100));
   // Announce every 10% rather than on every tick — docs/06 §5.
   const announced = $derived(Math.floor(percent / 10) * 10);
+  // Not run through Intl (unlike counts elsewhere): this is 0–100, and none of
+  // en-US/vi-VN/ja-JP groups a two-digit number — so it would cost a formatter
+  // lookup on the hottest render path in the app and change nothing.
 </script>
 
 <div class="wrap">

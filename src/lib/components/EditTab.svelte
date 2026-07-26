@@ -24,7 +24,7 @@
   } from '../edit/patch-tree';
   import { canMoveInto, moveTargets } from '../edit/move-target';
   import { resolveKey, visibleRows } from '../edit/tree-keyboard';
-  import { t } from '../i18n/index.svelte';
+  import { num, t } from '../i18n/index.svelte';
   import Button from './Button.svelte';
   import Callout from './Callout.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
@@ -443,7 +443,7 @@
   danger
   title={t('edit.deleteTitle')}
   body={descendantCount > 0
-    ? t('edit.deleteFolderBody', { title: pendingDelete?.title ?? '', n: descendantCount })
+    ? t('edit.deleteFolderBody', { title: pendingDelete?.title ?? '', n: num(descendantCount) })
     : t('edit.deleteBody', { title: pendingDelete?.title ?? '' })}
   confirmLabel={t('edit.delete')}
   cancelLabel={t('common.cancel')}
@@ -456,7 +456,7 @@
   danger
   title={t('edit.keepFirstTitle')}
   body={t('edit.keepFirstBody', {
-    n: duplicateGroups.reduce((n, g) => n + g.nodes.length - 1, 0),
+    n: num(duplicateGroups.reduce((n, g) => n + g.nodes.length - 1, 0)),
   })}
   confirmLabel={t('edit.delete')}
   cancelLabel={t('common.cancel')}

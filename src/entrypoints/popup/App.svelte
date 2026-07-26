@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { getRootChildren } from '@/lib/browser/bookmarks';
   import { openManager } from '@/lib/browser/open-manager';
-  import { t } from '@/lib/i18n/index.svelte';
+  import { num, t } from '@/lib/i18n/index.svelte';
   import { loadSettings } from '@/lib/stores/settings.svelte';
 
   let counts = $state<{ bookmarks: number; folders: number } | undefined>();
@@ -49,7 +49,7 @@
 
   <footer>
     {#if counts !== undefined}
-      {t('popup.counts', { bookmarks: counts.bookmarks, folders: counts.folders })}
+      {t('popup.counts', { bookmarks: num(counts.bookmarks), folders: num(counts.folders) })}
     {/if}
   </footer>
 </main>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { DuplicateGroup } from '../core/dedupe';
   import type { EditNode } from '../edit/patch-tree';
-  import { t } from '../i18n/index.svelte';
+  import { num, t } from '../i18n/index.svelte';
   import Button from './Button.svelte';
 
   interface Props {
@@ -18,14 +18,14 @@
 
 <aside aria-label={t('edit.duplicates')}>
   <header>
-    <strong>{t('edit.duplicatesFound', { groups: groups.length, extra })}</strong>
+    <strong>{t('edit.duplicatesFound', { groups: num(groups.length), extra: num(extra) })}</strong>
     <button class="close" aria-label={t('common.cancel')} onclick={onclose}>✕</button>
   </header>
 
   {#if groups.length === 0}
     <p class="muted">{t('edit.noDuplicates')}</p>
   {:else}
-    <Button variant="danger" onclick={onkeepFirst}>{t('edit.keepFirst', { n: extra })}</Button>
+    <Button variant="danger" onclick={onkeepFirst}>{t('edit.keepFirst', { n: num(extra) })}</Button>
 
     <ul>
       {#each groups as group (group.key)}

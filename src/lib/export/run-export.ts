@@ -44,7 +44,12 @@ export interface ExportPreview {
   bookmarks: number;
 }
 
-/** ISO date for the Markdown heading — locale-independent by design (docs/07 §3). */
+/**
+ * ISO date for the Markdown heading — locale-independent by design (docs/07 §3).
+ *
+ * Deliberately not `Intl`: file names and file *contents* stay locale-neutral so
+ * an exported file means the same thing whoever opens it.
+ */
 function isoDate(now: Date): string {
   const pad = (n: number): string => String(n).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;

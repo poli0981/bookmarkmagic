@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ImportMode } from '../browser/storage';
-  import { t } from '../i18n/index.svelte';
+  import { num, t } from '../i18n/index.svelte';
   import Callout from './Callout.svelte';
 
   interface Props {
@@ -46,7 +46,7 @@
     disabled={mode === 'replace'}
     onchange={(e) => onchange({ dedupe: (e.currentTarget as HTMLInputElement).checked })}
   />
-  <span>{t('import.dedupe', { n: duplicates })}</span>
+  <span>{t('import.dedupe', { n: num(duplicates) })}</span>
 </label>
 
 {#if mode === 'replace'}

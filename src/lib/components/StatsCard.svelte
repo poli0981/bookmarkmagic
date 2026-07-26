@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { t } from '../i18n/index.svelte';
+  import { num, t } from '../i18n/index.svelte';
   import type { TreeStats } from '../core/model';
 
   interface Props {
@@ -11,10 +11,10 @@
 </script>
 
 <dl>
-  <div><dt>{t('import.stats.bookmarks')}</dt><dd>{stats.bookmarks}</dd></div>
-  <div><dt>{t('import.stats.folders')}</dt><dd>{stats.folders}</dd></div>
-  <div><dt>{t('import.stats.depth')}</dt><dd>{stats.maxDepth}</dd></div>
-  <div><dt>{t('import.stats.duplicates')}</dt><dd>{duplicates}</dd></div>
+  <div><dt>{t('import.stats.bookmarks')}</dt><dd>{num(stats.bookmarks)}</dd></div>
+  <div><dt>{t('import.stats.folders')}</dt><dd>{num(stats.folders)}</dd></div>
+  <div><dt>{t('import.stats.depth')}</dt><dd>{num(stats.maxDepth)}</dd></div>
+  <div><dt>{t('import.stats.duplicates')}</dt><dd>{num(duplicates)}</dd></div>
 </dl>
 
 <style>
