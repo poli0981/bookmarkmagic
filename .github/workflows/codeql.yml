@@ -1,0 +1,36 @@
+# Caller stub — docs/12 §2.2.
+#
+# Uses `reusable-codeql.yml` (CodeQL Action v4), NOT the older `codeql.yml`,
+# whose input is the singular `language`. This one takes `languages`: a JSON
+# array encoded as a string.
+#
+# ⚠️ Prerequisite: repo Settings → Advanced Security → CodeQL "Default setup"
+# must be DISABLED, or this advanced-setup workflow is rejected at SARIF upload.
+name: CodeQL
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  schedule:
+    - cron: '0 14 * * 1' # weekly, Monday
+
+permissions:
+  security-events: write
+  actions: read
+  contents: read
+  packages: read
+
+jobs:
+  analyze:
+    # Reusable workflows do not inherit the caller's permissions — the block
+    # below is repeated on the job on purpose.
+    uses: poli0981/.github/.github/workflows/reusable-codeql.yml@main
+    permissions:
+      security-events: write
+      actions: read
+      contents: read
+      packages: read
+    with:
+      languages: '["javascript-typescript"]'

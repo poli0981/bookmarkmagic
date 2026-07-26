@@ -1,0 +1,56 @@
+# Caller stub — docs/12 §2.1.
+#
+# The `quality` job is local because the ops reusable runs NO quality gates at
+# all: its entire surface is install → build → assert manifest_version == 3 →
+# zip → upload. Lint, type-check, knip, coverage and the grep gate are ours.
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  quality:
+    name: Quality gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run lint # biome check .
+      - run: npm run check # svelte-check + tsc --noEmit
+      - run: npm run knip
+      - run: npm run coverage # vitest --coverage, thresholds per docs/11 §1
+      - run: npm run guard # the canonical grep gate, docs/08 §3
+
+  build:
+    name: Build + package
+    needs: quality
+    # No `secrets:` here — the reusable declares no secrets block at all, and
+    # passing a named secret to it is a workflow-compile error.
+    uses: poli0981/.github/.github/workflows/reusable-chrome-extension.yml@main
+    permissions:
+      contents: read
+    with:
+      # All four are required in practice. Leaving package-manager at its
+      # 'none' default skips install and build, then fails on
+      # `test -f ./manifest.json` — a file WXT never writes to the repo root.
+      package-manager: 'npm'
+      node-version: '24'
+      build-command: 'npm run build'
+      source-dir: '.output/chrome-mv3'
+      release: false
