@@ -11,7 +11,6 @@ export default {
     about: 'Giới thiệu',
     busy: 'Đang có tiến trình nhập',
     cancel: 'Hủy',
-    comingSoon: '{tab} sẽ có ở bản sau.',
   },
   popup: {
     import: 'Nhập bookmark…',

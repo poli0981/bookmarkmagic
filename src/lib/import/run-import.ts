@@ -8,6 +8,7 @@
  *   picker resolving, or by the user explicitly confirming the fallback
  *   download (docs/03 §1 step 6b).
  */
+import { getAppVersion } from '../browser/app-info';
 import { clearRoots, getRootChildren, getRoots, toBookmarkNodes } from '../browser/bookmarks';
 import {
   isPickerAvailable,
@@ -36,8 +37,6 @@ const PARSERS = {
   'bm-json': parseBmJson,
   csv: parseCsv,
 } as const;
-
-const APP_VERSION = '0.1.0';
 
 export interface PreparedImport {
   result: ParseResult;
@@ -160,7 +159,10 @@ export async function proveBackup(
 ): Promise<void> {
   let content: string;
   try {
-    content = serializeBmJson(snapshot, { version: APP_VERSION, exportedAt: now.toISOString() });
+    content = serializeBmJson(snapshot, {
+      version: getAppVersion(),
+      exportedAt: now.toISOString(),
+    });
   } catch (cause) {
     throw new BmBackupError(
       'BACKUP_SERIALIZE_FAILED',
