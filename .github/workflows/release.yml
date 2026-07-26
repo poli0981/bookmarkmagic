@@ -1,0 +1,80 @@
+# Release — docs/12 §2.3.
+#
+# Standalone rather than the ops reusable: the reusable's `release` job only
+# runs `gh release create --generate-notes`. It produces no SHA256SUMS.txt
+# (required by docs/09 §5), performs no store submission, and exposes no
+# `outputs:`, so a caller cannot reference the zip it built.
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: write # create the GitHub Release
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+
+      # The same gates as CI. A tag must never ship what a PR would have
+      # blocked — pushing a tag skips the CI workflow's branch triggers.
+      - run: npm run lint
+      - run: npm run check
+      - run: npm run knip
+      - run: npm run coverage
+      - run: npm run guard
+
+      - run: npm run zip # wxt zip → .output/<name>-<version>-chrome.zip
+
+      - name: Verify tag matches manifest version
+        run: |
+          set -euo pipefail
+          MANIFEST_VERSION=$(jq -r '.version' .output/chrome-mv3/manifest.json)
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          test "$MANIFEST_VERSION" = "$TAG_VERSION" \
+            || { echo "::error::tag $TAG_VERSION != manifest $MANIFEST_VERSION"; exit 1; }
+
+      - name: SHA256SUMS
+        working-directory: .output
+        run: sha256sum *-chrome.zip > SHA256SUMS.txt
+
+      - name: GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            .output/*-chrome.zip .output/SHA256SUMS.txt --generate-notes
+
+      # v1.0.x is published by hand (docs/12 §3) — first store reviews often
+      # ask questions and want a human in the loop. Flipping the repo variable
+      # CWS_AUTOPUBLISH to 'true' turns this on for v1.1+.
+      - name: Publish to Chrome Web Store
+        if: vars.CWS_AUTOPUBLISH == 'true'
+        env:
+          CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
+          CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
+          CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
+          CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
+        run: npx wxt submit --chrome-zip .output/*-chrome.zip
+
+  # A job INSIDE this workflow, not an `on: release: [published]` caller.
+  # A Release created by `gh release create` under the default GITHUB_TOKEN
+  # emits no event that starts new workflow runs, so an event-driven caller
+  # would silently never fire.
+  announce:
+    needs: release
+    uses: poli0981/.github/.github/workflows/announce-release.yml@main
+    permissions:
+      contents: read
+    secrets: inherit

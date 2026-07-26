@@ -1,0 +1,25 @@
+# Caller stub — docs/12 §2.4.
+#
+# The reusable already filters to `conclusion == 'failure'` on the default
+# branch, so this caller needs no `if:`.
+#
+# ⚠️ It declares `DISCORD_CI_WEBHOOK` as `required: true`, so this workflow
+# fails until that repo secret exists (docs/12 §5).
+name: Notify CI failure
+
+on:
+  workflow_run:
+    workflows: ['CI']
+    types: [completed]
+
+permissions:
+  contents: read
+  actions: read
+
+jobs:
+  notify:
+    uses: poli0981/.github/.github/workflows/notify-ci-failure.yml@main
+    permissions:
+      contents: read
+      actions: read
+    secrets: inherit
