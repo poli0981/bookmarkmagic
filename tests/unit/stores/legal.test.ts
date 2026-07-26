@@ -26,10 +26,14 @@ describe('decideLegalStatus', () => {
     expect(decideLegalStatus(null, 1)).toEqual({ kind: 'required', reason: 'first-run' });
   });
 
-  it('gates an older acceptance as an update', () => {
-    expect(decideLegalStatus({ acceptedVersion: 0, acceptedAt: ACCEPTED_AT }, 1)).toEqual({
+  it('gates an older acceptance as an update, KEEPING the superseded record', () => {
+    // Without `previous`, the About tab tells a user who accepted v1 that they
+    // have never accepted anything the moment LEGAL_VERSION becomes 2.
+    const previous = { acceptedVersion: 0, acceptedAt: ACCEPTED_AT };
+    expect(decideLegalStatus(previous, 1)).toEqual({
       kind: 'required',
       reason: 'updated',
+      previous,
     });
   });
 
@@ -83,6 +87,23 @@ describe('loadLegal', () => {
     vi.spyOn(fakeBrowser.storage.local, 'get').mockRejectedValue(new Error('storage disabled'));
     await expect(loadLegal()).resolves.toBeUndefined();
     expect(getLegalStatus()).toEqual({ kind: 'required', reason: 'first-run' });
+  });
+
+  it('still reports the superseded acceptance after a version bump', async () => {
+    await fakeBrowser.storage.local.set({
+      legal: { acceptedVersion: LEGAL_VERSION - 1, acceptedAt: ACCEPTED_AT },
+    });
+    await loadLegal();
+    expect(isGateRequired()).toBe(true);
+    expect(getAcceptance()).toEqual({
+      acceptedVersion: LEGAL_VERSION - 1,
+      acceptedAt: ACCEPTED_AT,
+    });
+  });
+
+  it('reports no acceptance at all on a fresh profile', async () => {
+    await loadLegal();
+    expect(getAcceptance()).toBeUndefined();
   });
 
   it('exposes the stored acceptance for the About tab', async () => {

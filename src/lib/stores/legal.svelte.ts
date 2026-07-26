@@ -15,7 +15,12 @@ import type { SaveOutcome } from './settings.svelte';
 export type LegalStatus =
   | { kind: 'loading' }
   | { kind: 'accepted'; acceptance: LegalAcceptance }
-  | { kind: 'required'; reason: 'first-run' | 'updated' };
+  /**
+   * `previous` carries the superseded record on the `updated` path. Without it
+   * the About tab would tell a user who accepted v1 that they have never
+   * accepted anything, the moment LEGAL_VERSION is bumped to 2.
+   */
+  | { kind: 'required'; reason: 'first-run' | 'updated'; previous?: LegalAcceptance };
 
 /**
  * The three routes the gate blocks.
@@ -43,7 +48,7 @@ export function decideLegalStatus(
 ): LegalStatus {
   if (acceptance === null) return { kind: 'required', reason: 'first-run' };
   if (acceptance.acceptedVersion < currentVersion) {
-    return { kind: 'required', reason: 'updated' };
+    return { kind: 'required', reason: 'updated', previous: acceptance };
   }
   return { kind: 'accepted', acceptance };
 }
@@ -56,8 +61,16 @@ export function isGateRequired(): boolean {
   return status.kind === 'required';
 }
 
+/**
+ * The most recent acceptance on record, current or superseded.
+ *
+ * About renders this, so it must survive a `LEGAL_VERSION` bump — the user did
+ * accept the older terms, and saying otherwise is simply false.
+ */
 export function getAcceptance(): LegalAcceptance | undefined {
-  return status.kind === 'accepted' ? status.acceptance : undefined;
+  if (status.kind === 'accepted') return status.acceptance;
+  if (status.kind === 'required') return status.previous;
+  return undefined;
 }
 
 /** `[]` unless the gate is up. Never `undefined`, so the TabBar prop is simple. */
