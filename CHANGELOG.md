@@ -11,6 +11,12 @@ breaking format or schema changes (a BM JSON version bump).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.0.0] — 2026-07-26
+
+First public release.
+
 ### Added
 
 - Import bookmark files (Netscape HTML, BookmarkMagic JSON, CSV) with a full
@@ -38,7 +44,5 @@ breaking format or schema changes (a BM JSON version bump).
 - Parsing is bounded: 25 MB per file, 100 000 nodes, 200 levels of nesting.
 - No network access of any kind at runtime, enforced by a grep gate in CI.
 
-<!-- ⚠️ Human: on the first release, rename [Unreleased] to [1.0.0] with the
-     release date, and add a fresh empty [Unreleased] section above it. -->
-
-[Unreleased]: https://github.com/poli0981/bookmarkmagic/commits/main
+[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/poli0981/bookmarkmagic/releases/tag/v1.0.0

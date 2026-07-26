@@ -1,0 +1,50 @@
+# docs/12 §5. Two ecosystems: the npm dev toolchain, and the pinned actions in
+# .github/workflows/.
+#
+# Note what this file cannot do: Dependabot *security* updates run from the
+# repo's alerts regardless of any config here. Several currently fail because
+# the advisories are against transitive dev dependencies with no reachable
+# patched version. That is noisy but not shipped — BookmarkMagic has zero
+# runtime dependencies, so `npm audit --omit=dev` reports 0 and nothing in the
+# published extension is affected (docs/09 T5).
+version: 2
+
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    commit-message:
+      # Conventional Commits — docs/10 §7 applies to bot commits too.
+      prefix: chore
+      prefix-development: chore
+      include: scope
+    groups:
+      # One PR per week for the routine churn, so CI runs once rather than
+      # eight times and the review is a single diff.
+      dev-minor-and-patch:
+        dependency-type: development
+        update-types:
+          - minor
+          - patch
+    ignore:
+      # Held deliberately: svelte-check and Volar need the TypeScript 6
+      # programmatic API until TS 7.1 (docs/01). A major bump here breaks
+      # `npm run check` rather than improving anything.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: ci
+      include: scope
+    groups:
+      actions:
+        patterns: ['*']

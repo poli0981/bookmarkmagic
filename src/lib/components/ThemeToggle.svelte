@@ -15,10 +15,14 @@
   // docs/06 §3 sketches a single ◐ that cycles. A segmented control instead:
   // one code path for both placements, and the current choice is visible rather
   // than inferred — a cycling button conflates "what am I" with "what's next".
+  // The compact header variant shows glyphs only, so they have to be legible at
+  // ~13px. U+263E (☾) was tried and is a thin crescent that reads as a capital
+  // "C" at that size — emoji are unambiguous and match the popup's existing
+  // ⬆/⬇/🗂 vocabulary. The accessible name comes from aria-label either way.
   const GLYPH: Record<ThemePreference, string> = {
     system: '◐',
-    light: '☀',
-    dark: '☾',
+    light: '☀️',
+    dark: '🌙',
   };
 
   let buttons: HTMLButtonElement[] = $state([]);
