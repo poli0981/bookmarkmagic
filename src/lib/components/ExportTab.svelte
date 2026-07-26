@@ -8,6 +8,7 @@
   import { countSelected, FORMAT_META, runExport } from '../export/run-export';
   import { num, t } from '../i18n/index.svelte';
   import { getSettings } from '../stores/settings.svelte';
+  import { pushToast } from '../stores/toast.svelte';
   import Button from './Button.svelte';
   import Callout from './Callout.svelte';
   import FolderPickTree from './FolderPickTree.svelte';
@@ -17,7 +18,6 @@
   let selection = $state<ReadonlySet<string> | undefined>(undefined);
   let format = $state<ExportFormat>('netscape-html');
   let loadError = $state<string | undefined>();
-  let toast = $state<string | undefined>();
   let csvDelimiter = $state<CsvDelimiter>(',');
   let markdownStyle = $state<MarkdownStyle>('nested');
 
@@ -55,9 +55,11 @@
           markdownStyle,
           now: new Date(),
         });
-        toast = t('export.saved', { name: result.filename });
+        pushToast(t('export.saved', { name: result.filename }), 'success');
       } catch (err) {
-        toast = err instanceof BmBrowserError ? err.detail : t('errors.UNKNOWN');
+        // Tone matters: this used to share a variable with the success message
+        // and rendered failures in success-green.
+        pushToast(err instanceof BmBrowserError ? err.detail : t('errors.UNKNOWN'), 'danger');
       }
     })();
   }
@@ -112,9 +114,6 @@
         {t('export.start', { n: num(bookmarkCount) })}
       </Button>
 
-      {#if toast !== undefined}
-        <p class="toast" role="status">{toast}</p>
-      {/if}
     </section>
   </div>
 {/if}
@@ -154,11 +153,5 @@
     border-radius: var(--radius-sm);
     background: var(--bg);
     color: var(--fg);
-  }
-
-  .toast {
-    margin: 0;
-    font-size: var(--fs-1);
-    color: var(--success);
   }
 </style>

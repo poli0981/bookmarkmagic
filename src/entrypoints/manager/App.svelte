@@ -4,6 +4,7 @@
   import ExportTab from '@/lib/components/ExportTab.svelte';
   import ImportTab from '@/lib/components/ImportTab.svelte';
   import TabBar from '@/lib/components/TabBar.svelte';
+  import Toast from '@/lib/components/Toast.svelte';
   import { t } from '@/lib/i18n/index.svelte';
   import { isWriting } from '@/lib/stores/import-session.svelte';
   import { getRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
@@ -55,6 +56,10 @@
     <button onclick={() => navigate('about')}>{t('common.about')}</button>
   </nav>
 </footer>
+
+<!-- Mounted once, outside <main>, so the route chain below cannot unmount it
+     mid-dismiss and strand a timer (docs/06 §4). -->
+<Toast />
 
 <style>
   header,
