@@ -9,6 +9,7 @@
     subscribe,
     update,
   } from '../browser/bookmarks';
+  import { copyToClipboard } from '../browser/clipboard';
   import { BmBrowserError } from '../browser/errors';
   import { openBookmarkUrl } from '../browser/open-url';
   import { findDuplicateGroups } from '../core/dedupe';
@@ -32,6 +33,7 @@
   import { canMoveInto, moveTargets } from '../edit/move-target';
   import { resolveKey, visibleRows } from '../edit/tree-keyboard';
   import { num, t } from '../i18n/index.svelte';
+  import { pushToast } from '../stores/toast.svelte';
   import Callout from './Callout.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import DuplicatePanel from './DuplicatePanel.svelte';
@@ -188,6 +190,13 @@
     }
   }
 
+  /** docs/06 §3.3's "Copy URL". Write-only, on an explicit click (docs/09 T8). */
+  async function copyUrl(url: string): Promise<void> {
+    if (url === '') return;
+    const copied = await copyToClipboard(url);
+    pushToast(t(copied ? 'edit.copied' : 'edit.copyFailed'), copied ? 'success' : 'danger');
+  }
+
   async function commitRename(id: string, title: string): Promise<void> {
     renamingId = undefined;
     const node = findNode(roots, id);
@@ -335,6 +344,7 @@
             oncancelRename={() => (renamingId = undefined)}
             ondelete={() => (pendingDelete = row.node)}
             onopen={() => void openBookmarkUrl(row.node.url ?? '')}
+            oncopyUrl={() => void copyUrl(row.node.url ?? '')}
             onmoveTo={() => (movingNode = row.node)}
             ondragstart={() => (draggingId = row.node.id)}
             ondropinto={() => onDrop(row.node.id)}

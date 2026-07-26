@@ -17,6 +17,7 @@
     onstartRename: () => void;
     ondelete: () => void;
     onopen: () => void;
+    oncopyUrl: () => void;
     onmoveTo: () => void;
     ondragstart: () => void;
     ondropinto: () => void;
@@ -41,6 +42,7 @@
     onstartRename,
     ondelete,
     onopen,
+    oncopyUrl,
     onmoveTo,
     ondragstart,
     ondropinto,
@@ -135,6 +137,13 @@
             e.stopPropagation();
             onopen();
           }}>↗</button
+        >
+        <button
+          title={t('edit.copyUrl')}
+          onclick={(e) => {
+            e.stopPropagation();
+            oncopyUrl();
+          }}>⧉</button
         >
       {/if}
       {#if editable}

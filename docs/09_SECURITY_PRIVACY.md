@@ -26,6 +26,29 @@
 | T7 | XSS via filenames/titles echoed into UI (result cards, toasts) | Weird characters in file name | Same as T1 — text interpolation only; filenames additionally sanitized for the *download* name (`[\\/:*?"<>|]` → `_`). |
 | T8 | Clipboard abuse | "Copy URL" action | Uses `navigator.clipboard.writeText` on explicit user click only; never reads the clipboard. |
 
+### Pass performed 2026-07-26 (Phase 5)
+
+| # | Now enforced by |
+|---|---|
+| T1 | `tests/unit/core/fixtures.test.ts` parses `malformed/script-injection.html` and asserts the payloads survive as inert text. `DOMParser('text/html')` never executes scripts, and `{@html}` is barred by `npm run guard`. |
+| T2 | `tests/unit/core/limits.test.ts` plus the caps in `core/limits.ts`. Measured: a 100k-node file parses without exhausting anything (`11 §6`). |
+| T3 | `malformed/js-url.html` at parse level, **and now** `tests/unit/browser/open-url.test.ts` at the point of use — `javascript:`, `data:`, `file:`, `chrome:`, `vbscript:` and case-shouted variants are all refused before `tabs.create`. |
+| T4 | `tests/unit/import/safety-backup.test.ts`. |
+| T5 | `npm audit --omit=dev` reports **0** — every open Dependabot alert is `development` scope. |
+| T6 | Human; nothing in code. |
+| T7 | `sanitizeFilename` (`tests/unit/browser/download.test.ts`); everything else reaches the DOM through Svelte text interpolation. |
+| T8 | `browser/clipboard.ts` — write-only, click-only, never reads. Implemented in Phase 5; it had been specified in `06 §3.3` and here since the start but never built. |
+
+Two gaps this pass closed, both of which had gone unnoticed because nothing
+mechanical was watching:
+
+- **The permission list had no test at all.** `tests/unit/manifest.test.ts` now
+  asserts `['bookmarks', 'storage']` exactly against `wxt.config.ts`, plus the
+  absence of `host_permissions`, `content_scripts`, a background worker and
+  eight other reach-widening keys. Verified to fail by adding `'tabs'`.
+- **"Copy URL" did not exist**, so T8 above described the mitigation for a
+  feature that was never shipped.
+
 ## 3. Secure coding rules (enforced)
 
 - `{@html}` — **forbidden**. Enforced by the canonical grep gate (`08 §3`) and
@@ -52,9 +75,16 @@ a **minor-version** event at minimum.
 
 ## 5. Release integrity
 
-- Builds are reproducible from a clean checkout: `npm ci && npm run zip`.
+- Builds are **content**-reproducible from a clean checkout: `npm ci && npm run
+  zip`. Verified 2026-07-26 by building the same commit in a fresh clone and in
+  the working tree — every entry in the two zips has an identical name and
+  CRC32. The archives' SHA-256 hashes still differ, because `wxt zip` records
+  file mtimes and nothing normalizes them (there is no `SOURCE_DATE_EPOCH`
+  support). Do not claim byte-identical rebuilds.
 - GitHub Releases attach the exact zip uploaded to CWS + `SHA256SUMS.txt`
-  so users can verify store build ↔ source correspondence.
+  so users can verify store build ↔ source correspondence. That works on the
+  released artifact itself, which is the same file in both places — it is not a
+  claim that a third party can rebuild the same hash.
 - Tags are signed (GPG) — consistent with the tracker-repo signing practice.
 
 ## 6. Vulnerability reporting
