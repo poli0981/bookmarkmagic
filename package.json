@@ -1,7 +1,7 @@
 {
   "name": "bookmarkmagic",
   "private": true,
-  "version": "0.1.0",
+  "version": "1.0.0",
   "type": "module",
   "description": "Import, export & edit bookmarks between browsers — offline, no account, no cloud.",
   "license": "GPL-3.0-or-later",

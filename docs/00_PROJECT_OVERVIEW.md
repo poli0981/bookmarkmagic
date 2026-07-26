@@ -119,9 +119,11 @@ Derived identifiers (canonical across docs and code):
    `github.com/poli0981/bookmarkmagic`.
 2. ✔ Repo created, `LICENSE` committed. Variant resolved: **GPL-3.0-or-later**,
    matching `poli0981/switch-every-tab-hotkey`.
-3. **Designed** icon set (16/32/48/128 px) + CWS promo images. Not blocking:
-   `scripts/gen-icons.mjs` (ported from the portfolio precedent, zero-dep) emits
-   placeholder PNGs in the accent violet so the manifest loads from Phase 0.
+3. ✔ Icon set (16/32/48/128 px) — the owner adopted the `scripts/gen-icons.mjs`
+   output as final on 2026-07-26, so the generator is the source of truth rather
+   than a placeholder. Regenerate with `npm run icons` after any change.
+   **Still open:** CWS promo images, which the store listing needs but the
+   extension does not.
 4. ✔ Donate URLs resolved from `.github/FUNDING.yml` (`14 §5`).
    ✔ Contact email filled in and confirmed live: `contact@poli0981.dev`
    (`legal/PRIVACY.md`), alongside the GitHub Issues link.

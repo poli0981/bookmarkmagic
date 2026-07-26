@@ -11,9 +11,15 @@ no cloud sync, 100% offline.
 A Chrome (MV3) extension for importing, exporting and editing bookmarks and
 folder trees. English · Tiếng Việt · 日本語.
 
-<!-- ⚠️ Human: add screenshots here before store submission — the manager's
-     import preview, the export picker, and the edit tree are the three that
-     matter. Icons are still generated placeholders (docs/00 §10 item 3). -->
+## Screenshots
+
+| Edit | Export |
+|---|---|
+| ![The edit tree, showing bookmarks with their domains](capture/Edit2.png) | ![The export tab: folder picker on the left, format cards on the right](capture/export.png) |
+
+| Settings | About |
+|---|---|
+| ![Settings: language, theme, and four defaults](capture/Setting.png) | ![About: version, links, third-party statement, donate links and the legal block](capture/About.png) |
 
 ## What it does
 

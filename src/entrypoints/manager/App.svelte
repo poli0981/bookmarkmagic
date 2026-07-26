@@ -113,8 +113,14 @@
 
 <footer>
   <span>
-    {#if version !== ''}v{version} · {/if}GPL-3.0 ·
-    <a href={REPO_URL} target="_blank" rel="noopener noreferrer">GitHub ↗</a>
+    <!-- Separators are `{' · '}` expressions, not literal text. Svelte trims
+         trailing whitespace at an {#if} boundary, which rendered the footer as
+         "v0.1.0 ·GPL-3.0". An expression is never trimmed. -->
+    {#if version !== ''}v{version}{' · '}{/if}GPL-3.0{' · '}<a
+      href={REPO_URL}
+      target="_blank"
+      rel="noopener noreferrer">GitHub ↗</a
+    >
   </span>
   <nav>
     <!-- Gated like TabBar's tabs: navigating away mid-write unmounts ImportTab
