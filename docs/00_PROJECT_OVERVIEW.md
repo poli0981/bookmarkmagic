@@ -5,11 +5,12 @@
 > **Owner:** poli0981 (GitHub) / SkullMute
 > **Repo:** `poli0981/bookmarkmagic` ✔
 > **License:** GPL-3.0-or-later
-> **Status:** In development — **Phases 0–4 complete** (scaffold, core library,
-> browser layer + import, export + edit, and i18n/theming/Settings/About/Legal
-> Gate). Verified working on real Chrome and Brave, 2026-07-25. Next: Phase 5
-> (hardening + release prep). Sequencing lives in `/CLAUDE.md`.
-> **Doc suite version:** 1.3 (2026-07-26 — Phase 4 reconciliation)
+> **Status:** **v1.0.0 released and submitted to the Chrome Web Store**
+> (2026-07-26) — all six build phases complete, awaiting store review. Signed
+> tag `v1.0.0`, GitHub Release with a checksum-verified zip. Verified working on
+> real Chrome and Brave. Sequencing lives in `/CLAUDE.md`; what is still open is
+> in §10 below.
+> **Doc suite version:** 1.4 (2026-07-26 — v1.0.0 release)
 
 ---
 
@@ -127,9 +128,21 @@ Derived identifiers (canonical across docs and code):
 4. ✔ Donate URLs resolved from `.github/FUNDING.yml` (`14 §5`).
    ✔ Contact email filled in and confirmed live: `contact@poli0981.dev`
    (`legal/PRIVACY.md`), alongside the GitHub Issues link.
-5. Chrome Web Store: developer account already paid ✔ — create the item,
-   fill the Privacy tab per `08_MV3_COMPLIANCE.md`.
-6. Repo secrets + settings per `12 §5` (incl. disabling CodeQL "Default setup").
+5. Chrome Web Store: developer account paid ✔, item created and **submitted
+   2026-07-26 — in review**. Listing copy and the Privacy tab answers come from
+   `13 §3` and `08 §5`. **Still open:** the promo images, and the store URL for
+   the README once the listing is public.
+6. Repo secrets + settings per `12 §5`. ✔ CodeQL "Default setup" is already
+   disabled (the advanced workflow uploads SARIF cleanly). **Still open, both
+   optional:** the `DISCORD_*` webhooks — without them the announce job is
+   skipped rather than fatal — and the four `CHROME_*` secrets, which are only
+   needed if `CWS_AUTOPUBLISH` is ever set to `true` for v1.1+.
+7. **Untested:** `npm run dev:firefox` against the `overrides` block in
+   `09 §3.1`. Four of those overrides sit under `web-ext-run` and no gate
+   exercises that script. Firefox is a v1.0 non-goal (§7), so this blocks
+   nothing — but do not assume it works.
+8. **Unmeasured:** the 2 s parse budget on a real browser (`11 §6`). The
+   recorded 2869 ms is a jsdom figure and settles nothing.
 
 ## 11. Reading order
 

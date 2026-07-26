@@ -17,7 +17,8 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | 2 — Browser layer + #import | ✔ 2026-07-25 | adapter, write queue, stores, full import flow incl. forced backup |
 | 3 — #export + #edit | ✔ 2026-07-25 | tri-state picker, tree CRUD, search, duplicates, DnD + keyboard parity |
 | 4 — i18n, theming, Settings, About, Legal Gate | ✔ 2026-07-26 | switcher + theme controls, six-row `#settings`, `#about`, first-run gate; Intl retrofit; store-backed Toast |
-| 5 — Hardening + release prep | next | CI stubs per `12 §2`, CHANGELOG, README, full QA, `wxt zip` clean install |
+| 5 — Hardening + release prep | ✔ 2026-07-26 | contrast tokens + a test that enforces them, `EditTab` split under the hard limit, CHANGELOG + README, four CI callers, T1–T8 pass, clean-room `wxt zip` |
+| **v1.0.0 released** | ✔ 2026-07-26 | signed tag, GitHub Release with a `sha256sum -c`-verified zip, submitted to the Chrome Web Store — **in review** |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
@@ -34,10 +35,24 @@ the path the `$state`-proxy `DataCloneError` would have broken; and the Phase
 2–3 import/export/edit flows still working after Phase 4 touched their tabs and
 the settings store.
 
-Each of phases 1–4 was adversarially reviewed after implementation and each
-review found real defects (7, 13 and 14 in phases 1–3) — several in the paths
-that delete bookmarks. Budget that review into the remaining phases; a green
-test run has not once meant "done" on this project.
+Every phase was adversarially reviewed after implementation and **every review
+found real defects** — 7, 13 and 14 in phases 1–3, 19-of-33-filed in phase 4,
+8-of-20 in phase 5 — several in the paths that delete bookmarks. Budget that
+review into any future work; a green test run has not once meant "done" on this
+project.
+
+Phase 5's own lesson is worth keeping: its three worst findings were defects in
+work added **earlier in the same branch** — a release workflow that would have
+failed on the first tag, a contrast test blind to its own bypass (`opacity` on
+text, which a token-level check cannot see), and a README claiming a test
+asserted the *built* manifest when it only read the config source. Review new
+work as hard as old work.
+
+And three defects reached `main` that no automated gate could ever have caught,
+all found by a human looking at the running extension or at a real CI run: the
+footer's missing space, a moon glyph that renders as a capital "C", and a
+reusable-workflow permission grant that produced a `startup_failure` with no
+jobs and no log.
 
 Phase 4's own review filed 33 findings across six lenses; 19 survived
 adversarial verification. The most serious was a first-run dead-end: the gate
@@ -133,6 +148,8 @@ attestation resolver, deadlocking it until reload.
 | 2026-07-26 | The gate's acceptance checkbox deliberately resets if the user navigates away and back — an un-submitted legal affirmation is not worth persisting | 14 §2 |
 | 2026-07-26 | Both entrypoints await settings (Manager also legal) **before** `mount()`, trading a blank frame for no locale/theme/gate flicker | 02 §2 |
 | 2026-07-26 | **Known limitation:** two open Manager tabs do not sync settings or acceptance to each other; last write wins. No `storage.onChanged` listener in v1 | 03 §4 |
+| 2026-07-26 | Transitive dev-dep CVEs fixed with a `package.json` `overrides` block rather than by waiting on parents — every parent pinned a vulnerable range, which is why Dependabot's own PRs all failed | 09 §3.1 |
+| 2026-07-26 | The release announcement is `continue-on-error`. A missing Discord webhook made the real v1.0.0 run red on a release whose zip and checksums had published correctly; a red run on a good release trains you to ignore the colour | 12 §2.3 |
 | 2026-07-26 | Gate-blocked tabs stay **clickable**; what blocks a route is the gate replacing the tab body, not an inert button. Disabling them removed the only in-app path back to the accept UI | 06 §3 |
 | 2026-07-26 | Failure UI shows the localized sentence and puts the raw browser error in a separate detail block — `detail ?? t(key)` made every translation dead code | 02 §7 |
 | 2026-07-26 | `--accent-fg` is redefined in the dark blocks alongside `--accent`; white on the lightened violet measured 3.67:1 | 06 §5 |
