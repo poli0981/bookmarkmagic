@@ -11,6 +11,8 @@ export default {
     about: 'Giới thiệu',
     busy: 'Đang có tiến trình nhập',
     cancel: 'Hủy',
+    dismiss: 'Đóng',
+    sections: 'Các mục',
   },
   popup: {
     import: 'Nhập bookmark…',
@@ -21,6 +23,7 @@ export default {
   import: {
     dropHint: 'Kéo thả tệp bookmark hoặc bấm để chọn — .html, .json, .csv · tối đa {size}',
     reading: 'Đang đọc {name}…',
+    preview: 'Xem trước',
     folderName: 'Đã nhập {date}',
     start: 'Nhập {n} bookmark',
     backingUp:

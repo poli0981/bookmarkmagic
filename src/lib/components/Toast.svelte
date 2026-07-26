@@ -5,15 +5,43 @@
   const toast = $derived(getVisibleToast());
 </script>
 
+<!-- Both live regions are ALWAYS in the DOM and only their text changes.
+
+     A live region inserted into the page already populated is not reliably
+     announced — screen readers derive announcements from mutations to a region
+     that was already present, so the earlier "whole thing inside {#if}" shape
+     meant success toasts were silently skipped.
+
+     Two fixed regions rather than one with a swapped aria-live, because
+     changing a live region's politeness at runtime is not reliably picked up.
+     Assertive interrupts, which is right for a failure and wrong for a
+     confirmation — the same split Callout already makes. -->
+<div class="sr-only" role="status" aria-live="polite">
+  {toast !== undefined && toast.tone !== 'danger' ? toast.message : ''}
+</div>
+<div class="sr-only" role="alert" aria-live="assertive">
+  {toast?.tone === 'danger' ? toast.message : ''}
+</div>
+
 {#if toast !== undefined}
-  <!-- role follows Callout's convention: an error interrupts, a status waits. -->
-  <div class="toast {toast.tone}" role={toast.tone === 'danger' ? 'alert' : 'status'}>
-    <span>{toast.message}</span>
-    <button aria-label={t('common.cancel')} onclick={() => dismissToast(toast.id)}>✕</button>
+  <div class="toast {toast.tone}">
+    <!-- Hidden from assistive tech: the live regions above already carry it,
+         and announcing it twice is worse than not styling it. -->
+    <span aria-hidden="true">{toast.message}</span>
+    <button aria-label={t('common.dismiss')} onclick={() => dismissToast(toast.id)}>✕</button>
   </div>
 {/if}
 
 <style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
   .toast {
     position: fixed;
     right: var(--sp-4);

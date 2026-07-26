@@ -25,7 +25,7 @@
   ];
 </script>
 
-<nav aria-label="Sections">
+<nav aria-label={t('common.sections')}>
   {#each TABS as tab (tab.route)}
     <button
       class:active={getRoute() === tab.route}

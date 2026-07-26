@@ -14,6 +14,8 @@ export default {
     about: '概要',
     busy: 'インポートを実行中です',
     cancel: 'キャンセル',
+    dismiss: '閉じる',
+    sections: 'セクション',
   },
   popup: {
     import: 'ブックマークをインポート…',
@@ -25,6 +27,7 @@ export default {
     dropHint:
       'ブックマークファイルをドロップするかクリックして選択してください — .html、.json、.csv · 最大 {size}',
     reading: '{name} を読み込んでいます…',
+    preview: 'プレビュー',
     folderName: 'インポート {date}',
     start: '{n} 件のブックマークをインポート',
     backingUp:

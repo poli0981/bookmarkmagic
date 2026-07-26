@@ -17,7 +17,7 @@ import {
   type ThemePreference,
   writeSettings,
 } from '../browser/storage';
-import { setLocale } from '../i18n/index.svelte';
+import { getLocale, setLocale } from '../i18n/index.svelte';
 import { resolveLocale } from '../i18n/resolve-locale';
 
 const SAVE_DEBOUNCE_MS = 200;
@@ -144,6 +144,7 @@ async function save(): Promise<SaveOutcome> {
 function applyLocale(): void {
   if (settings.locale !== 'auto') {
     setLocale(settings.locale);
+    applyDocumentLanguage();
     return;
   }
   // A failing i18n lookup must not stop settings from loading — fall back to
@@ -155,6 +156,20 @@ function applyLocale(): void {
     uiLanguage = 'en';
   }
   setLocale(resolveLocale(uiLanguage));
+  applyDocumentLanguage();
+}
+
+/**
+ * Keep `<html lang>` in step with the UI language.
+ *
+ * Both entrypoint documents ship `lang="en"`, so without this a screen reader
+ * reads Vietnamese and Japanese text with an English voice and pronunciation
+ * rules — the strings change and the announced language does not.
+ */
+function applyDocumentLanguage(): void {
+  const root = globalThis.document?.documentElement;
+  if (root === undefined) return;
+  root.lang = getLocale();
 }
 
 /**

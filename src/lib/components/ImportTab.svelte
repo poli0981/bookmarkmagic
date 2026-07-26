@@ -143,7 +143,7 @@
   <p class="muted">{t('import.reading', { name: session.filename })}</p>
 {:else if session.kind === 'parsed'}
   <div class="split">
-    <section aria-label="Preview">
+    <section aria-label={t('import.preview')}>
       <TreePreview roots={session.result.roots} status={prepared?.status ?? new WeakMap()} />
     </section>
     <section class="side">
