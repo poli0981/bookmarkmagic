@@ -203,6 +203,7 @@ jobs:
 
   announce:
     needs: release
+    continue-on-error: true      # see below
     uses: poli0981/.github/.github/workflows/announce-release.yml@main
     permissions:
       contents: read
@@ -210,6 +211,12 @@ jobs:
       tag_override: ${{ github.ref_name }}
     secrets: inherit
 ```
+
+`continue-on-error` because the reusable exits 1 on "No webhooks configured"
+when both Discord secrets are unset — which §5 lists as optional. On the real
+v1.0.0 run the Release, the zip and `SHA256SUMS.txt` all published correctly
+and the run still showed red. A red run on a good release trains you to ignore
+the colour, so the notification must not be able to fail the release.
 
 `tag_override` is **required here**, and for the same reason the announcement
 is a job rather than a caller. The reusable resolves

@@ -78,6 +78,13 @@ jobs:
   # would silently never fire.
   announce:
     needs: release
+    # A Discord notification is not part of the release. The reusable exits 1
+    # on "No webhooks configured" when DISCORD_RELEASES_WEBHOOK and
+    # DISCORD_REPO_WEBHOOK are both unset (docs/12 §5 lists them as optional),
+    # which turned the v1.0.0 run red even though the Release, the zip and
+    # SHA256SUMS.txt had all published correctly. A red run on a good release
+    # is worse than a missing announcement: it trains you to ignore the colour.
+    continue-on-error: true
     uses: poli0981/.github/.github/workflows/announce-release.yml@main
     permissions:
       contents: read
