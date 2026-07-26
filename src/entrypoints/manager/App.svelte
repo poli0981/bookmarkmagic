@@ -6,6 +6,7 @@
   import ExportTab from '@/lib/components/ExportTab.svelte';
   import ImportTab from '@/lib/components/ImportTab.svelte';
   import LanguageSwitcher from '@/lib/components/LanguageSwitcher.svelte';
+  import LegalGate from '@/lib/components/LegalGate.svelte';
   import SettingsTab from '@/lib/components/SettingsTab.svelte';
   import TabBar from '@/lib/components/TabBar.svelte';
   import ThemeToggle from '@/lib/components/ThemeToggle.svelte';
@@ -13,6 +14,12 @@
   import { t } from '@/lib/i18n/index.svelte';
   import { isWriting } from '@/lib/stores/import-session.svelte';
   import { REPO_URL } from '@/lib/links';
+  import {
+    getBlockedRoutes,
+    getLegalStatus,
+    isGatedRoute,
+    isGateRequired,
+  } from '@/lib/stores/legal.svelte';
   import { getRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
   import { flushSettings, getSettings, updateSettings } from '@/lib/stores/settings.svelte';
   import { pushToast } from '@/lib/stores/toast.svelte';
@@ -20,6 +27,10 @@
   // Settings are loaded and awaited in main.ts, before this ever mounts.
   const settings = $derived(getSettings());
   const version = getAppVersion();
+  const legal = $derived(getLegalStatus());
+  const gated = $derived(isGateRequired() && isGatedRoute(getRoute()));
+
+  let mainEl: HTMLElement | undefined = $state();
 
   onMount(() => {
     const stopRouting = startRouting();
@@ -61,15 +72,27 @@
     <span class="mark" aria-hidden="true">◆</span>
     <strong>{t('common.appName')}</strong>
   </div>
-  <TabBar />
+  <TabBar blocked={getBlockedRoutes()} />
   <div class="controls">
     <LanguageSwitcher compact value={settings.locale} onchange={(locale) => save({ locale })} />
     <ThemeToggle compact value={settings.theme} onchange={(theme) => save({ theme })} />
   </div>
 </header>
 
-<main>
-  {#if getRoute() === 'import'}
+<main bind:this={mainEl} tabindex="-1">
+  {#if gated && legal.kind === 'required'}
+    <!-- Fills the content region rather than covering the viewport. docs/06 §3
+         calls it "a full overlay", but docs/14 §2 (echoed in docs/03 §4 and the
+         docs/15 log) requires #settings and #about to stay reachable while it
+         is up — a literal inset:0 scrim would bury the footer links that get
+         you there. Header and footer stay live; the three blocked tabs are
+         disabled via TabBar's `blocked`.
+
+         Side effect worth keeping: the Import/Export/Edit tabs never mount
+         before acceptance, so nothing touches chrome.bookmarks until the user
+         has agreed to the terms. -->
+    <LegalGate status={legal} onaccepted={() => mainEl?.focus()} />
+  {:else if getRoute() === 'import'}
     <ImportTab />
   {:else if getRoute() === 'export'}
     <ExportTab />

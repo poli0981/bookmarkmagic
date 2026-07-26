@@ -1,9 +1,16 @@
 <script lang="ts">
   import { getAppVersion } from '../browser/app-info';
-  import { t } from '../i18n/index.svelte';
+  import { dateTime, t } from '../i18n/index.svelte';
   import { CHANGELOG_URL, DONATE_LINKS, ISSUES_URL, LEGAL_URLS, REPO_URL } from '../links';
+  import { getAcceptance } from '../stores/legal.svelte';
 
   const version = getAppVersion();
+  const acceptance = $derived(getAcceptance());
+  // undefined when acceptedAt is missing or unparseable — storage coerces a
+  // missing timestamp to '', and formatting that would throw inside the render.
+  const acceptedOn = $derived(
+    acceptance === undefined ? undefined : dateTime(acceptance.acceptedAt),
+  );
 </script>
 
 <section aria-label={t('common.about')}>
@@ -48,6 +55,21 @@
     {/each}
   </ul>
   <p class="muted">{t('legal.englishNote')}</p>
+  <p class="muted">
+    <!-- The version the user ACCEPTED, not LEGAL_VERSION: if they differ the
+         gate is up anyway, and showing the current constant here would claim
+         consent that was never given (docs/06 §3.5). -->
+    {#if acceptance === undefined}
+      {t('about.notAccepted')}
+    {:else if acceptedOn === undefined}
+      {t('about.acceptedUndated', { version: acceptance.acceptedVersion })}
+    {:else}
+      {t('about.accepted', {
+        date: acceptedOn,
+        version: acceptance.acceptedVersion,
+      })}
+    {/if}
+  </p>
 </section>
 
 <style>
