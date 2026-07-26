@@ -29,8 +29,15 @@ review found real defects (7, 13 and 14 in phases 1–3) — several in the path
 that delete bookmarks. Budget that review into the remaining phases; a green
 test run has not once meant "done" on this project.
 
-Phase 4 found three latent defects in code that 338 green tests had already
-signed off, all of them unreachable until Phase 4 gave them a caller:
+Phase 4's own review filed 33 findings across six lenses; 19 survived
+adversarial verification. The most serious was a first-run dead-end: the gate
+rendered only on the three routes it blocked, and those three tabs were the
+only in-app navigation to them — so a user who reached `#settings` (via the
+popup's new gear, which opens a fresh tab with no history) could never get
+back to the accept UI.
+
+Phase 4 also found three latent defects in code that 338 green tests had
+already signed off, all unreachable until Phase 4 gave them a caller:
 `writeSettings` handed a `$state` proxy to `chrome.storage.local.set` (would
 throw `DataCloneError` in a real browser — `fakeBrowser` stores the reference
 without cloning, so the suite could not see it); `updateSettings` replaced the
@@ -116,3 +123,8 @@ attestation resolver, deadlocking it until reload.
 | 2026-07-26 | The gate's acceptance checkbox deliberately resets if the user navigates away and back — an un-submitted legal affirmation is not worth persisting | 14 §2 |
 | 2026-07-26 | Both entrypoints await settings (Manager also legal) **before** `mount()`, trading a blank frame for no locale/theme/gate flicker | 02 §2 |
 | 2026-07-26 | **Known limitation:** two open Manager tabs do not sync settings or acceptance to each other; last write wins. No `storage.onChanged` listener in v1 | 03 §4 |
+| 2026-07-26 | Gate-blocked tabs stay **clickable**; what blocks a route is the gate replacing the tab body, not an inert button. Disabling them removed the only in-app path back to the accept UI | 06 §3 |
+| 2026-07-26 | Failure UI shows the localized sentence and puts the raw browser error in a separate detail block — `detail ?? t(key)` made every translation dead code | 02 §7 |
+| 2026-07-26 | `--accent-fg` is redefined in the dark blocks alongside `--accent`; white on the lightened violet measured 3.67:1 | 06 §5 |
+| 2026-07-26 | Plural keys implemented per `07 §5` (`selectPluralForm` + `tPlural`); `import.warnings.title` and all seven `warnings.*` codes converted | 07 §5 |
+| 2026-07-26 | The import session stores an i18n **key**, not a resolved string — `t()` is only reactive where it is called, so a stored sentence never follows a language switch | 03 §5 |

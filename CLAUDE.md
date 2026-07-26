@@ -87,9 +87,14 @@ performance budgets docs/11 §6, CI workflows per docs/12 §2 (explicit
 `permissions:` blocks on every caller — and note the ops repo has **no**
 `browser-extension-*` family), CHANGELOG, README (badges, screenshots ⚠,
 install, privacy summary, donate), full manual QA (docs/11 §5), `wxt zip`
-clean-install test. Also: point About's "Changelog" link at `CHANGELOG.md`
-once it exists (`src/lib/links.ts` currently targets `/releases`), and split
-`EditTab.svelte`, which is past the 500-line hard limit.
+clean-install test. Also carried in from the Phase 4 review:
+- point About's "Changelog" link at `CHANGELOG.md` once it exists
+  (`src/lib/links.ts` currently targets `/releases`);
+- split `EditTab.svelte`, which is past the 500-line hard limit;
+- `Button.svelte`'s `.danger`/`.success` variants hardcode `color: #fff`, which
+  measures **2.75:1** on dark-theme `--danger` (#ff6b7d) — under the 4.5:1
+  docs/06 §5 requires. Phase 4 fixed the same class of bug for `--accent-fg`;
+  these need `--danger-fg`/`--success-fg` tokens and a visual decision.
 **Exit:** ready for the docs/13 §1 runbook (human performs store submission).
 
 ## Working style
