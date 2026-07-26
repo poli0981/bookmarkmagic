@@ -150,3 +150,27 @@ generate-huge.ts                     # script: emits 100k+1 node file on demand 
 - Preview render after parse: < 500 ms (lazy tree).
 - Manager cold open: interactive < 1 s.
 - Import 10k nodes: progress visible ≤ 500 ms after start; cancel ≤ 1 s.
+
+### Measured 2026-07-26 — Phase 5
+
+A generated 100 000-node Netscape file (11.2 MB, 99 000 bookmarks in 1 000
+folders), timed **under jsdom**:
+
+| Stage | Time |
+|---|---|
+| `detectFormat` | 0 ms |
+| `parseNetscapeHtml` | **2 869 ms** |
+| `buildUrlIndex` | 42 ms |
+| `diffAgainstBrowser` | 53 ms |
+| `serializeNetscapeHtml` | 72 ms |
+
+⚠️ **This does not settle the 2 s budget either way.** Everything except the
+parse is pure JS and comfortably fast; the parse is dominated by `DOMParser`,
+and jsdom's parse5 implementation is roughly an order of magnitude slower than
+Chrome's native parser. The budget is about the real browser, so the honest
+reading is "≤ 2.9 s in the slowest environment we can measure from a test".
+
+The number that decides it has to come from Chrome. Added to the §5 checklist:
+
+- [ ] Generate a 100k-node HTML file, import it in a real browser, and time
+      from drop to preview. Record the number here rather than re-deriving it.
