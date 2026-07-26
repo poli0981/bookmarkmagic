@@ -17,12 +17,7 @@
 export const REPO_URL = 'https://github.com/poli0981/bookmarkmagic';
 export const ISSUES_URL = `${REPO_URL}/issues`;
 
-/**
- * Releases, not `blob/main/CHANGELOG.md` — the changelog is authored in Phase 5
- * and the file does not exist yet. A releases page renders as a valid (empty)
- * page; a missing blob is a 404 shown from inside a legal-adjacent surface.
- */
-export const CHANGELOG_URL = `${REPO_URL}/releases`;
+export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
 
 export interface LabelledLink {
   labelKey: string;

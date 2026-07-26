@@ -70,9 +70,16 @@ describe('outbound links', () => {
     ]);
   });
 
-  it('avoids linking a CHANGELOG.md that does not exist yet', () => {
-    // Phase 5 authors it; until then the releases page is the honest target.
-    expect(CHANGELOG_URL.endsWith('/releases')).toBe(true);
+  it('links a CHANGELOG.md that actually exists', () => {
+    // It pointed at /releases through Phase 4 because the file did not exist.
+    // Same check as the legal documents: a link from inside the product must
+    // not 404 because someone renamed or deleted the target.
+    expect(CHANGELOG_URL.endsWith('/blob/main/CHANGELOG.md')).toBe(true);
+    expect(existsSync(join(REPO_ROOT, 'CHANGELOG.md'))).toBe(true);
+  });
+
+  it('links a README the badges and install steps live in', () => {
+    expect(existsSync(join(REPO_ROOT, 'README.md'))).toBe(true);
   });
 });
 
