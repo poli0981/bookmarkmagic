@@ -16,18 +16,27 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | 1 — Core library | ✔ 2026-07-25 | 3 parsers, 4 serializers, dedupe/diff/plan; 600 seeded round-trips |
 | 2 — Browser layer + #import | ✔ 2026-07-25 | adapter, write queue, stores, full import flow incl. forced backup |
 | 3 — #export + #edit | ✔ 2026-07-25 | tri-state picker, tree CRUD, search, duplicates, DnD + keyboard parity |
-| 4 — i18n, theming, Settings, About, Legal Gate | next | dictionaries already exist in EN/VI/JA; the switcher UI does not |
-| 5 — Hardening + release prep | pending | CI stubs per `12 §2`, CHANGELOG, README, full QA, `wxt zip` clean install |
+| 4 — i18n, theming, Settings, About, Legal Gate | ✔ 2026-07-26 | switcher + theme controls, six-row `#settings`, `#about`, first-run gate; Intl retrofit; store-backed Toast |
+| 5 — Hardening + release prep | next | CI stubs per `12 §2`, CHANGELOG, README, full QA, `wxt zip` clean install |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
 `chrome.bookmarks` mock, because WXT's `fakeBrowser` stubs that API with
 "not implemented" throws (`11 §4`).
 
-Each of phases 1–3 was adversarially reviewed after implementation and each
-review found real defects (7, 13 and 14 respectively) — several in the paths
+Each of phases 1–4 was adversarially reviewed after implementation and each
+review found real defects (7, 13 and 14 in phases 1–3) — several in the paths
 that delete bookmarks. Budget that review into the remaining phases; a green
 test run has not once meant "done" on this project.
+
+Phase 4 found three latent defects in code that 338 green tests had already
+signed off, all of them unreachable until Phase 4 gave them a caller:
+`writeSettings` handed a `$state` proxy to `chrome.storage.local.set` (would
+throw `DataCloneError` in a real browser — `fakeBrowser` stores the reference
+without cloning, so the suite could not see it); `updateSettings` replaced the
+settings object rather than mutating it, which would strand any component that
+captured it; and footer navigation during `attesting` stranded the import's
+attestation resolver, deadlocking it until reload.
 
 ## v1.0.x — stabilization
 
@@ -93,3 +102,17 @@ test run has not once meant "done" on this project.
 | 2026-07-25 | CI: ops repo has no `browser-extension-*` family; callers use `reusable-chrome-extension.yml` + a local quality job, release is standalone | 12 §2 |
 | 2026-07-25 | Replace deletes nothing until the backup is **proven** — picker `close()` resolving, or an explicit user attestation on the anchor fallback | 03 §1 6b |
 | 2026-07-25 | Every `#edit` mutation resyncs from the browser on rejection; roots and `unmodifiable` nodes offer no destructive affordance at all | 03 §3 |
+| 2026-07-26 | Legal Gate renders **inside the content region**, not as a viewport overlay — `06 §3`'s "full overlay" reconciled in favour of `14 §2`'s reachable `#settings`/`#about` | 06 §3 |
+| 2026-07-26 | Settings state mutates **in place**; every storage write passes a plain snapshot (a `$state` proxy is not structured-cloneable, so the old code would have thrown `DataCloneError` in a real browser) | 03 §4 |
+| 2026-07-26 | `updateSettings` / `acceptLegal` return non-rejecting outcomes; UI feedback follows the write, never precedes it | 03 §4 |
+| 2026-07-26 | Toast queue + timers live in a store, so they survive the route chain unmounting | 06 §4 |
+| 2026-07-26 | Static outbound links use `<a target="_blank" rel="noopener noreferrer">`; imported bookmark URLs keep `tabs.create` (`09` T3 unchanged). Two mechanisms for two trust classes — do not harmonize | 09 T3 |
+| 2026-07-26 | `#settings` has **six** rows: `markdownStyle` was persisted but only editable as a transient `#export` control | 06 §3.4 |
+| 2026-07-26 | `locale: 'auto'` is a first-class fourth option in the switcher — it is the default, so it must be selectable | 06 §3.4 |
+| 2026-07-26 | Language labels are endonyms, duplicated identically across the three dicts (the `common.appName` precedent) | 07 §4 |
+| 2026-07-26 | Theme control is a three-way segmented control in both header and `#settings`, not a cycling `◐` | 06 §3 |
+| 2026-07-26 | Version comes from the manifest at runtime; three hardcoded `0.1.0` literals removed (footer, `run-export`, `run-import`) | 06 §3.5 |
+| 2026-07-26 | About's "Changelog" points at GitHub Releases until `CHANGELOG.md` exists in Phase 5 | 06 §3.5 |
+| 2026-07-26 | The gate's acceptance checkbox deliberately resets if the user navigates away and back — an un-submitted legal affirmation is not worth persisting | 14 §2 |
+| 2026-07-26 | Both entrypoints await settings (Manager also legal) **before** `mount()`, trading a blank frame for no locale/theme/gate flicker | 02 §2 |
+| 2026-07-26 | **Known limitation:** two open Manager tabs do not sync settings or acceptance to each other; last write wins. No `storage.onChanged` listener in v1 | 03 §4 |

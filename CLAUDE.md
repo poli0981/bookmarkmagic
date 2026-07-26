@@ -87,7 +87,9 @@ performance budgets docs/11 §6, CI workflows per docs/12 §2 (explicit
 `permissions:` blocks on every caller — and note the ops repo has **no**
 `browser-extension-*` family), CHANGELOG, README (badges, screenshots ⚠,
 install, privacy summary, donate), full manual QA (docs/11 §5), `wxt zip`
-clean-install test.
+clean-install test. Also: point About's "Changelog" link at `CHANGELOG.md`
+once it exists (`src/lib/links.ts` currently targets `/releases`), and split
+`EditTab.svelte`, which is past the 500-line hard limit.
 **Exit:** ready for the docs/13 §1 runbook (human performs store submission).
 
 ## Working style

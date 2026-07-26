@@ -130,8 +130,17 @@ generate-huge.ts                     # script: emits 100k+1 node file on demand 
       panel bulk-keep-first.
 - [ ] Keyboard-only pass of the tree (WAI-ARIA pattern) + dialogs.
 - [ ] Language switch EN→VI→JA live-updates all tabs; dates/numbers
-      localized; restart persists.
+      localized; restart persists. Header switcher and the `#settings` row
+      agree at all times (one state, two views).
 - [ ] Theme: system/light/dark; contrast spot-check.
+- [ ] Settings auto-save: change a value, close the tab immediately, reopen —
+      the value stuck. The "Saved" toast appears only *after* the write
+      confirms, and a failure says so instead.
+- [ ] Legal Gate "Close tab" either closes the tab or shows the
+      manual-close message — never appears to do nothing.
+- [ ] Two Manager tabs open: accepting or changing a setting in one is
+      reflected in the other (or record it as the known limitation it is —
+      `15` decision log).
 - [ ] chrome://extensions → no errors logged during the whole pass.
 - [ ] Edge (or Brave): smoke test install + import/export.
 

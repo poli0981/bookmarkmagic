@@ -77,20 +77,34 @@ bookmarkmagic/
 │   │   │   ├── dedupe.ts
 │   │   │   ├── diff.ts
 │   │   │   ├── detect-format.ts
+│   │   │   ├── plan.ts              # buildImportPlan → segments (§4)
+│   │   │   ├── search.ts            # #edit filter + ancestor expansion
+│   │   │   ├── select.ts            # tri-state export selection → subtree
+│   │   │   ├── csv-path.ts          # folder-path encoding shared by CSV both ways
 │   │   │   └── limits.ts            # MAX_FILE_BYTES, MAX_NODES, MAX_DEPTH, LEGAL_VERSION
 │   │   ├── browser/
 │   │   │   ├── bookmarks.ts         # getTree/create/move/update/remove wrappers
 │   │   │   ├── write-queue.ts       # sequential tree writer + progress + abort
 │   │   │   ├── storage.ts           # typed settings/legal accessors
 │   │   │   ├── download.ts          # Blob → <a download>
+│   │   │   ├── app-info.ts          # manifest version — the ONE source (06 §3.5)
+│   │   │   ├── errors.ts            # BmBrowserError / BmBackupError / BmAborted (§7)
 │   │   │   └── open-manager.ts      # getContexts() focus-or-create
+│   │   ├── import/run-import.ts     # the import pipeline (03 §1)
+│   │   ├── export/run-export.ts     # the export pipeline (03 §2)
+│   │   ├── edit/                    # patch-tree, move-target, tree-keyboard (03 §3)
+│   │   ├── settings/options.ts      # the six Settings choice tables (06 §3.4)
+│   │   ├── links.ts                 # repo / legal / donate URLs (14 §4, §5)
 │   │   ├── stores/                  # Svelte 5 runes state (.svelte.ts)
 │   │   │   ├── settings.svelte.ts   # locale, theme, defaults (persisted)
 │   │   │   ├── legal.svelte.ts      # acceptedVersion
+│   │   │   ├── toast.svelte.ts      # transient status queue + its timers (06 §4)
 │   │   │   ├── route.svelte.ts      # location.hash + hashchange wrapper (§5)
 │   │   │   └── import-session.svelte.ts
 │   │   ├── i18n/                    # runtime UI i18n (see 07_I18N.md)
 │   │   │   ├── index.svelte.ts
+│   │   │   ├── format.ts            # pure Intl number/date helpers (07 §3)
+│   │   │   ├── resolve-locale.ts
 │   │   │   └── locales/{en,vi,ja}.ts
 │   │   └── components/              # shared Svelte components (see 06_UI.md)
 │   └── styles/

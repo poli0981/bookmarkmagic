@@ -129,7 +129,18 @@ import) appear without reload. Listeners attach on tab enter, detach on leave.
 
 - Settings writes go through `stores/settings.svelte.ts` →
   `chrome.storage.local` (debounced 200 ms). Shape:
-  `{ locale, theme, defaultExportFormat, defaultMergeMode, csvDelimiter }`.
+  `{ locale, theme, defaultExportFormat, defaultMergeMode, csvDelimiter,
+  markdownStyle }` — **six** fields, one `<SettingRow>` each (`06 §3.4`).
+- `updateSettings(patch)` returns a `SaveOutcome` that resolves when the
+  debounced write has **settled**, and never rejects. UI feedback follows the
+  write; it never precedes it, or a failed save still says "Saved".
+- The store object is **mutated in place**, never replaced, so a component that
+  reads `getSettings()` into a local cannot silently go stale. Writes pass a
+  plain snapshot — `chrome.storage.local.set` structured-clones its argument and
+  a Svelte `$state` proxy is not cloneable.
+- `flushSettings()` runs on `visibilitychange` → hidden (not `beforeunload`,
+  which is cancellable). It shrinks the window in which an unwritten change is
+  lost from 200 ms to roughly nothing — not to zero.
 - Legal gate: on Manager mount read `legal.acceptedVersion`; if
   `< LEGAL_VERSION` render `<LegalGate>` overlay blocking **#import / #export /
   #edit** — **#settings and #about stay reachable**, so a VI/JA user can switch
@@ -137,6 +148,10 @@ import) appear without reload. Listeners attach on tab enter, detach on leave.
   switcher of its own. Accept → write version + timestamp → unlock.
   This three-route set is normative; `14 §2` states the same list.
   Details: `14_LEGAL_GATE.md`.
+- The gate's accept path writes **first**, awaits, and only then reflects
+  acceptance in state. Dismissing optimistically would leave the user accepted
+  in the UI and unaccepted on disk, so the gate would silently reappear next
+  launch. A storage read failure fails **closed** (gate shown).
 
 ## 5. State machines (informal)
 
