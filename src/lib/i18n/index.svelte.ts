@@ -1,3 +1,4 @@
+import { formatCount, formatDateTime, localeTag } from './format';
 import en from './locales/en';
 import ja from './locales/ja';
 import vi from './locales/vi';
@@ -17,6 +18,27 @@ let locale = $state<Locale>('en');
 
 export function setLocale(next: Locale): void {
   locale = next;
+}
+
+/**
+ * The *resolved* locale (`en|vi|ja`).
+ *
+ * Not to be confused with `getSettings().locale`, the *preference*, which also
+ * carries `'auto'`. Language controls must bind to the preference — binding to
+ * this makes choosing "Automatic" instantly snap the control to "English".
+ */
+export function getLocale(): Locale {
+  return locale;
+}
+
+/** Group a count for the current locale (docs/07 §3). Reactive. */
+export function num(value: number): string {
+  return formatCount(value, localeTag(locale));
+}
+
+/** Format an ISO instant for the current locale, or `undefined` if unparseable. */
+export function dateTime(iso: string): string | undefined {
+  return formatDateTime(iso, localeTag(locale));
 }
 
 /**
