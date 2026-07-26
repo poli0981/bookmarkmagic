@@ -1,0 +1,140 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { fakeBrowser } from 'wxt/testing';
+import { LEGAL_VERSION } from '@/lib/core/limits';
+import {
+  acceptLegal,
+  decideLegalStatus,
+  getAcceptance,
+  getBlockedRoutes,
+  getLegalStatus,
+  isGatedRoute,
+  isGateRequired,
+  loadLegal,
+} from '@/lib/stores/legal.svelte';
+
+const ACCEPTED_AT = '2026-07-25T10:00:00.000Z';
+
+beforeEach(() => {
+  fakeBrowser.reset();
+  // reset() clears data but leaves spies, so a rejecting storage.local.set
+  // would otherwise leak into every later test in this file.
+  vi.restoreAllMocks();
+});
+
+describe('decideLegalStatus', () => {
+  it('gates a fresh profile as first-run', () => {
+    expect(decideLegalStatus(null, 1)).toEqual({ kind: 'required', reason: 'first-run' });
+  });
+
+  it('gates an older acceptance as an update', () => {
+    expect(decideLegalStatus({ acceptedVersion: 0, acceptedAt: ACCEPTED_AT }, 1)).toEqual({
+      kind: 'required',
+      reason: 'updated',
+    });
+  });
+
+  it('accepts a matching version', () => {
+    const acceptance = { acceptedVersion: 1, acceptedAt: ACCEPTED_AT };
+    expect(decideLegalStatus(acceptance, 1)).toEqual({ kind: 'accepted', acceptance });
+  });
+
+  it('accepts a version NEWER than the current one', () => {
+    // The user ran a newer build. Re-gating them on a downgrade would be noise,
+    // not consent.
+    const acceptance = { acceptedVersion: 2, acceptedAt: ACCEPTED_AT };
+    expect(decideLegalStatus(acceptance, 1)).toEqual({ kind: 'accepted', acceptance });
+  });
+});
+
+describe('blocked routes', () => {
+  it('names exactly the three routes docs/14 §2 blocks', async () => {
+    await loadLegal();
+    expect(isGateRequired()).toBe(true);
+    expect([...getBlockedRoutes()]).toEqual(['import', 'export', 'edit']);
+  });
+
+  it('leaves #settings and #about reachable', () => {
+    // Normative in docs/03 §4, docs/14 §2 and the docs/15 decision log:
+    // #about so the documents can be read first, #settings so a VI/JA user can
+    // switch language -- which is why the gate has no switcher of its own.
+    expect(isGatedRoute('settings')).toBe(false);
+    expect(isGatedRoute('about')).toBe(false);
+    expect(isGatedRoute('import')).toBe(true);
+  });
+
+  it('blocks nothing once accepted', async () => {
+    await fakeBrowser.storage.local.set({
+      legal: { acceptedVersion: LEGAL_VERSION, acceptedAt: ACCEPTED_AT },
+    });
+    await loadLegal();
+    expect(isGateRequired()).toBe(false);
+    expect([...getBlockedRoutes()]).toEqual([]);
+  });
+});
+
+describe('loadLegal', () => {
+  it('fails closed on a malformed record', async () => {
+    await fakeBrowser.storage.local.set({ legal: { acceptedVersion: 'yes' } });
+    await loadLegal();
+    expect(isGateRequired()).toBe(true);
+  });
+
+  it('fails closed, without throwing, when the read rejects', async () => {
+    vi.spyOn(fakeBrowser.storage.local, 'get').mockRejectedValue(new Error('storage disabled'));
+    await expect(loadLegal()).resolves.toBeUndefined();
+    expect(getLegalStatus()).toEqual({ kind: 'required', reason: 'first-run' });
+  });
+
+  it('exposes the stored acceptance for the About tab', async () => {
+    await fakeBrowser.storage.local.set({
+      legal: { acceptedVersion: LEGAL_VERSION, acceptedAt: ACCEPTED_AT },
+    });
+    await loadLegal();
+    expect(getAcceptance()).toEqual({ acceptedVersion: LEGAL_VERSION, acceptedAt: ACCEPTED_AT });
+  });
+});
+
+describe('acceptLegal', () => {
+  it('persists the version and timestamp, then unlocks', async () => {
+    await loadLegal();
+    expect(await acceptLegal(ACCEPTED_AT)).toEqual({ ok: true });
+
+    const stored = await fakeBrowser.storage.local.get('legal');
+    expect(stored.legal).toEqual({ acceptedVersion: LEGAL_VERSION, acceptedAt: ACCEPTED_AT });
+    expect(isGateRequired()).toBe(false);
+  });
+
+  it('KEEPS THE GATE UP when the write rejects, and writes nothing', async () => {
+    // The flagship test of this phase. The recurring defect shape in this
+    // project is: dismiss optimistically, await a chrome.* call that can
+    // reject, never handle it. Here that would leave the user accepted in the
+    // UI and unaccepted on disk, with the gate silently back next launch.
+    await loadLegal();
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValue(
+      new Error('QUOTA_BYTES quota exceeded'),
+    );
+
+    const outcome = await acceptLegal(ACCEPTED_AT);
+    expect(outcome.ok).toBe(false);
+    expect(outcome.detail).toContain('QUOTA_BYTES');
+    expect(isGateRequired()).toBe(true);
+    expect(getAcceptance()).toBeUndefined();
+
+    const stored = await fakeBrowser.storage.local.get('legal');
+    expect(stored.legal).toBeUndefined();
+  });
+
+  it('never rejects, so no call site can leak an unhandled rejection', async () => {
+    vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValue(new Error('nope'));
+    await expect(acceptLegal(ACCEPTED_AT)).resolves.toMatchObject({ ok: false });
+  });
+
+  it('writes nothing at all when the user declines', async () => {
+    // docs/14 §2: "no nagging -- closing the tab is the decline. Nothing is
+    // written." Closing is a component action; the contract is that merely
+    // showing the gate never touches the legal key.
+    await loadLegal();
+    const all = await fakeBrowser.storage.local.get(null);
+    expect(Object.keys(all)).not.toContain('legal');
+  });
+});
