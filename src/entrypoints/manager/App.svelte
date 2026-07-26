@@ -58,11 +58,17 @@
     };
   });
 
-  /** Shared by the header controls so a silent failure there is impossible. */
+  /**
+   * Shared by the header controls so a silent failure there is impossible.
+   *
+   * The toast carries the LOCALIZED sentence, never the raw browser error —
+   * `detail` is essentially always present for a storage rejection, so putting
+   * it first made every translation of settings.saveFailed unreachable. The
+   * header has no room for a detail block; #settings shows one.
+   */
   function save(patch: Parameters<typeof updateSettings>[0]): void {
     void updateSettings(patch).then((outcome) => {
-      if (outcome.ok) pushToast(t('settings.saved'), 'success');
-      else pushToast(outcome.detail ?? t('settings.saveFailed'), 'danger');
+      pushToast(t(outcome.ok ? 'settings.saved' : 'settings.saveFailed'), outcome.ok ? 'success' : 'danger');
     });
   }
 </script>
