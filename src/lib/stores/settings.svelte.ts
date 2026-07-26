@@ -1,9 +1,13 @@
 /**
  * Persisted settings — docs/03 §4.
  *
- * Writes are debounced 200 ms so dragging a control does not hammer storage.
- * Theme is applied to <html data-theme> here, because that is the one place
- * that knows both the preference and when it changed.
+ * Purpose: the single source of truth for locale, theme and the per-tab
+ *   defaults, plus the only path that writes them to storage.
+ * Inputs: `updateSettings` patches from the Settings tab and header controls.
+ * Guarantees: writes are debounced 200 ms; the returned promise resolves when
+ *   that write has actually *settled*, and never rejects — so UI feedback can
+ *   report what happened instead of guessing. Theme and locale apply
+ *   synchronously, before the write is even scheduled.
  */
 import { browser } from 'wxt/browser';
 import {
@@ -18,9 +22,17 @@ import { resolveLocale } from '../i18n/resolve-locale';
 
 const SAVE_DEBOUNCE_MS = 200;
 
-let settings = $state<Settings>({ ...DEFAULT_SETTINGS });
+/** What a persistence attempt actually did. Never thrown, always returned. */
+export interface SaveOutcome {
+  ok: boolean;
+  detail?: string;
+}
+
+const settings = $state<Settings>({ ...DEFAULT_SETTINGS });
 let loaded = $state(false);
 let saveTimer: ReturnType<typeof setTimeout> | undefined;
+/** Everyone who called `updateSettings` since the last write shares this. */
+let pending: { promise: Promise<SaveOutcome>; resolve: (outcome: SaveOutcome) => void } | undefined;
 
 export function getSettings(): Settings {
   return settings;
@@ -32,32 +44,101 @@ export function isSettingsLoaded(): boolean {
 
 /** Read persisted settings and apply locale + theme. Call once per page. */
 export async function loadSettings(): Promise<void> {
-  settings = await readSettings();
+  Object.assign(settings, await readSettings());
   applyLocale();
   applyTheme(settings.theme);
   loaded = true;
 }
 
-export function updateSettings(patch: Partial<Settings>): void {
-  settings = { ...settings, ...patch };
+/**
+ * Apply a patch now, persist it shortly.
+ *
+ * Returns the outcome of the resulting write rather than firing and forgetting,
+ * so the Settings tab's "Saved" toast cannot claim a persistence that failed.
+ */
+export function updateSettings(patch: Partial<Settings>): Promise<SaveOutcome> {
+  // Mutated in place, never replaced. A replacement would strand any component
+  // that captured `getSettings()` into a local, and four components read this.
+  Object.assign(settings, patch);
   if (patch.theme !== undefined) applyTheme(patch.theme);
   if (patch.locale !== undefined) applyLocale();
-  scheduleSave();
+  return scheduleSave();
 }
 
-export async function resetSettings(): Promise<void> {
-  settings = { ...DEFAULT_SETTINGS };
+/**
+ * Restore every documented default and persist immediately.
+ *
+ * The pending debounced write is cancelled rather than allowed to fire first —
+ * otherwise a reset issued within 200 ms of a change writes twice, and the
+ * first write persists values the user just discarded.
+ */
+export function resetSettings(): Promise<SaveOutcome> {
+  if (saveTimer !== undefined) clearTimeout(saveTimer);
+  saveTimer = undefined;
+  Object.assign(settings, DEFAULT_SETTINGS);
   applyLocale();
   applyTheme(settings.theme);
-  await writeSettings(settings);
+  return flushNow();
 }
 
-function scheduleSave(): void {
+/**
+ * Write any pending change immediately.
+ *
+ * Called on `visibilitychange` → hidden, which fires on tab close, navigation
+ * and backgrounding. It shrinks the window in which a just-made change is lost
+ * from 200 ms to roughly nothing — it does not make it zero, because an async
+ * write started while the document is hidden is not guaranteed to finish.
+ */
+export function flushSettings(): Promise<SaveOutcome> {
+  if (saveTimer === undefined && pending === undefined) return Promise.resolve({ ok: true });
+  return flushNow();
+}
+
+function scheduleSave(): Promise<SaveOutcome> {
   if (saveTimer !== undefined) clearTimeout(saveTimer);
+
+  // Rapid changes coalesce onto one promise, so every caller awaiting a save
+  // learns the outcome of the single write that actually happened.
+  if (pending === undefined) {
+    let resolve!: (outcome: SaveOutcome) => void;
+    const promise = new Promise<SaveOutcome>((r) => {
+      resolve = r;
+    });
+    pending = { promise, resolve };
+  }
+
   saveTimer = setTimeout(() => {
-    saveTimer = undefined;
-    void writeSettings(settings);
+    void flushNow();
   }, SAVE_DEBOUNCE_MS);
+
+  return pending.promise;
+}
+
+/** Write now and settle whoever is waiting on the coalesced promise. */
+async function flushNow(): Promise<SaveOutcome> {
+  if (saveTimer !== undefined) clearTimeout(saveTimer);
+  saveTimer = undefined;
+  const waiting = pending;
+  pending = undefined;
+
+  const outcome = await save();
+  waiting?.resolve(outcome);
+  return outcome;
+}
+
+async function save(): Promise<SaveOutcome> {
+  try {
+    // $state proxies are not structured-cloneable, and chrome.storage.local.set
+    // clones its argument — passing the proxy straight through throws
+    // DataCloneError in a real browser. Settings is flat primitives, so a
+    // spread is a provably sufficient snapshot.
+    await writeSettings({ ...settings });
+    return { ok: true };
+  } catch (err) {
+    // Conditional spread, not `detail: undefined` — exactOptionalPropertyTypes
+    // makes an explicit undefined a type error (docs/10 §2).
+    return { ok: false, ...(err instanceof Error && { detail: err.message }) };
+  }
 }
 
 function applyLocale(): void {

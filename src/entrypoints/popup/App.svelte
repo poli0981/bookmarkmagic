@@ -3,12 +3,11 @@
   import { getRootChildren } from '@/lib/browser/bookmarks';
   import { openManager } from '@/lib/browser/open-manager';
   import { num, t } from '@/lib/i18n/index.svelte';
-  import { loadSettings } from '@/lib/stores/settings.svelte';
 
   let counts = $state<{ bookmarks: number; folders: number } | undefined>();
 
+  // Settings are loaded and awaited in main.ts, before this ever mounts.
   onMount(() => {
-    void loadSettings();
     void countTree();
   });
 

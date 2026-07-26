@@ -1,8 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
 import { DEFAULT_SETTINGS } from '@/lib/browser/storage';
+import { getLocale } from '@/lib/i18n/index.svelte';
 import {
   applyTheme,
+  flushSettings,
   getSettings,
   isSettingsLoaded,
   loadSettings,
@@ -12,6 +14,9 @@ import {
 
 beforeEach(async () => {
   fakeBrowser.reset();
+  // fakeBrowser.reset() clears stored data but leaves spies in place, so a
+  // rejecting storage.local.set would leak into every later test in the file.
+  vi.restoreAllMocks();
   // fakeBrowser stubs i18n with a throwing "not implemented".
   vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockReturnValue('en-US');
   document.documentElement.removeAttribute('data-theme');
@@ -45,16 +50,16 @@ describe('settings store', () => {
   });
 
   it('applies a theme change immediately, before the debounced save', () => {
-    updateSettings({ theme: 'light' });
+    void updateSettings({ theme: 'light' });
     expect(document.documentElement.getAttribute('data-theme')).toBe('light');
   });
 
   it('debounces writes — rapid changes produce one save', async () => {
     vi.useFakeTimers();
     try {
-      updateSettings({ theme: 'dark' });
-      updateSettings({ theme: 'light' });
-      updateSettings({ csvDelimiter: ';' });
+      void updateSettings({ theme: 'dark' });
+      void updateSettings({ theme: 'light' });
+      void updateSettings({ csvDelimiter: ';' });
 
       // Storage still holds what the beforeEach reset wrote — none of the three
       // changes has been flushed yet.
@@ -69,6 +74,86 @@ describe('settings store', () => {
     }
   });
 
+  it('writes a plain object, not the $state proxy', async () => {
+    // chrome.storage.local.set structured-clones its argument, and a Proxy is
+    // not cloneable — passing the reactive object straight through throws
+    // DataCloneError in a real browser. fakeBrowser stores the reference
+    // without cloning, so only an explicit clone here reproduces Chrome.
+    vi.useFakeTimers();
+    try {
+      void updateSettings({ theme: 'dark' });
+      await vi.advanceTimersByTimeAsync(250);
+      const stored = await fakeBrowser.storage.local.get('settings');
+      expect(() => structuredClone(stored.settings)).not.toThrow();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps a stable object identity so a captured reference cannot go stale', () => {
+    // The store mutates in place rather than replacing. A replacement would
+    // strand any component that read getSettings() into a local.
+    const before = getSettings();
+    void updateSettings({ theme: 'dark' });
+    expect(getSettings()).toBe(before);
+    expect(before.theme).toBe('dark');
+  });
+
+  it('resolves the outcome of the write, and never rejects, when storage fails', async () => {
+    vi.useFakeTimers();
+    try {
+      vi.spyOn(fakeBrowser.storage.local, 'set').mockRejectedValue(
+        new Error('QUOTA_BYTES quota exceeded'),
+      );
+      const saving = updateSettings({ theme: 'dark' });
+      await vi.advanceTimersByTimeAsync(250);
+
+      const outcome = await saving;
+      expect(outcome.ok).toBe(false);
+      expect(outcome.detail).toContain('QUOTA_BYTES');
+      // The in-session choice is still honoured — only persistence failed.
+      expect(getSettings().theme).toBe('dark');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('reports success once the debounced write lands', async () => {
+    vi.useFakeTimers();
+    try {
+      const saving = updateSettings({ csvDelimiter: ';' });
+      await vi.advanceTimersByTimeAsync(250);
+      expect(await saving).toEqual({ ok: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('flushSettings writes immediately without waiting out the debounce', async () => {
+    vi.useFakeTimers();
+    try {
+      const saving = updateSettings({ csvDelimiter: ';' });
+      expect(await flushSettings()).toEqual({ ok: true });
+
+      const stored = await fakeBrowser.storage.local.get('settings');
+      expect(stored.settings).toMatchObject({ csvDelimiter: ';' });
+      // The caller awaiting the debounced promise is settled by the flush too.
+      expect(await saving).toEqual({ ok: true });
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('flushSettings is a no-op when nothing is pending', async () => {
+    expect(await flushSettings()).toEqual({ ok: true });
+  });
+
+  it('resolves "auto" against the browser UI language', async () => {
+    vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockReturnValue('ja-JP');
+    await updateSettings({ locale: 'auto' });
+    expect(getLocale()).toBe('ja');
+  });
+
   it('still loads when the browser i18n lookup throws', async () => {
     vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockImplementation(() => {
       throw new Error('not implemented');
@@ -78,10 +163,28 @@ describe('settings store', () => {
   });
 
   it('reset restores the documented defaults and persists them at once', async () => {
-    updateSettings({ theme: 'dark', csvDelimiter: ';' });
+    void updateSettings({ theme: 'dark', csvDelimiter: ';' });
     await resetSettings();
     expect(getSettings()).toEqual(DEFAULT_SETTINGS);
     const stored = await fakeBrowser.storage.local.get('settings');
     expect(stored.settings).toEqual(DEFAULT_SETTINGS);
+  });
+
+  it('reset cancels the pending debounced save rather than writing twice', async () => {
+    vi.useFakeTimers();
+    try {
+      const set = vi.spyOn(fakeBrowser.storage.local, 'set');
+      void updateSettings({ theme: 'dark' });
+      await resetSettings();
+      await vi.advanceTimersByTimeAsync(250);
+
+      // Exactly the reset's own write. Letting the debounce fire afterwards
+      // would persist the value the user just discarded.
+      expect(set).toHaveBeenCalledTimes(1);
+      const stored = await fakeBrowser.storage.local.get('settings');
+      expect(stored.settings).toEqual(DEFAULT_SETTINGS);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });
