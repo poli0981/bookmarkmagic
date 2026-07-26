@@ -104,6 +104,7 @@ export default {
     rename: '名前を変更',
     open: '開く',
     copyUrl: 'リンクをコピー',
+    unsafeUrl: 'このアドレスは BookmarkMagic が開かない形式です。',
     copied: 'リンクをコピーしました',
     copyFailed: 'リンクをコピーできませんでした。',
     moveTo: '移動先…',

@@ -35,6 +35,21 @@ const FORBIDDEN_KEYS = [
 ];
 
 describe('manifest', () => {
+  it('declares the permissions array exactly once', () => {
+    // Two arrays (e.g. a browser-specific override) would mean this file only
+    // ever checks the first, which might not be the one that ships.
+    expect(CONFIG.match(/(?<![a-z_])permissions:/gi)?.length ?? 0).toBe(1);
+  });
+
+  it('builds the permissions array from string literals only', () => {
+    // Without this, a spread, an identifier or a `.concat()` tail would be
+    // dropped by the literal-harvesting regex below and the assertion would
+    // still pass while extra permissions shipped.
+    const match = CONFIG.match(/permissions:\s*\[([^\]]*)\]/);
+    const residue = (match?.[1] ?? '').replace(/'[^']*'|"[^"]*"|[\s,]/g, '');
+    expect(residue, 'permissions array contains non-literal entries').toBe('');
+  });
+
   it('requests exactly ["bookmarks", "storage"]', () => {
     const match = CONFIG.match(/permissions:\s*\[([^\]]*)\]/);
     expect(match?.[1], 'no permissions array found in wxt.config.ts').toBeDefined();

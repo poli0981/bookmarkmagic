@@ -37,6 +37,12 @@ jobs:
       - run: npm run coverage # vitest --coverage, thresholds per docs/11 §1
       - run: npm run guard # the canonical grep gate, docs/08 §3
 
+      # The unit test proves what wxt.config.ts ASKS for. Only this proves what
+      # WXT actually emitted — a dev build of the same config carries
+      # tabs/scripting/host_permissions that never appear in the config file.
+      - run: npm run build
+      - run: npm run check:manifest
+
   build:
     name: Build + package
     needs: quality

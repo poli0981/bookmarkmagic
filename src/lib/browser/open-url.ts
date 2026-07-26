@@ -13,6 +13,22 @@ import { browser } from 'wxt/browser';
 const ALLOWED_SCHEMES = new Set(['http:', 'https:']);
 
 /**
+ * Whether this URL would be refused — so the row can warn BEFORE the click.
+ *
+ * docs/09 T3 asks for both halves: block the navigation, and mark the bookmark
+ * so a `javascript:` entry titled "Your bank" does not look like an ordinary
+ * link that simply does nothing.
+ */
+export function isBlockedUrl(url: string | undefined): boolean {
+  if (url === undefined) return false;
+  try {
+    return !ALLOWED_SCHEMES.has(new URL(url).protocol);
+  } catch {
+    return true;
+  }
+}
+
+/**
  * Open `url` in a new tab if its scheme is allowed.
  *
  * Returns whether it was opened, so callers and tests can tell "blocked" from

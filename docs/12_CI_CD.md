@@ -63,6 +63,8 @@ jobs:
       - run: npm run knip
       - run: npm run coverage      # vitest --coverage, thresholds per 11 §1
       - run: npm run guard         # canonical grep gate, 08_MV3 §3
+      - run: npm run build
+      - run: npm run check:manifest  # the BUILT artifact, not just the config
 
   build:
     name: Build + package
@@ -194,8 +196,16 @@ jobs:
     uses: poli0981/.github/.github/workflows/announce-release.yml@main
     permissions:
       contents: read
+    with:
+      tag_override: ${{ github.ref_name }}
     secrets: inherit
 ```
+
+`tag_override` is **required here**, and for the same reason the announcement
+is a job rather than a caller. The reusable resolves
+`TAG="${INPUT_TAG:-$EVENT_TAG}"` with `EVENT_TAG = github.event.release.tag_name`
+— empty under `on: push: tags` — so omitting it makes the job exit 1 on
+"No release tag available" and the announcement never fires for any release.
 
 The announcement is a **job inside this workflow**, not a separate
 `on: release: [published]` caller. A Release created by `gh release create`

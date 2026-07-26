@@ -37,6 +37,10 @@ jobs:
 
       - run: npm run zip # wxt zip → .output/<name>-<version>-chrome.zip
 
+      # Gate the artifact, not just the config it was built from. A tag is the
+      # last point at which an unintended permission can still be stopped.
+      - run: npm run check:manifest
+
       - name: Verify tag matches manifest version
         run: |
           set -euo pipefail
@@ -77,4 +81,11 @@ jobs:
     uses: poli0981/.github/.github/workflows/announce-release.yml@main
     permissions:
       contents: read
+    with:
+      # REQUIRED here, and only because of the comment above. The reusable
+      # resolves `TAG="${INPUT_TAG:-$EVENT_TAG}"` with EVENT_TAG =
+      # github.event.release.tag_name — which is empty under `on: push: tags`,
+      # so without this the job exits 1 on "No release tag available" and the
+      # announcement never fires for any release.
+      tag_override: ${{ github.ref_name }}
     secrets: inherit
