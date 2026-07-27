@@ -62,7 +62,7 @@ Full policy: [`legal/PRIVACY.md`](legal/PRIVACY.md).
 
 ## Install
 
-From the Chrome Web Store: ⚠️ *link once the listing is live.*
+From the Chrome Web Store: [here](https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg)
 
 From source:
 
