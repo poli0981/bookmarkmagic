@@ -88,7 +88,7 @@ data-usage checkboxes. That is *not* the same as being exempt from disclosure:
 CWS requires extensions to describe how they handle user data **even when the
 handling is entirely local**, which is why the privacy-policy URL above is
 mandatory and why `legal/PRIVACY.md` spells out the local bookmark reads/writes
-and the `chrome.storage.local` settings explicitly (`14 §3.1`).
+and the `chrome.storage.local` settings explicitly (`14 §3`).
 
 The single-purpose text (§4) and the per-permission justifications (§2) are
 also submitted on this tab — keep all three in sync, and re-certify whenever
