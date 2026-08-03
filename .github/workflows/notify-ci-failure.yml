@@ -7,10 +7,10 @@
 # unset (docs/00 §10.6) this workflow therefore failed on *every* CI completion,
 # success included, from the first push after it landed.
 #
-# `continue-on-error` on top of that, for the same reason `release.yml`'s
-# announce job has it: a notification must never be able to change the colour of
-# the thing it is reporting on. A run that is red for a reason nobody acts on
-# teaches everyone to stop reading the colour.
+# The `vars.DISCORD_CI_NOTIFY` gate on top of that, for the same reason
+# `release.yml`'s announce job has one: a notification must never be able to
+# change the colour of the thing it is reporting on. A run that is red for a
+# reason nobody acts on teaches everyone to stop reading the colour.
 name: Notify CI failure
 
 on:
@@ -24,8 +24,17 @@ permissions:
 
 jobs:
   notify:
-    if: github.event.workflow_run.conclusion == 'failure'
-    continue-on-error: true
+    # Both conditions matter. The conclusion check stops this running at all on
+    # a green CI, which is what made it red on every push; the variable gate
+    # keeps it off entirely until the owner has actually set DISCORD_CI_WEBHOOK,
+    # since the reusable declares that secret `required: true` and GitHub
+    # validates it before the reusable's own filter runs.
+    #
+    # `continue-on-error` is NOT usable here: GitHub rejects it on a job that
+    # calls a reusable workflow ("Property continue-on-error is not allowed"),
+    # which invalidates the entire file. A repo variable is allowed in `if:`;
+    # a secret is not.
+    if: github.event.workflow_run.conclusion == 'failure' && vars.DISCORD_CI_NOTIFY == 'true'
     uses: poli0981/.github/.github/workflows/notify-ci-failure.yml@main
     permissions:
       contents: read
