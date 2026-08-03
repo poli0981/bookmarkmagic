@@ -53,12 +53,24 @@ jobs:
         working-directory: .output
         run: sha256sum *-chrome.zip > SHA256SUMS.txt
 
+      # Idempotent on purpose. `gh release create` fails outright if a Release
+      # for the tag already exists, so any failure AFTER this step — realistically
+      # the CWS publish below, once CWS_AUTOPUBLISH is on — used to strand the
+      # tag: re-running the workflow could not get past this line, and the only
+      # recovery was deleting the Release and the tag by hand (docs/13 §7).
       - name: GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            .output/*-chrome.zip .output/SHA256SUMS.txt --generate-notes
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME exists — re-uploading assets."
+            gh release upload "$GITHUB_REF_NAME" \
+              .output/*-chrome.zip .output/SHA256SUMS.txt --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              .output/*-chrome.zip .output/SHA256SUMS.txt --generate-notes
+          fi
 
       # v1.0.x is published by hand (docs/12 §3) — first store reviews often
       # ask questions and want a human in the loop. Flipping the repo variable

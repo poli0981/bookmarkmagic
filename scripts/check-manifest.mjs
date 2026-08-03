@@ -20,6 +20,32 @@ const MANIFEST = join(process.cwd(), '.output', 'chrome-mv3', 'manifest.json');
 /** Exactly this, in any order. Adding one is a minor-version event (docs/09 §4). */
 const ALLOWED_PERMISSIONS = ['bookmarks', 'storage'];
 
+/**
+ * The exact top-level key set the build is expected to emit.
+ *
+ * The forbidden list below can only catch reach-widening keys someone thought
+ * to enumerate. This catches the other direction — a build tool that starts
+ * emitting a key nobody asked for, or stops emitting one the store requires.
+ * WXT is a 0.x dependency, so a routine minor bump is exactly when that
+ * happens, and the unit test over `wxt.config.ts` is structurally blind to it:
+ * a WXT upgrade cannot change that file.
+ *
+ * Adding a key here is a deliberate act. Check docs/08 §1 first.
+ */
+const EXPECTED_KEYS = [
+  'action',
+  'default_locale',
+  'description',
+  'homepage_url',
+  'icons',
+  'manifest_version',
+  'minimum_chrome_version',
+  'name',
+  'options_ui',
+  'permissions',
+  'version',
+];
+
 /** Keys that would widen the extension's reach. None may be present. */
 const FORBIDDEN_KEYS = [
   'host_permissions',
@@ -58,6 +84,17 @@ if (permissions.join(',') !== [...ALLOWED_PERMISSIONS].sort().join(',')) {
 
 for (const key of FORBIDDEN_KEYS) {
   if (key in manifest) problems.push(`declares "${key}": ${JSON.stringify(manifest[key])}`);
+}
+
+const actualKeys = Object.keys(manifest).sort();
+const expectedKeys = [...EXPECTED_KEYS].sort();
+const unexpected = actualKeys.filter((key) => !expectedKeys.includes(key));
+const missing = expectedKeys.filter((key) => !actualKeys.includes(key));
+if (unexpected.length > 0) {
+  problems.push(`unexpected top-level key(s): ${unexpected.join(', ')} — see docs/08 §1`);
+}
+if (missing.length > 0) {
+  problems.push(`missing expected top-level key(s): ${missing.join(', ')}`);
 }
 
 if (problems.length > 0) {

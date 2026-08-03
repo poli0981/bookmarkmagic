@@ -196,12 +196,18 @@ jobs:
         working-directory: .output
         run: sha256sum *-chrome.zip > SHA256SUMS.txt
 
-      - name: GitHub Release
+      - name: GitHub Release          # idempotent — see below
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            .output/*-chrome.zip .output/SHA256SUMS.txt --generate-notes
+          set -euo pipefail
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release upload "$GITHUB_REF_NAME" \
+              .output/*-chrome.zip .output/SHA256SUMS.txt --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" \
+              .output/*-chrome.zip .output/SHA256SUMS.txt --generate-notes
+          fi
 
       - name: Publish to Chrome Web Store
         if: vars.CWS_AUTOPUBLISH == 'true'
@@ -222,6 +228,13 @@ jobs:
       tag_override: ${{ github.ref_name }}
     secrets: inherit
 ```
+
+**The Release step is idempotent deliberately.** `gh release create` fails
+outright when a Release for the tag already exists, so any failure *after* it —
+realistically the CWS publish step, once `CWS_AUTOPUBLISH` is on — stranded the
+tag: a re-run could not get past that line, and recovery meant deleting the
+Release and the tag by hand. `docs/13 §7` documents the manual escape; this
+removes the need for it in the common case.
 
 `continue-on-error` because the reusable exits 1 on "No webhooks configured"
 when both Discord secrets are unset — which §5 lists as optional. On the real
