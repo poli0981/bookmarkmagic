@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { fakeBrowser } from 'wxt/testing';
+import { fakeBrowser } from 'wxt/testing/fake-browser';
 import { openBookmarkUrl } from '@/lib/browser/open-url';
 
 /**
@@ -8,18 +8,24 @@ import { openBookmarkUrl } from '@/lib/browser/open-url';
  * `javascript:` bookmark and the browser acting on it. It had no test.
  */
 
-let created: { url?: string }[] = [];
+/**
+ * Recorded `tabs.create` calls.
+ *
+ * `url?: string | undefined` rather than `url?: string`: the API's own
+ * `CreateProperties` declares it that way, and under
+ * `exactOptionalPropertyTypes` the two are different types.
+ */
+let created: { url?: string | undefined }[] = [];
 
 beforeEach(() => {
   fakeBrowser.reset();
   vi.restoreAllMocks();
   created = [];
-  // fakeBrowser stubs tabs.* with "not implemented" throws.
+  // fakeBrowser stubs tabs.* with "not implemented" throws. The mock resolves
+  // with nothing because the API's return type is void — the caller ignores it,
+  // and only the recorded call matters.
   vi.spyOn(fakeBrowser.tabs, 'create').mockImplementation(async (props) => {
     created.push(props);
-    // SAFETY: the caller ignores the return value; only the recorded call
-    // matters, and building a full Tab here would assert nothing.
-    return {} as Awaited<ReturnType<typeof fakeBrowser.tabs.create>>;
   });
 });
 
