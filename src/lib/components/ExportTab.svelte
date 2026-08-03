@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { getRootChildren, type LiveNode } from '../browser/bookmarks';
-  import { BmBrowserError } from '../browser/errors';
+  import { type DescribedError, describeError } from '../browser/describe-error';
   import type { ExportFormat } from '../browser/storage';
   import type { CsvDelimiter } from '../core/serialize/csv';
   import type { MarkdownStyle } from '../core/serialize/markdown';
@@ -16,13 +16,14 @@
   import { pushToast } from '../stores/toast.svelte';
   import Button from './Button.svelte';
   import Callout from './Callout.svelte';
+  import ErrorCallout from './ErrorCallout.svelte';
   import FolderPickTree from './FolderPickTree.svelte';
   import FormatSelect from './FormatSelect.svelte';
 
   let roots = $state<LiveNode[]>([]);
   let selection = $state<ReadonlySet<string> | undefined>(undefined);
   let format = $state<ExportFormat>('netscape-html');
-  let loadError = $state<string | undefined>();
+  let loadError = $state<DescribedError | undefined>();
   let csvDelimiter = $state<CsvDelimiter>(',');
   let markdownStyle = $state<MarkdownStyle>('nested');
 
@@ -39,7 +40,9 @@
       csvDelimiter = settings.csvDelimiter;
       markdownStyle = settings.markdownStyle;
     } catch (err) {
-      loadError = err instanceof BmBrowserError ? err.detail : t('errors.UNKNOWN');
+      // Was `err.detail` alone — a raw English Chrome string as the entire
+      // screen, in all three languages (docs/02 §7).
+      loadError = describeError(err);
     }
   }
 
@@ -63,15 +66,17 @@
         pushToast(t('export.saved', { name: result.filename }), 'success');
       } catch (err) {
         // Tone matters: this used to share a variable with the success message
-        // and rendered failures in success-green.
-        pushToast(err instanceof BmBrowserError ? err.detail : t('errors.UNKNOWN'), 'danger');
+        // and rendered failures in success-green. The message is the localized
+        // sentence — a toast has no room for a detail block, which is the same
+        // reasoning the header's save-failure toast records.
+        pushToast(t(describeError(err).messageKey), 'danger');
       }
     })();
   }
 </script>
 
 {#if loadError !== undefined}
-  <Callout tone="danger">{loadError}</Callout>
+  <ErrorCallout messageKey={loadError.messageKey} detail={loadError.detail} />
 {:else}
   <div class="split">
     <section aria-label={t('export.scope')}>

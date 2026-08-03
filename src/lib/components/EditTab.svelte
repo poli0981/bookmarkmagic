@@ -10,7 +10,7 @@
     update,
   } from '../browser/bookmarks';
   import { copyToClipboard } from '../browser/clipboard';
-  import { BmBrowserError } from '../browser/errors';
+  import { type DescribedError, describeError } from '../browser/describe-error';
   import { openBookmarkUrl } from '../browser/open-url';
   import { findDuplicateGroups } from '../core/dedupe';
   import { searchTree } from '../core/search';
@@ -30,31 +30,41 @@
     moveNode,
     removeNode,
   } from '../edit/patch-tree';
+  import { deleteEach } from '../edit/bulk-delete';
   import { canMoveInto, moveTargets } from '../edit/move-target';
+  import {
+    collapseSearchExpansion,
+    forgetSearchExpansion,
+    mergeSearchExpansion,
+  } from '../edit/search-expansion';
   import { resolveKey, visibleRows } from '../edit/tree-keyboard';
   import { num, t } from '../i18n/index.svelte';
   import { pushToast } from '../stores/toast.svelte';
-  import Callout from './Callout.svelte';
+  import ErrorCallout from './ErrorCallout.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import DuplicatePanel from './DuplicatePanel.svelte';
   import EditToolbar from './EditToolbar.svelte';
   import MoveToDialog from './MoveToDialog.svelte';
-  import TreeRow from './TreeRow.svelte';
+  import TreeList from './TreeList.svelte';
 
   let roots = $state<EditNode[]>([]);
-  let expanded = $state<Set<string>>(new Set());
+  let expanded = $state<ReadonlySet<string>>(new Set());
   let focusedId = $state<string | undefined>();
   let renamingId = $state<string | undefined>();
   let query = $state('');
   let debounced = $state('');
   let showDuplicates = $state(false);
-  let loadError = $state<string | undefined>();
+  let loadError = $state<DescribedError | undefined>();
   let pendingDelete = $state<EditNode | undefined>();
   let pendingKeepFirst = $state(false);
   let draggingId = $state<string | undefined>();
   let movingNode = $state<EditNode | undefined>();
   /** Per-operation failure, shown ABOVE the tree rather than replacing it. */
-  let actionError = $state<{ message: string; detail: string | undefined } | undefined>();
+  let actionError = $state<
+    (DescribedError & { partial?: { done: number; total: number } }) | undefined
+  >();
+  /** Folders the search opened, so clearing the search can close them again. */
+  let searchOpened = $state<ReadonlySet<string>>(new Set());
   let searchInput = $state<HTMLInputElement | undefined>();
   let treeEl = $state<HTMLElement | undefined>();
 
@@ -96,7 +106,9 @@
       roots = (await getRootChildren()).map(toEditNode);
       expanded = new Set(roots.map((root) => root.id));
     } catch (err) {
-      loadError = err instanceof BmBrowserError ? err.detail : t('errors.UNKNOWN');
+      // Was `err.detail` alone: a raw English Chrome string as the entire
+      // screen, in every language (docs/02 §7).
+      loadError = describeError(err);
     }
   }
 
@@ -114,16 +126,43 @@
   // Search-opened ancestors are merged INTO `expanded` rather than unioned at
   // render time. Reading from a union that toggle() cannot write to made the
   // disclosure button and ArrowLeft dead keys on every search-expanded folder.
+  //
+  // The merge is remembered so it can be undone: a one-character query expands
+  // most of a large tree, and clearing the box used to render every one of
+  // those rows at once, in a single synchronous pass, with no virtualization.
   $effect(() => {
-    if (search.expand.size === 0) return;
-    const missing = [...search.expand].filter((id) => !expanded.has(id));
-    if (missing.length > 0) expanded = new Set([...expanded, ...missing]);
+    if (!filtering) {
+      if (searchOpened.size === 0) return;
+      expanded = collapseSearchExpansion(expanded, searchOpened);
+      searchOpened = new Set();
+      return;
+    }
+    const merged = mergeSearchExpansion(expanded, search.expand, searchOpened);
+    if (merged.expanded === expanded) return;
+    expanded = merged.expanded;
+    searchOpened = merged.opened;
   });
 
   const rows = $derived(visibleRows(roots, expanded, filtering ? search.visible : undefined));
 
+  const partialNote = $derived(
+    actionError?.partial === undefined
+      ? undefined
+      : t('edit.keepFirstPartial', {
+          done: num(actionError.partial.done),
+          total: num(actionError.partial.total),
+        }),
+  );
+
+  // `isEditable` matters as much as the url check: without it, duplicates
+  // inside a policy-managed subtree were offered for bulk deletion, and the
+  // browser rejects every one of them. The single-delete path has always
+  // filtered; docs/15 makes it normative that unmodifiable nodes offer no
+  // destructive affordance at all.
   const duplicateGroups = $derived(
-    findDuplicateGroups(flattenTree(roots).filter((node) => node.url !== undefined)),
+    findDuplicateGroups(
+      flattenTree(roots).filter((node) => node.url !== undefined && isEditable(node)),
+    ),
   );
 
   /**
@@ -136,10 +175,7 @@
     try {
       await run();
     } catch (err) {
-      actionError =
-        err instanceof BmBrowserError
-          ? { message: t('errors.BROWSER'), detail: err.detail }
-          : { message: t('errors.UNKNOWN'), detail: err instanceof Error ? err.message : undefined };
+      actionError = describeError(err);
       await load();
     }
   }
@@ -149,6 +185,9 @@
     if (next.has(id)) next.delete(id);
     else next.add(id);
     expanded = next;
+    // Touching a folder makes it the user's, so clearing the search must not
+    // close it again.
+    searchOpened = forgetSearchExpansion(searchOpened, id);
   }
 
   function onKeydown(event: KeyboardEvent): void {
@@ -251,12 +290,21 @@
     // Snapshot the ids first: duplicateGroups is $derived from `roots`, so
     // reading it inside the loop would recompute mid-iteration.
     const doomed = extraCopyIds(duplicateGroups);
-    await guardEdit(async () => {
-      for (const id of doomed) {
-        roots = removeNode(roots, id);
-        await remove(id);
-      }
+    actionError = undefined;
+
+    const outcome = await deleteEach(doomed, remove, (id) => {
+      roots = removeNode(roots, id);
     });
+    if (outcome.error === undefined) return;
+
+    // The dialog promised an exact number. Saying only "the browser refused"
+    // after deleting some of them leaves the user unable to tell how many
+    // copies are left, on an action that cannot be undone.
+    actionError = {
+      ...describeError(outcome.error),
+      partial: { done: outcome.deleted, total: outcome.total },
+    };
+    await load();
   }
 
   /** Shared by the drag path and the keyboard "Move to…" path. */
@@ -300,7 +348,7 @@
 </script>
 
 {#if loadError !== undefined}
-  <Callout tone="danger">{loadError}</Callout>
+  <ErrorCallout messageKey={loadError.messageKey} detail={loadError.detail} />
 {:else}
   <EditToolbar
     bind:input={searchInput}
@@ -313,65 +361,37 @@
   />
 
   {#if actionError !== undefined}
-    <div class="action-error">
-      <Callout tone="danger">{actionError.message}</Callout>
-      {#if actionError.detail !== undefined}
-        <pre>{actionError.detail}</pre>
-      {/if}
-    </div>
+    <ErrorCallout
+      messageKey={actionError.messageKey}
+      detail={actionError.detail}
+      note={partialNote}
+    />
   {/if}
 
   <div class="split" class:with-panel={showDuplicates}>
-    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-    <ul
-      bind:this={treeEl}
-      class="tree"
-      role="tree"
-      aria-label={t('common.edit')}
-      tabindex="0"
-      aria-activedescendant={focusedId === undefined ? undefined : `node-${focusedId}`}
+    <TreeList
+      bind:element={treeEl}
+      {rows}
+      {focusedId}
+      {renamingId}
+      {filtering}
+      {draggingId}
+      matched={search.matched}
+      editable={isEditable}
+      canDropInto={(id) => draggingId !== undefined && canMoveInto(roots, draggingId, id)}
       onkeydown={onKeydown}
-    >
-      {#each rows as row (row.node.id)}
-        <li
-          id="node-{row.node.id}"
-          data-node-id={row.node.id}
-          role="treeitem"
-          aria-level={row.depth}
-          aria-expanded={row.expandable ? row.expanded : undefined}
-          aria-selected={focusedId === row.node.id}
-        >
-          <TreeRow
-            node={row.node}
-            depth={row.depth}
-            expandable={row.expandable}
-            expanded={row.expanded}
-            focused={focusedId === row.node.id}
-            matched={search.matched.has(row.node.id)}
-            renaming={renamingId === row.node.id}
-            ontoggle={() => toggle(row.node.id)}
-            onfocus={() => (focusedId = row.node.id)}
-            onstartRename={() => (renamingId = row.node.id)}
-            onrename={(title) => void commitRename(row.node.id, title)}
-            oncancelRename={() => (renamingId = undefined)}
-            ondelete={() => (pendingDelete = row.node)}
-            onopen={() => void openUrl(row.node.url ?? '')}
-            oncopyUrl={() => void copyUrl(row.node.url ?? '')}
-            onmoveTo={() => (movingNode = row.node)}
-            ondragstart={() => (draggingId = row.node.id)}
-            ondropinto={() => onDrop(row.node.id)}
-            dropTarget={draggingId !== undefined &&
-              canMoveInto(roots, draggingId, row.node.id)}
-            draggable={isEditable(row.node)}
-            editable={isEditable(row.node)}
-          />
-        </li>
-      {/each}
-
-      {#if rows.length === 0}
-        <li class="empty">{filtering ? t('edit.noMatches') : t('edit.empty')}</li>
-      {/if}
-    </ul>
+      ontoggle={toggle}
+      onfocusRow={(id) => (focusedId = id)}
+      onstartRename={(id) => (renamingId = id)}
+      onrename={(id, title) => void commitRename(id, title)}
+      oncancelRename={() => (renamingId = undefined)}
+      ondelete={(node) => (pendingDelete = node)}
+      onopen={(node) => void openUrl(node.url ?? "")}
+      oncopyUrl={(node) => void copyUrl(node.url ?? "")}
+      onmoveTo={(node) => (movingNode = node)}
+      ondragstart={(id) => (draggingId = id)}
+      ondropinto={(id) => onDrop(id)}
+    />
 
     {#if showDuplicates}
       <DuplicatePanel
@@ -441,41 +461,6 @@
     }
   }
 
-  .tree {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    font-size: var(--fs-1);
-    max-height: 560px;
-    overflow: auto;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--sp-2);
-  }
 
-  .tree:focus-visible {
-    outline: 2px solid var(--accent);
-  }
-
-  .action-error {
-    margin-bottom: var(--sp-3);
-  }
-
-  .action-error pre {
-    margin: var(--sp-2) 0 0;
-    font-size: var(--fs-0);
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--sp-2);
-    overflow: auto;
-    user-select: all;
-  }
-
-  .empty {
-    color: var(--fg-muted);
-    padding: var(--sp-4);
-    text-align: center;
-  }
 
 </style>
