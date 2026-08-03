@@ -21,7 +21,7 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | 5 — Hardening + release prep | ✔ 2026-07-26 | contrast tokens + a test that enforces them, `EditTab` split under the hard limit, CHANGELOG + README, four CI callers, T1–T8 pass, clean-room `wxt zip` |
 | **v1.0.0 released** | ✔ 2026-07-26 | signed tag, GitHub Release with a `sha256sum -c`-verified zip, submitted to the Chrome Web Store |
 | **v1.0.0 published** | ✔ by 2026-08-03 | approved by CWS review with no rejection recorded; listing public, item id `eghnciphhegekmnofffpgbdfefckdhmg`, **real users installed** |
-| 6 — Post-launch stabilization | in progress 2026-08-03 | doc reconciliation, user-intake machinery, the defects below, dependency bumps → v1.0.1 |
+| 6 — Post-launch stabilization | ✔ 2026-08-03 | doc reconciliation, user-intake machinery, the defects below, dependency bumps → v1.0.1 |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
