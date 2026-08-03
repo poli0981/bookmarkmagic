@@ -196,7 +196,7 @@ failure mode that would hit every installed user at once.
 ### Measured 2026-07-26 — Phase 5
 
 A generated 100 000-node Netscape file (11.2 MB, 99 000 bookmarks in 1 000
-folders), timed **under jsdom**:
+folders), timed **under jsdom 29**:
 
 | Stage | Time |
 |---|---|

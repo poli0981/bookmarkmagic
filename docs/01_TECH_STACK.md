@@ -19,12 +19,13 @@
 |---|---|---|
 | Node.js | **24.x (Active LTS)** | Build runtime. Active LTS until Oct 2026, maintained to 2028-04-30. Node 26 is *Current*, not LTS — do not use for production tooling yet. |
 | npm | bundled with Node 24 (v11) | Package manager. Commit `package-lock.json`. |
-| **WXT** | **^0.20.27** | Extension framework: entrypoints, manifest generation, HMR, `wxt zip`, `wxt submit`. |
+| **WXT** | **^0.21.3** (was ^0.20.27 through v1.0.0) | Extension framework: entrypoints, manifest generation, HMR, `wxt zip`, `wxt submit`. **0.x, so a minor is semver's breaking slot** — and 0.21 was: `wxt/testing` split into `wxt/testing/fake-browser` and `wxt/testing/vitest-plugin`, and `tabs.create` is now typed as returning `void`. Both are dev-only. Never take a WXT bump without diffing the **built** manifest before and after (`12 §2.3`); `tests/unit/manifest.test.ts` reads `wxt.config.ts` and is structurally incapable of noticing. |
 | **TypeScript** | **~6.0.3** (strict) | Deliberate exception to "latest stable": TS **7.0 went GA 2026-07-08** (7.0.2 is `dist-tags.latest`), but the Go-native compiler exposes no stable programmatic API yet and Microsoft's own GA post says Svelte/Volar toolchains "can only currently rely on TypeScript 6.0" — full support is deferred to 7.1. Since `svelte-check` is our template type authority, we hold on 6.x. Pin with `~` (patch-only). Revisit when TS 7.1 ships **and** svelte-check declares support. |
 | **Svelte** | **^5.56.4** | UI, runes mode only (`$state`, `$derived`, `$effect`, `$props`). |
 | @wxt-dev/module-svelte | latest at scaffold | WXT ↔ Svelte integration. |
 | **Biome** | **2.5.2 (pinned exact)** | Lint + format (replaces ESLint + Prettier). Install with `npm i -D -E @biomejs/biome` per Biome guidance. |
-| svelte-check | ^4.7.1 | Type/template authority for `.svelte` files. |
+| svelte-check | ^4.7.4 | Type/template authority for `.svelte` files. |
+| jsdom | **^30** (was ^29 through v1.0.0) | Test DOM. Not interchangeable — `02 §3` picks jsdom over happy-dom because the Netscape walk depends on parse5's implied-end-tag behaviour. A major bump runs `tests/unit/dom-environment.test.ts` first; if that canary fails, pin rather than loosen the test. |
 | **Knip** | **^6** (6.29.0 latest as of 2026-07) | Dead code: unused files, exports, dependencies. Requires Node ≥ 20.19. v6 swapped the TypeScript backend for oxc-parser — confirm `compilers.svelte` is still the supported `.svelte` hook before scaffold (`10 §4`). |
 | **Vitest** | latest stable at scaffold | Unit tests for `src/lib/core`. |
 | @vitest/coverage-v8 | match Vitest | Coverage reporting. |
