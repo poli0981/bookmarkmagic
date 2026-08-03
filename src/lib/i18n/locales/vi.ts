@@ -33,6 +33,8 @@ export default {
     doneSummary: 'Hoàn tất — đã tạo {created} mục.',
     skipped: 'Đã bỏ qua {existing} mục đã có trong trình duyệt và {inFile} mục lặp trong tệp.',
     cancelledSummary: 'Đã hủy — {created} mục đã được tạo trước đó và vẫn được giữ lại.',
+    cancelledAfterClear:
+      'Bạn đã hủy sau khi bookmark cũ đã bị xóa, nên những gì còn lại chỉ là phần đã được tạo lại.',
     dateNotice:
       'Bookmark được nhập vào sẽ mang ngày hôm nay. Chrome không cho phép tiện ích đặt lại ngày tạo gốc của bookmark — các tệp bạn xuất ra vẫn giữ ngày thật.',
     partialCreated: '{created} mục đã được tạo trước khi lỗi xảy ra và vẫn được giữ lại.',

@@ -148,9 +148,10 @@ Derived identifiers (canonical across docs and code):
    2026-07-26 and **approved — the listing is public and has users**. Listing
    copy and the Privacy tab answers came from `13 §3` and `08 §5`. The store URL
    landed in the README on 2026-07-27 (`ea246aa`) and the item id is now in the
-   §9 identifiers table. **Still open:** the asset reconciliation in item 3, and
-   `store/listing.{en,vi,ja}.md` — `13 §4` promises the listing copy is
-   version-controlled in-repo, and it is not.
+   §9 identifiers table. `store/listing.{en,vi,ja}.md` now hold the listing copy
+   `13 §4` always asked for — ⚠️ reconstructed from `13 §3` *after* the listing
+   went live, so diff them against the dashboard and correct the files.
+   **Still open:** the asset reconciliation in item 3.
 6. Repo secrets + settings per `12 §5`. ✔ CodeQL "Default setup" is already
    disabled (the advanced workflow uploads SARIF cleanly). **Still open:**
    - `DISCORD_CI_WEBHOOK` is **not** optional in practice. `notify-ci-failure.yml`
@@ -158,7 +159,9 @@ Derived identifiers (canonical across docs and code):
      unset that workflow fails on *every* CI completion — success or failure.
      Either set it or accept the caller-side tolerance in `12 §2.4`.
    - `DISCORD_RELEASES_WEBHOOK` / `DISCORD_REPO_WEBHOOK` genuinely are optional;
-     the announce job is `continue-on-error` since `5f4c6e7`.
+     the announce job is skipped unless the repo variable `DISCORD_ANNOUNCE` is
+     `true`. (It used to say `continue-on-error`, which GitHub **rejects** on a
+     reusable-workflow caller — see `12 §2.3`.)
    - The four `CHROME_*` secrets are now a **concrete v1.1 prerequisite**, not a
      maybe: `15` lists automated CWS publishing as the first v1.1 item. One of
      the four is already known — `CHROME_EXTENSION_ID` is the item id in §9. The
