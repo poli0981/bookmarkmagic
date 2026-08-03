@@ -25,6 +25,7 @@
 | @wxt-dev/module-svelte | latest at scaffold | WXT ↔ Svelte integration. |
 | **Biome** | **2.5.2 (pinned exact)** | Lint + format (replaces ESLint + Prettier). Install with `npm i -D -E @biomejs/biome` per Biome guidance. |
 | svelte-check | ^4.7.4 | Type/template authority for `.svelte` files. |
+| **@types/node** | **^24** (matches the Node major) | Types for `node:fs`, `node:path`, `node:child_process` and `process`, which the test suite and `scripts/*.mjs` genuinely use. **Declared explicitly since 2026-08-03** — it used to arrive transitively, and WXT 0.21 stopped providing it. Types only: erased at build, so hard rule 2 (zero *runtime* dependencies) is untouched. |
 | jsdom | **^30** (was ^29 through v1.0.0) | Test DOM. Not interchangeable — `02 §3` picks jsdom over happy-dom because the Netscape walk depends on parse5's implied-end-tag behaviour. A major bump runs `tests/unit/dom-environment.test.ts` first; if that canary fails, pin rather than loosen the test. |
 | **Knip** | **^6** (6.29.0 latest as of 2026-07) | Dead code: unused files, exports, dependencies. Requires Node ≥ 20.19. v6 swapped the TypeScript backend for oxc-parser — confirm `compilers.svelte` is still the supported `.svelte` hook before scaffold (`10 §4`). |
 | **Vitest** | latest stable at scaffold | Unit tests for `src/lib/core`. |
