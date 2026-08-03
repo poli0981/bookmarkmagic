@@ -51,6 +51,43 @@ export async function loadSettings(): Promise<void> {
 }
 
 /**
+ * Adopt settings written by another Manager tab.
+ *
+ * Two rules, and between them they solve the echo problem and the debounce
+ * problem at once:
+ *
+ * 1. **If this context has an unflushed write, ignore the change entirely.**
+ *    `save()` writes the whole object, not a patch, so this tab is about to
+ *    overwrite the incoming value anyway — and adopting it first would clobber
+ *    the choice the user just made, in the UI *and* in what gets persisted 200
+ *    ms later. Ignoring is last-write-wins, which is the semantic docs/15
+ *    already documented, and it converges because our write fires this same
+ *    event in the other tab.
+ * 2. **Otherwise adopt only fields that actually differ.** Our own write always
+ *    matches what we already hold, so self-echo suppression falls out for free
+ *    — no `lastWritten` snapshot to keep in step and go stale, and no
+ *    dependence on key order, which `{...proxy}` and `coerceSettings` do not
+ *    agree on anyway.
+ *
+ * Deliberately does not schedule a save: adopting a value that is already on
+ * disk and writing it straight back would make two tabs ping-pong forever.
+ *
+ * @returns whether anything changed.
+ */
+export function adoptExternalSettings(next: Settings): boolean {
+  if (saveTimer !== undefined || pending !== undefined) return false;
+
+  const keys = Object.keys(DEFAULT_SETTINGS) as (keyof Settings)[];
+  if (keys.every((key) => settings[key] === next[key])) return false;
+
+  // In place, never replaced — see updateSettings.
+  Object.assign(settings, next);
+  applyLocale();
+  applyTheme(settings.theme);
+  return true;
+}
+
+/**
  * Apply a patch now, persist it shortly.
  *
  * Returns the outcome of the resulting write rather than firing and forgetting,

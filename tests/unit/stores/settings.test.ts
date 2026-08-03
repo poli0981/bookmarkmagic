@@ -3,6 +3,7 @@ import { fakeBrowser } from 'wxt/testing';
 import { DEFAULT_SETTINGS } from '@/lib/browser/storage';
 import { getLocale } from '@/lib/i18n/index.svelte';
 import {
+  adoptExternalSettings,
   applyTheme,
   flushSettings,
   getSettings,
@@ -198,5 +199,74 @@ describe('settings store', () => {
     } finally {
       vi.useRealTimers();
     }
+  });
+});
+
+/**
+ * Cross-tab adoption — docs/03 §4.
+ *
+ * Two Manager tabs used to silently overwrite each other, because `save()`
+ * writes the whole settings object rather than a patch: a tab holding a stale
+ * locale reverted the other tab's language change the moment its own theme
+ * toggle fired. From the user's side that is "I changed it and it didn't
+ * stick", which is unfalsifiable and reads as a bug in the extension.
+ */
+describe('adoptExternalSettings', () => {
+  it('applies a change from another tab, including locale and theme', async () => {
+    await updateSettings({ theme: 'light' });
+    const changed = adoptExternalSettings({ ...DEFAULT_SETTINGS, theme: 'dark', locale: 'vi' });
+
+    expect(changed).toBe(true);
+    expect(getSettings().theme).toBe('dark');
+    expect(document.documentElement.getAttribute('data-theme')).toBe('dark');
+    expect(getLocale()).toBe('vi');
+  });
+
+  it('mutates in place, so a component that captured the object still sees it', () => {
+    const captured = getSettings();
+    adoptExternalSettings({ ...DEFAULT_SETTINGS, theme: 'dark' });
+    expect(getSettings()).toBe(captured);
+    expect(captured.theme).toBe('dark');
+  });
+
+  it('ignores an identical value — which is what our own write looks like', () => {
+    // Echo suppression falls out of field equality: no snapshot to keep in step,
+    // and no dependence on key order.
+    expect(adoptExternalSettings({ ...getSettings() })).toBe(false);
+  });
+
+  it('does NOT clobber an edit this tab has not persisted yet', async () => {
+    // The hazard the whole design exists for. Writes are debounced 200 ms; a
+    // change arriving inside that window must lose, because this tab is about
+    // to write its entire object over it anyway — adopting first would revert
+    // the user's choice in the UI *and* in what gets saved.
+    vi.useFakeTimers();
+    try {
+      void updateSettings({ theme: 'dark' });
+      const changed = adoptExternalSettings({ ...DEFAULT_SETTINGS, theme: 'light' });
+
+      expect(changed).toBe(false);
+      expect(getSettings().theme).toBe('dark');
+
+      await vi.advanceTimersByTimeAsync(250);
+      const stored = await fakeBrowser.storage.local.get('settings');
+      expect((stored.settings as { theme: string }).theme).toBe('dark');
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('adopts again once the pending write has flushed', async () => {
+    await updateSettings({ theme: 'dark' });
+    await flushSettings();
+    expect(adoptExternalSettings({ ...DEFAULT_SETTINGS, theme: 'light' })).toBe(true);
+  });
+
+  it('does not write back what it just adopted', async () => {
+    // Otherwise two tabs ping-pong the same value forever.
+    const spy = vi.spyOn(fakeBrowser.storage.local, 'set');
+    adoptExternalSettings({ ...DEFAULT_SETTINGS, theme: 'dark' });
+    await flushSettings();
+    expect(spy).not.toHaveBeenCalled();
   });
 });
