@@ -142,6 +142,10 @@ const dict = {
     keepFirstTitle: 'Delete duplicate copies?',
     keepFirstBody:
       'Keep the first copy of each link and delete the other {n}? This cannot be undone.',
+    // The dialog promises an exact number, so a partial delete has to reconcile
+    // against it — the action cannot be undone.
+    keepFirstPartial:
+      'Deleted {done} of {total} copies before this failed. Nothing else was removed.',
   },
   settings: {
     autosave: 'Changes are saved as you make them.',

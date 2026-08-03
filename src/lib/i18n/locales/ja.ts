@@ -130,6 +130,8 @@ export default {
     keeps: '保持',
     keepFirstTitle: '重複したコピーを削除しますか？',
     keepFirstBody: '各リンクの最初のコピーを残し、他の {n} 件を削除しますか？元に戻せません。',
+    keepFirstPartial:
+      'エラーが発生する前に {total} 件中 {done} 件を削除しました。それ以外は削除されていません。',
   },
   settings: {
     autosave: '変更は自動的に保存されます。',

@@ -129,6 +129,8 @@ export default {
     keeps: 'giữ lại',
     keepFirstTitle: 'Xóa các bản trùng?',
     keepFirstBody: 'Giữ bản đầu tiên của mỗi liên kết và xóa {n} bản còn lại? Không thể hoàn tác.',
+    keepFirstPartial:
+      'Đã xóa {done} trong số {total} bản trước khi lỗi xảy ra. Không có gì khác bị xóa.',
   },
   settings: {
     autosave: 'Thay đổi được lưu ngay khi bạn chỉnh.',

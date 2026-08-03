@@ -22,6 +22,7 @@
   import Button from './Button.svelte';
   import Callout from './Callout.svelte';
   import DropZone from './DropZone.svelte';
+  import ErrorCallout from './ErrorCallout.svelte';
   import ImportOptions from './ImportOptions.svelte';
   import ProgressBar from './ProgressBar.svelte';
   import StatsCard from './StatsCard.svelte';
@@ -201,10 +202,7 @@
     onclick={resetImport}>{t('import.another')}</Button
   >
 {:else if session.kind === 'error'}
-  <Callout tone="danger">{t(session.messageKey)}</Callout>
-  {#if session.detail !== undefined}
-    <pre class="detail">{session.detail}</pre>
-  {/if}
+  <ErrorCallout messageKey={session.messageKey} detail={session.detail} />
   {#if session.created !== undefined && session.created > 0}
     <p class="muted">{t('import.partialCreated', { created: num(session.created) })}</p>
   {/if}
@@ -264,13 +262,4 @@
     margin-top: var(--sp-3);
   }
 
-  .detail {
-    font-size: var(--fs-0);
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    padding: var(--sp-2);
-    overflow: auto;
-    user-select: all;
-  }
 </style>
