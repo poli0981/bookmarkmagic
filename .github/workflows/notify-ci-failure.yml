@@ -1,10 +1,16 @@
 # Caller stub — docs/12 §2.4.
 #
-# The reusable already filters to `conclusion == 'failure'` on the default
-# branch, so this caller needs no `if:`.
+# The reusable filters to `conclusion == 'failure'` on the default branch
+# internally, so the `if:` below is redundant for behaviour — but not for this:
+# the reusable declares `DISCORD_CI_WEBHOOK` as `required: true`, and GitHub
+# validates that BEFORE any of the reusable's own logic runs. With the secret
+# unset (docs/00 §10.6) this workflow therefore failed on *every* CI completion,
+# success included, from the first push after it landed.
 #
-# ⚠️ It declares `DISCORD_CI_WEBHOOK` as `required: true`, so this workflow
-# fails until that repo secret exists (docs/12 §5).
+# `continue-on-error` on top of that, for the same reason `release.yml`'s
+# announce job has it: a notification must never be able to change the colour of
+# the thing it is reporting on. A run that is red for a reason nobody acts on
+# teaches everyone to stop reading the colour.
 name: Notify CI failure
 
 on:
@@ -18,6 +24,8 @@ permissions:
 
 jobs:
   notify:
+    if: github.event.workflow_run.conclusion == 'failure'
+    continue-on-error: true
     uses: poli0981/.github/.github/workflows/notify-ci-failure.yml@main
     permissions:
       contents: read
