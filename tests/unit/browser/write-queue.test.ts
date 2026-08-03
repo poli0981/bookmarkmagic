@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { BmAborted } from '@/lib/browser/errors';
+import { BmAborted, BmPartialWrite } from '@/lib/browser/errors';
 import { type WriteProgress, writeTree } from '@/lib/browser/write-queue';
 import type { BookmarkNode, ImportPlan } from '@/lib/core/model';
 import { FakeBookmarks } from '../../helpers/fake-bookmarks';
@@ -196,18 +196,54 @@ describe('writeTree — abort', () => {
 });
 
 describe('writeTree — API failure', () => {
+  const sixNodes = (): { title: string; url: string }[] =>
+    Array.from({ length: 6 }, (_, i) => ({ title: `b${i}`, url: `https://e${i}.example/` }));
+
   it('propagates a create failure with the earlier successes already written', async () => {
     const fake = new FakeBookmarks({ failOnCreate: 4 });
-    const nodes = Array.from({ length: 6 }, (_, i) => ({
-      title: `b${i}`,
-      url: `https://e${i}.example/`,
-    }));
 
     await expect(
-      writeTree(planOf([{ rootId: '2', nodes }]), { create: fake.create }),
+      writeTree(planOf([{ rootId: '2', nodes: sixNodes() }]), { create: fake.create }),
     ).rejects.toThrow(/injected failure/);
 
     expect(fake.childTitles('2')).toEqual(['b0', 'b1', 'b2']);
+  });
+
+  it('reports how many nodes landed, because they are still in the user tree', async () => {
+    // Without this the report says only "the browser refused a bookmark
+    // operation" — while three real bookmarks sit in the tree, and the user has
+    // no way to learn how many. BmAborted has always carried this; a failure
+    // needs it at least as much, because nobody chose it.
+    const fake = new FakeBookmarks({ failOnCreate: 4 });
+
+    const err = await writeTree(planOf([{ rootId: '2', nodes: sixNodes() }]), {
+      create: fake.create,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(BmPartialWrite);
+    const partial = err as BmPartialWrite;
+    expect(partial.phase).toBe('writing');
+    expect(partial.done).toBe(3);
+    expect(partial.detail).toMatch(/injected failure/);
+  });
+
+  it('lets a cancellation stay a cancellation', async () => {
+    // The abort check throws from inside the same loop as the create. Wrapping
+    // it would relabel every user cancellation as a failure and make the
+    // `cancelled` state — and its copy in three languages — unreachable.
+    const fake = new FakeBookmarks();
+    const controller = new AbortController();
+
+    const err = await writeTree(planOf([{ rootId: '2', nodes: sixNodes() }]), {
+      create: async (details) => {
+        controller.abort();
+        return fake.create(details);
+      },
+      signal: controller.signal,
+    }).catch((e: unknown) => e);
+
+    expect(err).toBeInstanceOf(BmAborted);
+    expect(err).not.toBeInstanceOf(BmPartialWrite);
   });
 });
 

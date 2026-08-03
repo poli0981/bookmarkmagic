@@ -40,7 +40,31 @@ export type ImportState =
    * was active when the error happened, so switching language left the error
    * message behind in the old one.
    */
-  | { kind: 'error'; filename: string; messageKey: string; detail: string | undefined };
+  | {
+      kind: 'error';
+      filename: string;
+      messageKey: string;
+      /**
+       * Raw technical text, absent when there is none.
+       *
+       * Optional rather than `string | undefined` so it matches `DescribedError`
+       * exactly — under `exactOptionalPropertyTypes` those are different types,
+       * and a spread of one into the other is a compile error.
+       */
+      detail?: string | undefined;
+      /** Nodes created before a partial failure, when the failure knows. */
+      created?: number;
+      /** Root children deleted before a partial failure, when it knows. */
+      removed?: number;
+      /**
+       * The safety backup's filename, on a Replace that got past the backup.
+       *
+       * Carried onto the failure deliberately: `attesting` knew it and `error`
+       * used to throw it away, so the one string that lets a user restore a
+       * half-deleted tree was the one thing not on screen.
+       */
+      backupFilename?: string;
+    };
 
 let state = $state<ImportState>({ kind: 'idle' });
 let options = $state<ImportOptionsState>({ mode: 'new-folder', dedupe: true });
@@ -102,7 +126,41 @@ export function cancelWrite(): void {
   controller?.abort();
 }
 
+/**
+ * Resolver for the fallback-backup attestation — held HERE, not in `ImportTab`.
+ *
+ * As a component-local `let` it died with the component. Pressing Back during
+ * `attesting` unmounted the tab, stranded the promise `runImport` was awaiting,
+ * and left `isWriting()` true forever: every tab and footer control disabled,
+ * `beforeunload` prompting, and a remounted tab rendering two inert buttons
+ * against a fresh, empty resolver. Closing the tab was the only escape.
+ */
+let attestResolve: ((confirmed: boolean) => void) | undefined;
+
+/** Wait for the user to confirm they have the fallback backup. */
+export function awaitAttestation(): Promise<boolean> {
+  // A resolver that is still live fails CLOSED. An unanswered attestation is
+  // not consent, and this is the gate in front of deleting every bookmark.
+  attestResolve?.(false);
+  return new Promise<boolean>((resolve) => {
+    attestResolve = resolve;
+  });
+}
+
+export function answerAttestation(confirmed: boolean): void {
+  attestResolve?.(confirmed);
+  attestResolve = undefined;
+}
+
+export function hasPendingAttestation(): boolean {
+  return attestResolve !== undefined;
+}
+
 export function resetImport(): void {
+  // Before clearing state, not after: otherwise "Import another file" during an
+  // attestation moves the deadlock out of a component and into this store,
+  // where nothing renders it and nobody would find it.
+  answerAttestation(false);
   controller = undefined;
   prepared = undefined;
   state = { kind: 'idle' };

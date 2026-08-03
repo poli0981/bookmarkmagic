@@ -12,7 +12,7 @@
  */
 import type { BookmarkNode, ImportPlan } from '../core/model';
 import { create as createNode, type LiveNode } from './bookmarks';
-import { BmAborted } from './errors';
+import { BmAborted, BmPartialWrite } from './errors';
 
 /** Emitted every PROGRESS_EVERY creates and once at the end. */
 export interface WriteProgress {
@@ -55,6 +55,9 @@ export interface WriteResult {
  *
  * @throws {BmAborted} when the signal fires — carrying the exact number of
  *   nodes already created, so the report can tell the user what landed.
+ * @throws {BmPartialWrite} when a create rejects, carrying the same count. A
+ *   rejection half-way through leaves real bookmarks in the user's tree; a bare
+ *   "the browser refused" gives them no way to know how many.
  */
 export async function writeTree(
   plan: ImportPlan,
@@ -81,11 +84,20 @@ export async function writeTree(
     for (const node of nodes) {
       if (signal?.aborted === true) throw new BmAborted(done);
 
-      const created = await create({
-        parentId,
-        title: node.title,
-        ...(node.url !== undefined && { url: node.url }),
-      });
+      let created: LiveNode;
+      try {
+        created = await create({
+          parentId,
+          title: node.title,
+          ...(node.url !== undefined && { url: node.url }),
+        });
+      } catch (cause) {
+        // Order matters. The abort check above throws from inside this same
+        // loop, and wrapping it would relabel every user cancellation as a
+        // failure — making `cancelled` unreachable and its copy dead.
+        if (cause instanceof BmAborted) throw cause;
+        throw new BmPartialWrite('writing', done, cause);
+      }
 
       done++;
       sinceYield++;

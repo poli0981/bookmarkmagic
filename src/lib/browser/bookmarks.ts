@@ -11,7 +11,7 @@
 import { browser } from 'wxt/browser';
 import type { BookmarkNode } from '../core/model';
 import { millisToSeconds } from '../core/timestamps';
-import { BmAborted, BmBrowserError } from './errors';
+import { BmAborted, BmBrowserError, BmEnvError, BmPartialWrite } from './errors';
 
 /** The live-tree node. Unlike `BookmarkNode` it carries browser identity. */
 export interface LiveNode {
@@ -70,7 +70,10 @@ export async function getRoots(): Promise<BookmarkRoots> {
   const mobile = byId('3') ?? writable.find((node) => node !== toolbar && node !== other);
 
   if (toolbar === undefined || other === undefined) {
-    throw new BmBrowserError('bookmarks.getTree', 'no writable bookmark roots found');
+    // Not a BmBrowserError: nothing refused anything. Every root this profile
+    // has is policy-managed, so there is nowhere an extension may write, and
+    // "the browser refused a bookmark operation" would be actively misleading.
+    throw new BmEnvError('NO_WRITABLE_ROOTS', `${children.length} root(s), none writable`);
   }
 
   return {
@@ -210,6 +213,11 @@ export function subscribe(handlers: BookmarkEvents): () => void {
 /**
  * Delete the CHILDREN of the given roots, never the roots themselves (the API
  * forbids that anyway). Managed nodes are skipped — docs/05 §6.
+ *
+ * @throws {BmAborted} on cancellation, carrying how many were already removed.
+ * @throws {BmPartialWrite} when a removal rejects, carrying the same count.
+ *   This is the one path that destroys data, so "how much is gone" is the
+ *   single most useful thing the failure can say.
  */
 export async function clearRoots(
   roots: readonly LiveNode[],
@@ -222,8 +230,12 @@ export async function clearRoots(
       if (child.unmodifiable !== undefined) continue;
       // Checked per node so a cancel arriving mid-deletion stops promptly
       // rather than running the whole tree to completion.
-      if (signal?.aborted === true) throw new BmAborted(0);
-      await removeTree(child.id);
+      if (signal?.aborted === true) throw new BmAborted(removed);
+      try {
+        await removeTree(child.id);
+      } catch (cause) {
+        throw new BmPartialWrite('clearing', removed, cause);
+      }
       removed++;
     }
   }
