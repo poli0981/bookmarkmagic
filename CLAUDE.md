@@ -1,8 +1,24 @@
 # CLAUDE.md — Build Instructions (BookmarkMagic)
 
-You are building a Chrome MV3 extension: offline bookmark import/export/edit.
+A Chrome MV3 extension: offline bookmark import/export/edit.
 This file is the entry point; the `docs/` suite is the specification.
 **When code and docs disagree, docs win — or stop and ask.**
+
+> ## ⚠️ This is shipped software
+>
+> **v1.0.0 is published on the Chrome Web Store and has real users** (submitted
+> 2026-07-26, live by 2026-08-03). Phases 0–5 are complete; the project is in
+> **maintenance**. That changes the rules of the game:
+>
+> - Every change now reaches installed users through a store review. It needs a
+>   semver bump, a `CHANGELOG.md` entry and an update submission — `13 §1b`.
+> - Breaking something is no longer a local cost. The 1.0.0 → 1.0.x **upgrade
+>   over an existing profile** (`11 §5`) is the one test whose failure hits
+>   every user at once.
+> - Bumping `LEGAL_VERSION` re-shows the first-run gate to **everybody**. It is
+>   a deliberate, documented act (`14 §2`), never a side effect.
+> - Read `docs/15`'s build-progress table and decision log before planning
+>   anything; `docs/00 §10` is the live open-items list.
 
 ## Doc index (read 00–02 fully before writing any code)
 
@@ -37,7 +53,11 @@ This file is the entry point; the `docs/` suite is the specification.
    `satisfies Dict`, where `Dict = typeof dict` is exported from
    `locales/en.ts`). **Never `as const` on a locale file** — docs/07 §2.
 7. TypeScript strict; no `any`; casts need `// SAFETY:` comments.
-8. Conventional Commits; `npm run verify` green before every commit.
+8. Conventional Commits; `npm run verify` green before every commit — and
+   **`npm run verify:full` before anything release-bearing**. `verify` omits
+   three gates the tag run enforces (`coverage`, `build`, `check:manifest`), so
+   a core change that drops branch coverage passes locally and fails only after
+   the tag is pushed, when `gh release create` may already have run.
 
 ## Build phases (each ends with `npm run verify` green + a commit)
 
@@ -88,20 +108,43 @@ performance budgets docs/11 §6, CI workflows per docs/12 §2 (explicit
 `browser-extension-*` family), CHANGELOG, README (badges, screenshots ⚠,
 install, privacy summary, donate), full manual QA (docs/11 §5), `wxt zip`
 clean-install test. Also carried in from the Phase 4 review:
-- point About's "Changelog" link at `CHANGELOG.md` once it exists
-  (`src/lib/links.ts` currently targets `/releases`);
-- ✔ `EditTab.svelte` split (589 → 459, under the hard limit). Its script block
-  is still 279 lines against the 150-line guidance; the remainder is the
-  mutation layer, which is genuinely coupled to reactive state and was left
-  whole rather than split behind accessors on the app's delete paths;
+- ✔ About's "Changelog" link now targets `CHANGELOG.md`, pinned by
+  `tests/unit/links.test.ts`;
+- ✔ `EditTab.svelte` split (589 → 459, under the hard limit). **It has since
+  grown back to 481** (script block 300) via the Phase 5 review commits — 19
+  lines of headroom against the hard 500. Anything added there now has to come
+  out first; `src/lib/edit/` is where extracted logic goes;
 - ✔ contrast tokens fixed, and `tests/unit/styles/contrast.test.ts` now fails
-  the build on any text pair under 4.5:1.
-**Exit:** ready for the docs/13 §1 runbook (human performs store submission).
+  the build on any text pair under 4.5:1. Two blind spots to know about: it is
+  token-level, so it cannot see the `opacity`-on-text bypass it was written to
+  catch, and its pair list is hand-maintained.
+**Exit:** ✔ v1.0.0 submitted and published.
+
+### Phase 6 — Post-launch stabilization → v1.0.1
+The first phase written for shipped software. In order, because the docs are
+binding and three of the code changes need the spec to say the new thing first:
+docs reconciliation (this suite had frozen at "in review") → user-intake
+machinery (`.github/ISSUE_TEMPLATE`, `CONTRIBUTING.md`, the sanitizer — docs/15
+§v1.0.x's "fixture + test per report" had no intake at all) → import failure
+reporting and the routing deadlock → localized `#edit`/`#export` failures and
+bounded search expansion → cross-tab settings/legal sync → dependency bumps and
+CI hardening → the About store link → cut 1.0.1.
+**Exit:** `main` tag-ready, docs/11 §5 manual pass green including the
+**1.0.0 → 1.0.1 upgrade over an existing profile**; the human signs and pushes
+the tag and performs the store update per docs/13 §1b.
 
 ## Working style
 
 - Small commits per module; tests land with (or before) implementation.
+- **A git worktree needs its own `npm ci` *and* `npx wxt prepare`.** With an
+  empty `node_modules/` packages resolve upward from the parent repo and most
+  things appear to work, but knip reports every devDependency unused and
+  `verify` fails; `tsconfig.json` extends `./.wxt/tsconfig.json`, which
+  `wxt prepare` generates.
 - When a browser fixture contradicts the format spec: add the fixture, make
   the parser tolerant, note the quirk in code + docs/04 §1.2, then continue.
 - Do not invent features not in docs; park ideas as `docs/15` roadmap PRs.
 - Anything marked ⚠️ is human-only — surface it in your summary, don't fake it.
+- Every phase so far has been adversarially reviewed after implementation and
+  **every review found real defects**. A green test run has never once meant
+  "done" on this project. Budget the review.
