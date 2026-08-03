@@ -1,18 +1,27 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { fakeBrowser } from 'wxt/testing';
 import {
   DEFAULT_SETTINGS,
   readLegal,
   readSettings,
+  type StorageChange,
+  subscribeStorage,
   writeLegal,
   writeSettings,
 } from '@/lib/browser/storage';
 
-// fakeBrowser DOES implement storage.local, so no hand-rolled mock is needed
-// here (unlike bookmarks — docs/11 §4).
+// fakeBrowser DOES implement storage.local — and, verified before this suite
+// was written, storage.onChanged too. No hand-rolled mock is needed here
+// (unlike bookmarks — docs/11 §4).
 beforeEach(() => {
   fakeBrowser.reset();
+  // reset() clears stored data but leaves spies in place, so one test that
+  // mocks a storage call would otherwise leak into every later test.
+  vi.restoreAllMocks();
 });
+
+/** Let the storage event dispatch. */
+const settle = (): Promise<void> => new Promise((resolve) => setTimeout(resolve));
 
 describe('settings', () => {
   it('returns the documented defaults on a fresh profile', async () => {
@@ -78,5 +87,86 @@ describe('legal acceptance', () => {
     await writeLegal(2, '2026-07-25T10:00:00.000Z');
     const all = await fakeBrowser.storage.local.get(null);
     expect(Object.keys(all).sort()).toEqual(['legal', 'settings']);
+  });
+});
+
+/**
+ * `subscribeStorage` — docs/03 §4.
+ *
+ * The event fires in every extension context including the one that wrote, so
+ * this layer only decodes and hands over; deciding what is an echo belongs to
+ * the store, which is the only thing that knows what it was about to write.
+ */
+describe('subscribeStorage', () => {
+  it('reports a settings write made elsewhere, already coerced', async () => {
+    const seen: StorageChange[] = [];
+    const stop = subscribeStorage((change) => seen.push(change));
+
+    await fakeBrowser.storage.local.set({ settings: { ...DEFAULT_SETTINGS, theme: 'dark' } });
+    await settle();
+
+    expect(seen).toHaveLength(1);
+    expect(seen[0]?.settings?.theme).toBe('dark');
+    stop();
+  });
+
+  it('coerces a malformed value field by field rather than passing it through', async () => {
+    // A second tab is not a more trustworthy source than disk. It is the disk.
+    const seen: StorageChange[] = [];
+    const stop = subscribeStorage((change) => seen.push(change));
+
+    await fakeBrowser.storage.local.set({ settings: { theme: 'chartreuse', locale: 'vi' } });
+    await settle();
+
+    expect(seen[0]?.settings).toEqual({ ...DEFAULT_SETTINGS, locale: 'vi' });
+    stop();
+  });
+
+  it('reports a legal acceptance, and a cleared one as null', async () => {
+    const seen: StorageChange[] = [];
+    const stop = subscribeStorage((change) => seen.push(change));
+
+    await writeLegal(1, '2026-08-03T00:00:00.000Z');
+    await settle();
+    expect(seen.at(-1)?.legal?.acceptedVersion).toBe(1);
+
+    await fakeBrowser.storage.local.remove('legal');
+    await settle();
+    expect(seen.at(-1)?.legal).toBeNull();
+    stop();
+  });
+
+  it('ignores keys this extension does not own', async () => {
+    const seen: StorageChange[] = [];
+    const stop = subscribeStorage((change) => seen.push(change));
+
+    await fakeBrowser.storage.local.set({ somethingElse: 1 });
+    await settle();
+
+    expect(seen).toHaveLength(0);
+    stop();
+  });
+
+  it('stops delivering once unsubscribed', async () => {
+    const seen: StorageChange[] = [];
+    const stop = subscribeStorage((change) => seen.push(change));
+    stop();
+
+    await writeSettings({ ...DEFAULT_SETTINGS, theme: 'dark' });
+    await settle();
+
+    expect(seen).toHaveLength(0);
+  });
+
+  it('swallows a throwing handler', async () => {
+    // An exception inside a chrome.* listener surfaces as an extension error in
+    // chrome://extensions, which docs/11 §5 treats as a failed QA pass.
+    const stop = subscribeStorage(() => {
+      throw new Error('handler blew up');
+    });
+
+    await expect(writeSettings({ ...DEFAULT_SETTINGS })).resolves.toBeUndefined();
+    await settle();
+    stop();
   });
 });

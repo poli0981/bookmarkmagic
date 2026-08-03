@@ -3,6 +3,7 @@ import { fakeBrowser } from 'wxt/testing';
 import { LEGAL_VERSION } from '@/lib/core/limits';
 import {
   acceptLegal,
+  adoptExternalLegal,
   decideLegalStatus,
   getAcceptance,
   getBlockedRoutes,
@@ -157,5 +158,56 @@ describe('acceptLegal', () => {
     await loadLegal();
     const all = await fakeBrowser.storage.local.get(null);
     expect(Object.keys(all)).not.toContain('legal');
+  });
+});
+
+/**
+ * Cross-tab adoption — docs/03 §4, docs/14 §2.
+ *
+ * Deliberately one-way. `App.svelte` renders the gate *in place of* the tab
+ * body, so an externally-raised gate would unmount ImportTab mid-write and
+ * strand the import it was driving — the same deadlock the routing guard and
+ * the store-held attestation resolver exist to close, reached through a third
+ * door. These tests exist so a future "simplification" that makes it
+ * symmetrical fails loudly rather than shipping.
+ */
+describe('adoptExternalLegal', () => {
+  it('drops the gate when another tab accepts', async () => {
+    await loadLegal();
+    expect(isGateRequired()).toBe(true);
+
+    expect(adoptExternalLegal({ acceptedVersion: LEGAL_VERSION, acceptedAt: 'x' })).toBe(true);
+    expect(isGateRequired()).toBe(false);
+  });
+
+  it('does NOT re-gate when another tab clears the acceptance', async () => {
+    await fakeBrowser.storage.local.set({
+      legal: { acceptedVersion: LEGAL_VERSION, acceptedAt: 'x' },
+    });
+    await loadLegal();
+    expect(isGateRequired()).toBe(false);
+
+    expect(adoptExternalLegal(null)).toBe(false);
+    expect(isGateRequired()).toBe(false);
+  });
+
+  it('does NOT re-gate on a superseded record either', async () => {
+    await fakeBrowser.storage.local.set({
+      legal: { acceptedVersion: LEGAL_VERSION, acceptedAt: 'x' },
+    });
+    await loadLegal();
+
+    expect(adoptExternalLegal({ acceptedVersion: LEGAL_VERSION - 1, acceptedAt: 'old' })).toBe(
+      false,
+    );
+    expect(isGateRequired()).toBe(false);
+  });
+
+  it('ignores a stale record while the gate is up, rather than accepting it', async () => {
+    await loadLegal();
+    expect(adoptExternalLegal({ acceptedVersion: LEGAL_VERSION - 1, acceptedAt: 'old' })).toBe(
+      false,
+    );
+    expect(isGateRequired()).toBe(true);
   });
 });

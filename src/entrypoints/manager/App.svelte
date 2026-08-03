@@ -21,7 +21,14 @@
     isGateRequired,
   } from '@/lib/stores/legal.svelte';
   import { getRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
-  import { flushSettings, getSettings, updateSettings } from '@/lib/stores/settings.svelte';
+  import { subscribeStorage } from '@/lib/browser/storage';
+  import { adoptExternalLegal } from '@/lib/stores/legal.svelte';
+  import {
+    adoptExternalSettings,
+    flushSettings,
+    getSettings,
+    updateSettings,
+  } from '@/lib/stores/settings.svelte';
   import { pushToast } from '@/lib/stores/toast.svelte';
 
   // Settings are loaded and awaited in main.ts, before this ever mounts.
@@ -55,11 +62,22 @@
       if (globalThis.document?.visibilityState === 'hidden') void flushSettings();
     };
 
+    // Two Manager tabs used to overwrite each other silently: `save()` writes
+    // the whole settings object, so a tab holding a stale locale reverted the
+    // other tab's language change the moment its own theme toggle fired.
+    // Registered here rather than in main.ts because this is the only place
+    // with a teardown path.
+    const stopStorage = subscribeStorage((change) => {
+      if (change.settings !== undefined) adoptExternalSettings(change.settings);
+      if ('legal' in change) adoptExternalLegal(change.legal ?? null);
+    });
+
     globalThis.addEventListener('beforeunload', onBeforeUnload);
     globalThis.document?.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       stopRouting();
+      stopStorage();
       globalThis.removeEventListener('beforeunload', onBeforeUnload);
       globalThis.document?.removeEventListener('visibilitychange', onVisibilityChange);
     };

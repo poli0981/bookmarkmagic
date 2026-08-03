@@ -95,6 +95,28 @@ export async function loadLegal(): Promise<void> {
 }
 
 /**
+ * Adopt an acceptance recorded by another Manager tab — **one way only**.
+ *
+ * Accepting in one tab drops the gate in the other. The reverse is deliberately
+ * unreachable: `App.svelte` renders the gate *in place of* the tab body, so an
+ * externally-raised gate would unmount `ImportTab` mid-write and strand the
+ * import it was driving — recreating, through a third door, exactly the
+ * deadlock the routing guard and the store-held attestation resolver exist to
+ * close. Clearing storage in another tab therefore does nothing here; a reload
+ * is what re-evaluates the gate downward, and that is a fresh page with no
+ * in-flight work to strand.
+ *
+ * @returns whether the gate was dropped.
+ */
+export function adoptExternalLegal(acceptance: LegalAcceptance | null): boolean {
+  if (status.kind === 'accepted') return false;
+  const next = decideLegalStatus(acceptance, LEGAL_VERSION);
+  if (next.kind !== 'accepted') return false;
+  status = next;
+  return true;
+}
+
+/**
  * Record acceptance.
  *
  * The ordering is the whole point: write, await, and flip to `accepted` ONLY
