@@ -1,0 +1,73 @@
+name: A translation is wrong or awkward
+description: Vietnamese or Japanese wording that is incorrect, unnatural, or untranslated.
+title: '[i18n] '
+labels: [i18n]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Native speakers are the only people who can catch this. English is the
+        source language; Vietnamese is reviewed by the maintainer and Japanese
+        is best-effort until a native pass, so JA reports are especially
+        welcome.
+
+        You do **not** need to open a pull request or install anything — just
+        tell us the wording. If you would rather send the change yourself,
+        [CONTRIBUTING.md](https://github.com/poli0981/bookmarkmagic/blob/main/CONTRIBUTING.md)
+        has the whole path.
+
+  - type: dropdown
+    id: locale
+    attributes:
+      label: Language
+      options:
+        - Tiếng Việt (vi)
+        - 日本語 (ja)
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Where does the text appear?
+      description: >-
+        A tab name and a description is plenty — "the Export tab, on the CSV
+        format card". If you happen to know the key path from
+        `src/lib/i18n/locales/`, even better.
+      placeholder: Settings tab, the theme row — or export.formats.csv.hint
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current text
+      description: Copy it exactly as it appears.
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposed
+    attributes:
+      label: Suggested text
+    validations:
+      required: true
+
+  - type: textarea
+    id: why
+    attributes:
+      label: Why is the current wording wrong?
+      description: >-
+        Grammar, register, an unnatural loanword, a term inconsistent with the
+        rest of the UI — whatever it is. This is the part that makes the change
+        reviewable by someone who does not speak the language.
+    validations:
+      required: false
+
+  - type: markdown
+    attributes:
+      value: |
+        **One constraint worth knowing:** placeholders like `{n}` or `{name}`
+        must appear in the translation exactly as they do in English — same
+        names, same count. A build gate enforces it, so a suggestion that drops
+        one cannot be merged as-is.

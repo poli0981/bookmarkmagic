@@ -1,0 +1,21 @@
+# Issue chooser — docs/12 §5, docs/13 §6.
+#
+# Blank issues are disabled on purpose. The whole v1.0.x plan is "fixture +
+# test per report" (docs/15), and that only works if a parser report arrives
+# with a sanitized sample. A blank issue is the path that skips that ask.
+blank_issues_enabled: false
+
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/poli0981/bookmarkmagic/security/advisories/new
+    about: Report privately, never as a public issue. See SECURITY.md.
+
+  - name: Rate or review on the Chrome Web Store
+    url: https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg
+    about: Reviews are read, but a bug reported here gets fixed faster.
+
+  - name: Question, or no GitHub account
+    url: mailto:contact@poli0981.dev
+    about: >-
+      Email works. Please do not attach your real bookmarks file — see the
+      privacy policy for what happens to anything you send.
