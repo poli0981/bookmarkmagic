@@ -33,6 +33,13 @@ export default {
     doneSummary: 'Hoàn tất — đã tạo {created} mục.',
     skipped: 'Đã bỏ qua {existing} mục đã có trong trình duyệt và {inFile} mục lặp trong tệp.',
     cancelledSummary: 'Đã hủy — {created} mục đã được tạo trước đó và vẫn được giữ lại.',
+    dateNotice:
+      'Bookmark được nhập vào sẽ mang ngày hôm nay. Chrome không cho phép tiện ích đặt lại ngày tạo gốc của bookmark — các tệp bạn xuất ra vẫn giữ ngày thật.',
+    partialCreated: '{created} mục đã được tạo trước khi lỗi xảy ra và vẫn được giữ lại.',
+    partialCleared:
+      '{removed} mục ở cấp cao nhất đã bị xóa trước khi lỗi xảy ra. Hãy khôi phục chúng từ tệp sao lưu của bạn.',
+    backupHint:
+      'Tệp sao lưu an toàn đã được lưu với tên {name}. Nhập lại tệp JSON đó để khôi phục.',
     openEdit: 'Mở thẻ Chỉnh sửa',
     another: 'Nhập tệp khác',
     dedupe: 'Bỏ qua mục đã có trong trình duyệt này (tìm thấy {n})',
@@ -239,6 +246,10 @@ export default {
     BACKUP_CANCELLED: 'Bạn đã hủy bản sao lưu, nên không có gì bị xóa.',
     BACKUP_WRITE_FAILED: 'Không thể lưu bản sao lưu, nên không có gì bị xóa.',
     BROWSER: 'Trình duyệt đã từ chối một thao tác bookmark.',
+    NO_WRITABLE_ROOTS:
+      'Hồ sơ trình duyệt này không có thư mục bookmark nào mà BookmarkMagic được phép ghi vào. Bookmark do tổ chức quản lý thì không thể thay đổi.',
+    PARTIAL_WRITE: 'Trình duyệt đã ngừng nhận bookmark khi quá trình nhập đang diễn ra.',
+    PARTIAL_CLEAR: 'Trình duyệt đã dừng lại giữa chừng khi đang thay thế bookmark của bạn.',
     UNKNOWN: 'Đã xảy ra lỗi.',
   },
 } satisfies Dict;

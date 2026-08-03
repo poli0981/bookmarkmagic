@@ -11,6 +11,8 @@ import type { LiveNode } from '@/lib/browser/bookmarks';
 export interface FakeBookmarksOptions {
   /** Throw on the Nth create (1-based), to test partial-failure reporting. */
   failOnCreate?: number;
+  /** Throw on the Nth removeTree (1-based) — the Replace path's equivalent. */
+  failOnRemoveTree?: number;
 }
 
 export class FakeBookmarks {
@@ -18,6 +20,7 @@ export class FakeBookmarks {
   private readonly nodes = new Map<string, LiveNode>();
   private nextId = 100;
   private createCount = 0;
+  private removeCount = 0;
   // An explicit field, not a constructor parameter property: the latter emits
   // runtime code and is rejected by `erasableSyntaxOnly` (docs/10 §2).
   private readonly options: FakeBookmarksOptions;
@@ -110,7 +113,11 @@ export class FakeBookmarks {
   };
 
   removeTree = async (id: string): Promise<void> => {
+    this.removeCount++;
     this.calls.push(`removeTree:${id}`);
+    if (this.options.failOnRemoveTree === this.removeCount) {
+      throw new Error(`injected failure on removeTree #${this.removeCount}`);
+    }
     const node = this.nodes.get(id);
     if (node === undefined) throw new Error(`no such node: ${id}`);
     if (node.unmodifiable !== undefined) throw new Error("Can't modify managed bookmarks");

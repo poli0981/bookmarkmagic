@@ -45,6 +45,17 @@ const dict = {
     doneSummary: 'Done — {created} items created.',
     skipped: 'Skipped {existing} already in this browser and {inFile} repeated in the file.',
     cancelledSummary: 'Cancelled — {created} items were already created and were left in place.',
+    // docs/05 §6 and docs/00 §8 both require saying this, and nothing did.
+    // chrome.bookmarks.create takes no dateAdded, so every imported bookmark is
+    // stamped with the import time — indistinguishable from corruption to
+    // someone migrating a decade-old archive.
+    dateNotice:
+      'Imported bookmarks are dated today. Chrome does not let an extension set a bookmark’s original date — your exported files keep the real ones.',
+    partialCreated:
+      '{created} items had already been created before this failed, and were left in place.',
+    partialCleared:
+      '{removed} top-level items had already been deleted before this failed. Restore them from your backup.',
+    backupHint: 'Your safety backup was saved as {name}. Restore it by importing that JSON file.',
     openEdit: 'Open Edit tab',
     another: 'Import another file',
     dedupe: 'Skip duplicates already in this browser ({n} found)',
@@ -256,6 +267,10 @@ const dict = {
     BACKUP_CANCELLED: 'You cancelled the safety backup, so nothing was deleted.',
     BACKUP_WRITE_FAILED: 'The safety backup could not be saved, so nothing was deleted.',
     BROWSER: 'The browser refused a bookmark operation.',
+    NO_WRITABLE_ROOTS:
+      'This browser profile has no bookmark folder BookmarkMagic is allowed to write to. Bookmarks managed by an organisation cannot be changed.',
+    PARTIAL_WRITE: 'The browser stopped accepting bookmarks part-way through the import.',
+    PARTIAL_CLEAR: 'The browser stopped part-way through replacing your bookmarks.',
     UNKNOWN: 'Something went wrong.',
   },
 };

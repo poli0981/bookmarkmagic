@@ -151,4 +151,37 @@ describe('clearRoots', () => {
     });
     expect(current.countCalls('removeTree')).toBe(0);
   });
+
+  it('reports how much was already deleted when a removal rejects', async () => {
+    // This is the only path in the product that destroys data. A failure that
+    // says nothing but "the browser refused" leaves the user unable to tell
+    // whether they lost two bookmarks or all of them.
+    current = new FakeBookmarks({ failOnRemoveTree: 3 });
+    for (let i = 0; i < 5; i++) {
+      current.seed('2', { title: `b${i}`, url: `https://e${i}.example/` });
+    }
+
+    const roots = await getRoots();
+    const err = await clearRoots(roots.writable).catch((e: unknown) => e);
+
+    expect(err).toMatchObject({ name: 'BmPartialWrite', phase: 'clearing', done: 2 });
+  });
+
+  it('carries the removed count on an abort too, not a hardcoded zero', async () => {
+    for (let i = 0; i < 4; i++) {
+      current.seed('2', { title: `b${i}`, url: `https://e${i}.example/` });
+    }
+    const controller = new AbortController();
+    let seen = 0;
+
+    const roots = await getRoots();
+    const original = current.removeTree;
+    current.removeTree = async (id: string): Promise<void> => {
+      await original(id);
+      if (++seen === 2) controller.abort();
+    };
+
+    const err = await clearRoots(roots.writable, controller.signal).catch((e: unknown) => e);
+    expect(err).toMatchObject({ name: 'BmAborted', done: 2 });
+  });
 });

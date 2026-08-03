@@ -1,11 +1,13 @@
 <script lang="ts">
+  import { describeError } from '../browser/describe-error';
   import { timestampSuffix } from '../browser/download';
-  import { BmAborted, BmBackupError, BmBrowserError } from '../browser/errors';
-  import { BmParseError } from '../core/model';
+  import { BmAborted, BmBackupError } from '../browser/errors';
   import { num, t } from '../i18n/index.svelte';
   import { prepareImport, runImport } from '../import/run-import';
   import { getSettings } from '../stores/settings.svelte';
   import {
+    answerAttestation,
+    awaitAttestation,
     beginWrite,
     cancelWrite,
     getImportOptions,
@@ -32,36 +34,6 @@
   const prepared = $derived(getPrepared());
   const session = $derived(getImportState());
   const options = $derived(getImportOptions());
-
-  /** Resolver for the fallback-backup attestation dialog. */
-  let attestResolve: ((confirmed: boolean) => void) | undefined;
-
-  function answerAttest(confirmed: boolean): void {
-    attestResolve?.(confirmed);
-    attestResolve = undefined;
-  }
-
-  /**
-   * Map an error onto an i18n KEY plus a raw detail — never a resolved string.
-   * The session store outlives this component, and `t()` only re-runs where it
-   * is called, so a translated sentence stored here would never follow a
-   * language switch.
-   */
-  function describeError(err: unknown): { messageKey: string; detail: string | undefined } {
-    if (err instanceof BmParseError) {
-      return { messageKey: `errors.${err.code}`, detail: err.detail };
-    }
-    if (err instanceof BmBackupError) {
-      return { messageKey: `errors.${err.code}`, detail: err.message };
-    }
-    if (err instanceof BmBrowserError) {
-      return { messageKey: 'errors.BROWSER', detail: err.detail };
-    }
-    return {
-      messageKey: 'errors.UNKNOWN',
-      detail: err instanceof Error ? err.message : undefined,
-    };
-  }
 
   async function onFile(file: File): Promise<void> {
     setImportState({ kind: 'validating', filename: file.name });
@@ -116,9 +88,7 @@
         },
         confirmUnprovenBackup: () => {
           setImportState({ kind: 'attesting', filename, backupFilename });
-          return new Promise<boolean>((resolve) => {
-            attestResolve = resolve;
-          });
+          return awaitAttestation();
         },
       });
       setImportState({ kind: 'done', filename, created: outcome.created, plan: outcome.plan });
@@ -127,7 +97,15 @@
         setImportState({ kind: 'cancelled', filename, created: err.done });
         return;
       }
-      setImportState({ kind: 'error', filename, ...describeError(err) });
+      setImportState({
+        kind: 'error',
+        filename,
+        ...describeError(err),
+        // Only when a backup was actually produced. On a BmBackupError the file
+        // may never have been written, and sending a frightened user to look
+        // for a backup that does not exist is worse than saying nothing.
+        ...(options.mode === 'replace' && !(err instanceof BmBackupError) && { backupFilename }),
+      });
     }
   }
 
@@ -164,6 +142,7 @@
         duplicates={session.duplicates}
         onchange={(patch) => setImportOptions(patch)}
       />
+      <p class="muted">{t('import.dateNotice')}</p>
       <Button
         variant={options.mode === 'replace' ? 'danger' : 'primary'}
         onclick={() => void start(session.filename)}
@@ -179,8 +158,10 @@
        thing standing between the user and an unbacked-up deletion. -->
   <Callout tone="danger">{t('import.attest', { name: session.backupFilename })}</Callout>
   <div class="actions">
-    <Button variant="danger" onclick={() => answerAttest(true)}>{t('import.attestConfirm')}</Button>
-    <Button onclick={() => answerAttest(false)}>{t('common.cancel')}</Button>
+    <Button variant="danger" onclick={() => answerAttestation(true)}>
+      {t('import.attestConfirm')}
+    </Button>
+    <Button onclick={() => answerAttestation(false)}>{t('common.cancel')}</Button>
   </div>
 {:else if session.kind === 'clearing'}
   <Callout tone="danger">{t('import.clearing')}</Callout>
@@ -206,6 +187,7 @@
       inFile: num(session.plan.stats.skippedInFile),
     })}
   </p>
+  <p class="muted">{t('import.dateNotice')}</p>
   <div class="actions">
     <Button variant="primary" onclick={() => navigate('edit')}>{t('import.openEdit')}</Button>
     <Button
@@ -214,6 +196,7 @@
   </div>
 {:else if session.kind === 'cancelled'}
   <Callout tone="warn">{t('import.cancelledSummary', { created: num(session.created) })}</Callout>
+  <p class="muted">{t('import.dateNotice')}</p>
   <Button
     onclick={resetImport}>{t('import.another')}</Button
   >
@@ -221,6 +204,15 @@
   <Callout tone="danger">{t(session.messageKey)}</Callout>
   {#if session.detail !== undefined}
     <pre class="detail">{session.detail}</pre>
+  {/if}
+  {#if session.created !== undefined && session.created > 0}
+    <p class="muted">{t('import.partialCreated', { created: num(session.created) })}</p>
+  {/if}
+  {#if session.removed !== undefined && session.removed > 0}
+    <Callout tone="danger">{t('import.partialCleared', { removed: num(session.removed) })}</Callout>
+  {/if}
+  {#if session.backupFilename !== undefined}
+    <p class="muted">{t('import.backupHint', { name: session.backupFilename })}</p>
   {/if}
   <Button
     onclick={resetImport}>{t('import.another')}</Button

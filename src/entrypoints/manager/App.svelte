@@ -33,7 +33,14 @@
   let mainEl: HTMLElement | undefined = $state();
 
   onMount(() => {
-    const stopRouting = startRouting();
+    // The tab bar and the footer already refuse to navigate mid-write. This
+    // closes the third door: browser Back, which fires `hashchange` directly
+    // and — during the backup attestation — used to unmount ImportTab and leave
+    // the Manager permanently locked.
+    const stopRouting = startRouting({
+      isBlocked: isWriting,
+      onBlocked: () => pushToast(t('common.busy'), 'info'),
+    });
 
     // Leaving mid-write would kill the queue with the tab (docs/03 §5).
     const onBeforeUnload = (event: BeforeUnloadEvent): void => {
