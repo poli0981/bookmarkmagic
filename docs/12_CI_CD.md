@@ -346,9 +346,25 @@ Only the repo-visible items can be verified from a checkout; the rest live in
 GitHub settings and stay ⚠️ until the owner confirms them. An unticked box here
 means "unknown", not "not done".
 
-- [ ] ⚠️ Branch protection on `main`: require CI, require review, linear
-      history. Required checks are the **job** names — `Quality gates` and
-      `Build + package` — not the workflow name. (Both strings match `ci.yml`.)
+- [x] Branch protection on `main` — configured 2026-08-03. Two corrections to
+      what this line used to say, both learned by applying it:
+      - **Required checks are `Quality gates` and `Build + package / build`.**
+        The old text said `Build + package`, the job name in `ci.yml`. That is
+        not what gets reported: a job that *calls a reusable workflow* publishes
+        its check as `<caller job> / <reusable job>`. Requiring the caller's
+        name alone matches nothing, so every PR waits forever on a check that
+        can never arrive — `main` becomes permanently unmergeable.
+      - **`required_approving_review_count: 0`, not 1.** "Require review" is
+        right for a team and a lockout for one maintainer, who cannot approve
+        their own pull request. Zero still forces every change through a PR and
+        through the checks above; it only drops the second pair of eyes that
+        does not exist. Raise it the day a second maintainer does.
+
+      Also set: linear history (matches the rebase-merge practice), no force
+      pushes, no branch deletion, conversation resolution required. **Admins are
+      deliberately NOT enforced** — with a single maintainer, an escape hatch
+      from your own protection rules is the difference between a safety net and
+      a locked door.
 - [x] CodeQL **Default setup DISABLED** (Settings → Advanced Security) —
       confirmed 2026-07-26; `codeql.yml` uploads SARIF cleanly, which is only
       possible with it off (§2.2).
