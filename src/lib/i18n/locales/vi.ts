@@ -174,6 +174,7 @@ export default {
     repo: 'Kho mã trên GitHub',
     issues: 'Báo lỗi',
     changelog: 'Bản phát hành và nhật ký thay đổi',
+    store: 'Trang trên Chrome Web Store',
     thirdParty: 'Thư viện bên thứ ba: Không có',
     thirdPartyNote: 'BookmarkMagic không đi kèm bất kỳ thư viện chạy nào.',
     donate: 'Ủng hộ dự án',

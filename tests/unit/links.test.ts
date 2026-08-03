@@ -1,10 +1,17 @@
-import { existsSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { getAppVersion } from '@/lib/browser/app-info';
 import { setLocale, t } from '@/lib/i18n/index.svelte';
 import type { Locale } from '@/lib/i18n/resolve-locale';
-import { CHANGELOG_URL, DONATE_LINKS, ISSUES_URL, LEGAL_URLS, REPO_URL } from '@/lib/links';
+import {
+  CHANGELOG_URL,
+  DONATE_LINKS,
+  ISSUES_URL,
+  LEGAL_URLS,
+  REPO_URL,
+  STORE_URL,
+} from '@/lib/links';
 
 const LOCALES: Locale[] = ['en', 'vi', 'ja'];
 /** Vitest runs with cwd at the project root, which is where `legal/` lives. */
@@ -80,6 +87,29 @@ describe('outbound links', () => {
 
   it('links a README the badges and install steps live in', () => {
     expect(existsSync(join(REPO_ROOT, 'README.md'))).toBe(true);
+  });
+});
+
+describe('store listing', () => {
+  it('is the published item, and is the only in-product route to a review', () => {
+    // docs/13 §6 counts store ratings as a post-launch channel; before this
+    // there was no way to reach the listing from inside the extension at all.
+    expect(STORE_URL.startsWith('https://chromewebstore.google.com/detail/')).toBe(true);
+    // The item id doubles as the CHROME_EXTENSION_ID secret (docs/00 §9), so a
+    // typo here is a typo in two places.
+    expect(STORE_URL).toContain('eghnciphhegekmnofffpgbdfefckdhmg');
+  });
+
+  it('puts no email address on any in-product surface', () => {
+    // Deliberate — docs/15 decision log, 2026-08-03. An address inside the
+    // extension invites users to mail their real bookmarks file, which is the
+    // receipt of personal data legal/PRIVACY.md exists to bound. The address
+    // belongs in SECURITY.md and CONTRIBUTING.md, where it arrives alongside
+    // the instruction to sanitize first.
+    const source = readFileSync(join(REPO_ROOT, 'src', 'lib', 'links.ts'), 'utf8');
+    const code = source.replace(/\/\*\*[\s\S]*?\*\//g, '');
+    expect(code).not.toMatch(/mailto:/);
+    expect(code).not.toMatch(/@poli0981\.dev/);
   });
 });
 
