@@ -1,10 +1,11 @@
 # 15 — Roadmap
 
-## v1.0 — MVP (store launch) — target: ~1–2 week build
+## v1.0 — MVP (store launch) — ✔ SHIPPED
 
-Everything in `00_PROJECT_OVERVIEW.md §6`. Definition of done =
+Everything in `00_PROJECT_OVERVIEW.md §6`. Definition of done was
 `CLAUDE.md` Phase 5 exit criteria + manual QA checklist green + store
-approval.
+approval — **all three met; published by 2026-08-03.** This section is now a
+record rather than a plan.
 
 Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 
@@ -18,7 +19,9 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | 3 — #export + #edit | ✔ 2026-07-25 | tri-state picker, tree CRUD, search, duplicates, DnD + keyboard parity |
 | 4 — i18n, theming, Settings, About, Legal Gate | ✔ 2026-07-26 | switcher + theme controls, six-row `#settings`, `#about`, first-run gate; Intl retrofit; store-backed Toast |
 | 5 — Hardening + release prep | ✔ 2026-07-26 | contrast tokens + a test that enforces them, `EditTab` split under the hard limit, CHANGELOG + README, four CI callers, T1–T8 pass, clean-room `wxt zip` |
-| **v1.0.0 released** | ✔ 2026-07-26 | signed tag, GitHub Release with a `sha256sum -c`-verified zip, submitted to the Chrome Web Store — **in review** |
+| **v1.0.0 released** | ✔ 2026-07-26 | signed tag, GitHub Release with a `sha256sum -c`-verified zip, submitted to the Chrome Web Store |
+| **v1.0.0 published** | ✔ by 2026-08-03 | approved by CWS review with no rejection recorded; listing public, item id `eghnciphhegekmnofffpgbdfefckdhmg`, **real users installed** |
+| 6 — Post-launch stabilization | in progress 2026-08-03 | doc reconciliation, user-intake machinery, the defects below, dependency bumps → v1.0.1 |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
@@ -70,11 +73,43 @@ settings object rather than mutating it, which would strand any component that
 captured it; and footer navigation during `attesting` stranded the import's
 attestation resolver, deadlocking it until reload.
 
-## v1.0.x — stabilization
+## v1.0.x — stabilization (**the live workstream since 2026-08-03**)
 
-- Parser-tolerance fixes from real user files (fixture + test per report).
-- Translation polish (JA review pass).
-- Listing copy tweaks from early reviews.
+This was speculative when written. It is now the actual next work, because real
+users and a public listing exist.
+
+### Intake — how a report becomes a fix
+
+There is exactly one path, and every step has an owner in the repo:
+
+1. A user files `.github/ISSUE_TEMPLATE/parser_report.yml`, which **requires** a
+   sanitized sample (`scripts/sanitize-bookmarks.mjs`) and an explicit consent
+   checkbox that the sample may be committed as a GPL-3.0 test fixture.
+2. The sample lands in `tests/fixtures/`. Note `.gitattributes` sets
+   `tests/fixtures/** -text`, so EOL normalization cannot destroy the CRLF/BOM
+   bytes the bug may depend on.
+3. A regression test lands in `tests/unit/core/fixtures.test.ts` — the only
+   fixture-driven suite — **in the same PR** as the parser fix (`11 §2`).
+4. The quirk is noted in the parser source and in `04 §1.2` (`CLAUDE.md`
+   working style makes this mandatory, not optional).
+5. `11 §2`'s inventory and `CHANGELOG.md [Unreleased]` are updated.
+
+Translation fixes use `.github/ISSUE_TEMPLATE/translation.yml` and follow
+`07 §4`; the JA native review pass (`ja.ts`'s `TODO(review-ja)`) is the
+outstanding one, and it is user-facing now.
+
+### Release trigger
+
+Cut a patch when **any** of these is true, rather than on a schedule:
+
+- a parser-tolerance fix exists (a user is currently unable to import a file);
+- a data-integrity or dead-end defect is fixed;
+- a batch of translation fixes has accumulated;
+- a dependency fix is needed for a real advisory.
+
+Listing copy tweaks alone do **not** need a patch — the store listing is edited
+independently of the package (`13 §5`), though the copy should still go through
+`store/listing.{en,vi,ja}.md` first so it is reviewable.
 
 ## v1.1 — quality of life
 
@@ -144,10 +179,10 @@ attestation resolver, deadlocking it until reload.
 | 2026-07-26 | Language labels are endonyms, duplicated identically across the three dicts (the `common.appName` precedent) | 07 §4 |
 | 2026-07-26 | Theme control is a three-way segmented control in both header and `#settings`, not a cycling `◐` | 06 §3 |
 | 2026-07-26 | Version comes from the manifest at runtime; three hardcoded `0.1.0` literals removed (footer, `run-export`, `run-import`) | 06 §3.5 |
-| 2026-07-26 | About's "Changelog" points at GitHub Releases until `CHANGELOG.md` exists in Phase 5 | 06 §3.5 |
+| 2026-07-26 | ~~About's "Changelog" points at GitHub Releases until `CHANGELOG.md` exists in Phase 5~~ — **resolved in Phase 5**: `links.ts` targets `CHANGELOG.md` and `tests/unit/links.test.ts` asserts both the URL shape and that the file exists | 06 §3.5 |
 | 2026-07-26 | The gate's acceptance checkbox deliberately resets if the user navigates away and back — an un-submitted legal affirmation is not worth persisting | 14 §2 |
 | 2026-07-26 | Both entrypoints await settings (Manager also legal) **before** `mount()`, trading a blank frame for no locale/theme/gate flicker | 02 §2 |
-| 2026-07-26 | **Known limitation:** two open Manager tabs do not sync settings or acceptance to each other; last write wins. No `storage.onChanged` listener in v1 | 03 §4 |
+| 2026-07-26 | ~~**Known limitation:** two open Manager tabs do not sync settings or acceptance to each other; last write wins. No `storage.onChanged` listener in v1~~ — **superseded 2026-08-03**, see the Phase 6 rows below | 03 §4 |
 | 2026-07-26 | Transitive dev-dep CVEs fixed with a `package.json` `overrides` block rather than by waiting on parents — every parent pinned a vulnerable range, which is why Dependabot's own PRs all failed | 09 §3.1 |
 | 2026-07-26 | The release announcement is `continue-on-error`. A missing Discord webhook made the real v1.0.0 run red on a release whose zip and checksums had published correctly; a red run on a good release trains you to ignore the colour | 12 §2.3 |
 | 2026-07-26 | Gate-blocked tabs stay **clickable**; what blocks a route is the gate replacing the tab body, not an inert button. Disabling them removed the only in-app path back to the accept UI | 06 §3 |
@@ -155,3 +190,15 @@ attestation resolver, deadlocking it until reload.
 | 2026-07-26 | `--accent-fg` is redefined in the dark blocks alongside `--accent`; white on the lightened violet measured 3.67:1 | 06 §5 |
 | 2026-07-26 | Plural keys implemented per `07 §5` (`selectPluralForm` + `tPlural`); `import.warnings.title` and all seven `warnings.*` codes converted | 07 §5 |
 | 2026-07-26 | The import session stores an i18n **key**, not a resolved string — `t()` is only reactive where it is called, so a stored sentence never follows a language switch | 03 §5 |
+| 2026-08-03 | **Every destructive step reports what already landed.** `writeTree` and `clearRoots` wrap their failing `chrome.*` call in `BmPartialWrite{phase, done}`, matching the contract `BmAborted` already had. A failure that says only "the browser refused" tells a user whose tree was half-replaced nothing they can act on | 02 §7, 03 §1 |
+| 2026-08-03 | **`BmAborted` is re-thrown before the partial-write wrap.** Wrapping it would relabel every user cancellation as a failure and make `import.cancelledSummary` dead code — the same defect class as `detail ?? t(key)` | 03 §1 |
+| 2026-08-03 | **The import report states that imported bookmarks carry today's date.** `05 §6` and `00 §8` both required this and no string ever said it. Shown in the `parsed` state too — telling someone before they commit beats telling them after | 03 §1, 05 §6 |
+| 2026-08-03 | **Routing is guarded while a write or attestation is in flight**, via an injected predicate rather than a store import, so `route` stays uncoupled. Browser Back during `attesting` previously deadlocked the Manager permanently: the same hole Phase 4 closed for the footer and TabBar, left open on `hashchange` | 02 §5 |
+| 2026-08-03 | **The attestation resolver lives in the import store, not in `ImportTab`.** A component-local resolver dies with the component; a remounted tab then renders inert buttons. A stale or reset resolver settles **`false`** — an unanswered backup attestation must never read as consent | 03 §1 6b |
+| 2026-08-03 | **Two Manager tabs now converge.** Settings adopt external changes under two rules: ignore anything arriving while this context has an unflushed write (last-write-wins, as before), else adopt only when a field actually differs. Field equality makes self-echo suppression fall out for free — no snapshot to go stale | 03 §4 |
+| 2026-08-03 | **Legal acceptance is adopted in one direction only — toward accepted.** The gate replaces the tab body, so an externally-raised gate would unmount `ImportTab` mid-write and recreate the attestation deadlock through a third door. One-way makes that unreachable by construction | 03 §4, 14 §2 |
+| 2026-08-03 | **One `ErrorCallout` owns the localized-sentence-plus-detail-block contract.** Three sites still rendered a raw English Chrome string as the whole message after `LegalGate` had already been fixed for exactly that | 02 §7 |
+| 2026-08-03 | **`NO_WRITABLE_ROOTS` is its own error, not `BROWSER`.** A profile with no writable root is an absence, not a refusal; reporting "the browser refused" sends the user looking for the wrong thing | 02 §7 |
+| 2026-08-03 | **Search-driven expansion is undone when the search clears**, tracked separately from folders the user opened by hand. Merging into `expanded` was deliberate (a render-time union broke the disclosure button) — the missing half was the un-merge | 03 §3, 06 §3.3 |
+| 2026-08-03 | **The "if you contact us" paragraph in `legal/PRIVACY.md` is a clarification, not a material change** — it describes what happens to data a user chooses to send, which was never inside "what the extension collects". `LEGAL_VERSION` deliberately **not** bumped: re-showing the gate to every installed user over a patch is a worse outcome than the ambiguity it fixes | 14 §2, 14 §3 |
+| 2026-08-03 | **No support email on any in-product surface.** About links to the store listing, the repo, issues and the changelog. Publishing an address inside the extension invites unsanitized bookmark files by mail, which is the exact receipt-of-personal-data problem the privacy clause exists to bound. The address stays in `SECURITY.md`, `CONTRIBUTING.md` and the privacy policy | 06 §3.5, 09 §6 |

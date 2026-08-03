@@ -33,7 +33,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run test"
+    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run test",
+    "verify:full": "npm run verify && npm run coverage && npm run build && npm run check:manifest"
   },
   "devDependencies": {
     "@biomejs/biome": "2.5.5",

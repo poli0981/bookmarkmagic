@@ -67,7 +67,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run test"
+    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run test",
+    "verify:full": "npm run verify && npm run coverage && npm run build && npm run check:manifest"
   }
 }
 ```
@@ -77,8 +78,15 @@
 `npm ci` would otherwise fail type-checking.
 
 `npm run verify` is the local gate — it must pass before every commit that
-touches `src/` (mirrors CI, see `12_CI_CD.md`). CI additionally runs
-`npm run coverage` for the threshold gate (`11 §1`).
+touches `src/`.
+
+It is **not** the same gate CI and a release tag run, and the difference bites:
+both additionally run `coverage` (the `11 §1` thresholds), `build` and
+`check:manifest`. A change to `src/lib/core/**` that drops branch coverage below
+85 therefore passes every local step and fails only *after* the tag is pushed —
+by which point `release.yml` may already have created the GitHub Release, which
+is not re-runnable. `verify:full` closes that gap and is what `CLAUDE.md` hard
+rule 8 requires before anything release-bearing.
 
 Also set `repository`, `homepage` and `bugs` to
 `https://github.com/poli0981/bookmarkmagic` — `13`/`14` link to those URLs.
