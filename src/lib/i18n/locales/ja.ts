@@ -175,6 +175,7 @@ export default {
     repo: 'GitHub リポジトリ',
     issues: '問題を報告',
     changelog: 'リリースと変更履歴',
+    store: 'Chrome ウェブストアのページ',
     thirdParty: 'サードパーティ依存: なし',
     thirdPartyNote: 'BookmarkMagic は実行時ライブラリを一切同梱していません。',
     donate: '開発を支援する',

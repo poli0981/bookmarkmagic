@@ -19,6 +19,22 @@ export const ISSUES_URL = `${REPO_URL}/issues`;
 
 export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
 
+/**
+ * The published Chrome Web Store listing (item id — docs/00 §9).
+ *
+ * The only route from inside the product to rating or reviewing it, which
+ * docs/13 §6 lists as a post-launch channel.
+ *
+ * There is deliberately **no support email here.** Putting an address on an
+ * in-product surface invites users to mail their real bookmarks file, which is
+ * a browsing history and exactly the receipt of personal data that
+ * `legal/PRIVACY.md` and docs/09 §6 are written to bound. The address lives in
+ * SECURITY.md, CONTRIBUTING.md and the privacy policy, where it arrives with
+ * the instruction to sanitize first (docs/15 decision log, 2026-08-03).
+ */
+export const STORE_URL =
+  'https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg';
+
 export interface LabelledLink {
   labelKey: string;
   url: string;

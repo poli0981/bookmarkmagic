@@ -1,7 +1,7 @@
 <script lang="ts">
   import { getAppVersion } from '../browser/app-info';
   import { dateTime, t } from '../i18n/index.svelte';
-  import { CHANGELOG_URL, DONATE_LINKS, ISSUES_URL, LEGAL_URLS, REPO_URL } from '../links';
+  import { CHANGELOG_URL, DONATE_LINKS, ISSUES_URL, LEGAL_URLS, REPO_URL, STORE_URL } from '../links';
   import { getAcceptance } from '../stores/legal.svelte';
 
   const version = getAppVersion();
@@ -33,6 +33,7 @@
         {t('about.changelog')} ↗
       </a>
     </li>
+    <li><a href={STORE_URL} target="_blank" rel="noopener noreferrer">{t('about.store')} ↗</a></li>
   </ul>
 
   <h2>{t('about.thirdParty')}</h2>

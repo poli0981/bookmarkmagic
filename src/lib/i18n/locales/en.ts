@@ -190,6 +190,7 @@ const dict = {
     repo: 'GitHub repository',
     issues: 'Report an issue',
     changelog: 'Releases and changelog',
+    store: 'Chrome Web Store listing',
     thirdParty: 'Third-party dependencies: None',
     thirdPartyNote: 'BookmarkMagic ships no runtime libraries at all.',
     donate: 'Support development',
