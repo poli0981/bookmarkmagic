@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, untrack } from 'svelte';
   import {
     create,
     getRootChildren,
@@ -131,16 +131,26 @@
   // most of a large tree, and clearing the box used to render every one of
   // those rows at once, in a single synchronous pass, with no virtualization.
   $effect(() => {
-    if (!filtering) {
-      if (searchOpened.size === 0) return;
-      expanded = collapseSearchExpansion(expanded, searchOpened);
-      searchOpened = new Set();
-      return;
-    }
-    const merged = mergeSearchExpansion(expanded, search.expand, searchOpened);
-    if (merged.expanded === expanded) return;
-    expanded = merged.expanded;
-    searchOpened = merged.opened;
+    // Depend on the SEARCH only. `expanded` and `searchOpened` are read and
+    // written here, so tracking them makes the effect its own dependency: every
+    // write re-invalidates it, and it re-runs against a `search.expand` that has
+    // not changed. Collapsing a search-opened folder then immediately re-opened
+    // it — the disclosure arrow looked broken, which is the same class of defect
+    // the merge-into-`expanded` design was introduced to fix.
+    const wanted = search.expand;
+    const active = filtering;
+    untrack(() => {
+      if (!active) {
+        if (searchOpened.size === 0) return;
+        expanded = collapseSearchExpansion(expanded, searchOpened);
+        searchOpened = new Set();
+        return;
+      }
+      const merged = mergeSearchExpansion(expanded, wanted, searchOpened);
+      if (merged.expanded === expanded) return;
+      expanded = merged.expanded;
+      searchOpened = merged.opened;
+    });
   });
 
   const rows = $derived(visibleRows(roots, expanded, filtering ? search.visible : undefined));

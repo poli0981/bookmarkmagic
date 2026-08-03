@@ -31,7 +31,12 @@ export type ImportState =
   // begun, and nothing in the progress UI needs it.
   | { kind: 'writing'; filename: string; progress: WriteProgress }
   | { kind: 'done'; filename: string; created: number; plan: ImportPlan }
-  | { kind: 'cancelled'; filename: string; created: number }
+  /**
+   * `backupFilename` is present only when the cancel landed AFTER the Replace
+   * clear, i.e. the tree really was deleted and only `created` of it rebuilt.
+   * Without it the report reads as a harmless no-op on an empty browser.
+   */
+  | { kind: 'cancelled'; filename: string; created: number; backupFilename?: string }
   /**
    * `messageKey` is a dotted i18n path, NOT a resolved string.
    *

@@ -34,7 +34,27 @@ const BLANK_ICON =
 
 // ---------------------------------------------------------------- format sniff
 
-/** @param {string} text */
+/** The docs/04 §3 CSV header, in order. A file is CSV only if it says so. */
+const CSV_HEADER = ['folder_path', 'title', 'url', 'add_date'];
+
+/**
+ * Identify the format, or refuse.
+ *
+ * @param {string} text
+ * @returns {'html' | 'json' | 'csv' | null} `null` when nothing matched.
+ *
+ * Returning `null` rather than guessing is load-bearing. Every sanitizer below
+ * finds what it must destroy *by format*, so a wrong guess destroys nothing and
+ * emits the input verbatim — and the file would still be handed to the user as
+ * "sanitized". The old `return 'csv'` fallback did exactly that for a truncated
+ * JSON export, an HTML excerpt with no doctype, or a CSV with foreign headers:
+ * byte-identical output, exit code 0, real hostnames intact.
+ *
+ * The people who run this tool are, by definition, the ones whose file did not
+ * import — so a malformed or hand-trimmed file is the *typical* input here, not
+ * an edge case. `src/lib/core/detect-format.ts` refuses these same inputs with
+ * `UNKNOWN_FORMAT`; this must not be weaker than the parser it fronts.
+ */
 export function detectKind(text) {
   const body = text.charCodeAt(0) === 0xfeff ? text.slice(1) : text;
   if (/NETSCAPE-Bookmark-file-1/i.test(body.slice(0, 512))) return 'html';
@@ -47,8 +67,17 @@ export function detectKind(text) {
       // Not JSON after all; fall through.
     }
   }
+  const firstLine = body.split(/\r?\n/, 1)[0] ?? '';
+  for (const delimiter of [',', ';']) {
+    const columns = firstLine
+      .split(delimiter)
+      .map((h) => h.trim().replace(/^"|"$/g, '').toLowerCase());
+    if (columns.length === CSV_HEADER.length && CSV_HEADER.every((c, i) => columns[i] === c)) {
+      return 'csv';
+    }
+  }
   if (/<\s*dl[\s>]/i.test(body)) return 'html';
-  return 'csv';
+  return null;
 }
 
 // ------------------------------------------------------------------- mappers
@@ -170,11 +199,24 @@ function makeTitleMapper() {
  * @param {{start: number, end: number, value: string}[]} spans
  */
 function replaceSpans(text, spans) {
-  let out = text;
-  for (const span of [...spans].sort((a, b) => b.start - a.start)) {
-    out = out.slice(0, span.start) + span.value + out.slice(span.end);
+  // Overlaps are dropped, outermost first. Two patterns can legitimately claim
+  // the same bytes — an <A> title containing `x="http://…"` matches both the
+  // title rule and the generic attribute sweep — and applying both would splice
+  // already-rewritten text using an `end` measured against the original,
+  // silently eating or stranding bytes. The widest span sanitizes the most.
+  const ordered = [...spans].sort((a, b) => a.start - b.start || b.end - a.end);
+  const out = [];
+  let cursor = 0;
+  for (const span of ordered) {
+    if (span.start < cursor) continue;
+    out.push(text.slice(cursor, span.start), span.value);
+    cursor = span.end;
   }
-  return out;
+  out.push(text.slice(cursor));
+  // Joined once rather than spliced per span: the old loop rebuilt the whole
+  // string for every replacement, which is O(spans x file) and takes minutes on
+  // a large export.
+  return out.join('');
 }
 
 /**
@@ -191,12 +233,17 @@ function replaceSpans(text, spans) {
  * @param {number} [group]
  */
 function spansFrom(text, re, map, group = 1) {
+  // The `d` flag gives exact per-group offsets. The previous version searched
+  // the match text for the captured substring, which lands on the wrong copy
+  // whenever the capture also appears earlier in the match — e.g. a bookmark
+  // whose title equals part of its own URL.
+  const indexed = new RegExp(re.source, re.flags.includes('d') ? re.flags : `${re.flags}d`);
   const spans = [];
-  for (const m of text.matchAll(re)) {
+  for (const m of text.matchAll(indexed)) {
     const captured = m[group] ?? '';
-    if (captured === '') continue;
-    const start = m.index + m[0].lastIndexOf(captured);
-    spans.push({ start, end: start + captured.length, value: map(captured) });
+    const at = m.indices?.[group];
+    if (captured === '' || at === undefined) continue;
+    spans.push({ start: at[0], end: at[1], value: map(captured) });
   }
   return spans;
 }
@@ -234,6 +281,34 @@ function attrRewriter(map) {
   };
 }
 
+/**
+ * `name = value`, where the value is double-quoted, single-quoted or bare.
+ *
+ * Group 2/3/4 is the value, whichever quoting was used. Matching only `"…"`
+ * left `HREF='https://…'` completely untouched — real exports in the wild use
+ * single quotes, and that one is a straight leak.
+ */
+const ANY_ATTR = /\b([a-z_][a-z0-9_-]*)\s*=\s*(?:"([^"]*)"|'([^']*)'|([^\s"'<>=`]+))/dgi;
+
+/**
+ * Spans for every attribute whose name matches, at any quoting.
+ *
+ * @param {string} text
+ * @param {RegExp} nameRe tested against the lower-cased attribute name
+ * @param {(value: string) => string} map
+ */
+function attrSpans(text, nameRe, map) {
+  const spans = [];
+  for (const m of text.matchAll(ANY_ATTR)) {
+    if (!nameRe.test((m[1] ?? '').toLowerCase())) continue;
+    const at = m.indices?.[2] ?? m.indices?.[3] ?? m.indices?.[4];
+    const value = m[2] ?? m[3] ?? m[4] ?? '';
+    if (at === undefined || value === '') continue;
+    spans.push({ start: at[0], end: at[1], value: map(value) });
+  }
+  return spans;
+}
+
 /** Attributes handled explicitly; the generic URL sweep must not touch them. */
 const HANDLED_ATTRS = new Set(['href', 'icon']);
 
@@ -248,17 +323,18 @@ const HANDLED_ATTRS = new Set(['href', 'icon']);
 function urlAttrSpans(text, mapUrl) {
   const spans = [];
   const rewrite = attrRewriter(mapUrl);
-  for (const m of text.matchAll(/\b([a-z_][a-z0-9_-]*)\s*=\s*"([^"]*)"/gi)) {
+  for (const m of text.matchAll(ANY_ATTR)) {
     const name = (m[1] ?? '').toLowerCase();
-    const value = m[2] ?? '';
+    const value = m[2] ?? m[3] ?? m[4] ?? '';
     if (HANDLED_ATTRS.has(name) || value === '') continue;
     try {
       if (new URL(value).host === '') continue;
     } catch {
       continue;
     }
-    const start = m.index + m[0].lastIndexOf(value);
-    spans.push({ start, end: start + value.length, value: rewrite(value) });
+    const at = m.indices?.[2] ?? m.indices?.[3] ?? m.indices?.[4];
+    if (at === undefined) continue;
+    spans.push({ start: at[0], end: at[1], value: rewrite(value) });
   }
   return spans;
 }
@@ -267,25 +343,37 @@ function sanitizeHtml(text, mapUrl, mapTitle) {
   let descriptions = 0;
   let keywords = 0;
   const spans = [
-    // HREF="…" and ICON="…" — attribute name case is left exactly as found.
-    ...spansFrom(text, /\bhref\s*=\s*"([^"]*)"/gi, attrRewriter(mapUrl)),
-    ...spansFrom(text, /\bicon\s*=\s*"([^"]*)"/gi, () => BLANK_ICON),
+    // HREF and ICON, at any quoting — attribute name case is left as found.
+    ...attrSpans(text, /^href$/, attrRewriter(mapUrl)),
+    ...attrSpans(text, /^icon$/, () => BLANK_ICON),
     ...urlAttrSpans(text, mapUrl),
     // Firefox keywords and tags are user-authored text, so they are personal
     // too. Tag count is preserved because it is the only part a parser sees.
-    ...spansFrom(text, /\bshortcuturl\s*=\s*"([^"]*)"/gi, () => `kw${++keywords}`),
-    ...spansFrom(text, /\btags\s*=\s*"([^"]*)"/gi, (v) =>
+    ...attrSpans(text, /^shortcuturl$/, () => `kw${++keywords}`),
+    ...attrSpans(text, /^tags$/, (v) =>
       v
         .split(',')
         .map((_, i) => `tag${i + 1}`)
         .join(','),
     ),
     // Bookmark titles: the text between <A …> and </A>.
-    ...spansFrom(text, new RegExp(`<a\\b${TAG_INNARDS}>([^<]*)</a>`, 'gi'), mapTitle),
+    // `[\s\S]*?` and not `[^<]*`: a title containing a raw `<` made the whole
+    // match fail, so that bookmark's title was left in the output untouched.
+    ...spansFrom(text, new RegExp(`<a\\b${TAG_INNARDS}>([\\s\\S]*?)</a>`, 'gi'), mapTitle),
     // Folder titles.
-    ...spansFrom(text, new RegExp(`<h3\\b${TAG_INNARDS}>([^<]*)</h3>`, 'gi'), mapTitle),
+    ...spansFrom(text, new RegExp(`<h3\\b${TAG_INNARDS}>([\\s\\S]*?)</h3>`, 'gi'), mapTitle),
     // Folder/bookmark descriptions.
-    ...spansFrom(text, /<dd>([^\n<]*)/gi, () => `Description ${++descriptions}`),
+    // Runs to the next element, not to the end of the line: a description that
+    // wrapped onto a second line left everything after the first newline in
+    // place, and a `<DD>` is exactly where someone writes a private note.
+    ...spansFrom(
+      text,
+      // The `\s*` belongs in the lookahead, not the capture: leaving it inside
+      // eats the newline and indentation before the next tag, which is exactly
+      // the byte-level shape this tool promises not to touch.
+      /<dd>([\s\S]*?)(?=\s*<\s*(?:dt|dd|dl|\/dl)\b|\s*$)/gi,
+      () => `Description ${++descriptions}`,
+    ),
   ];
   return replaceSpans(text, spans);
 }
@@ -419,18 +507,58 @@ function mapFolderPath(path, mapTitle) {
 // -------------------------------------------------------------- entry points
 
 /**
+ * Everything in the OUTPUT that still looks like a real address.
+ *
+ * This is the backstop, and it is the only reason the rules above can be
+ * trusted. They are regexes over untrusted markup, so each one has a shape it
+ * does not match — a single-quoted attribute, a title containing `<`, a JSON
+ * key nobody enumerated, a `<DD>` that wraps onto a second line. Every one of
+ * those is a silent leak, and the only way to find them all by inspection is to
+ * be sure you have thought of every one, which nobody is.
+ *
+ * So instead of trusting the rules, the output is checked: any host that is not
+ * one of our own `*.example` aliases means something got through, and the file
+ * is refused rather than handed over. A rule this misses degrades into a
+ * refusal — annoying — instead of into a published browsing history.
+ *
+ * @param {string} text sanitized output
+ * @returns {string[]} distinct suspicious hosts, empty when clean
+ */
+export function findLeakedHosts(text) {
+  const leaked = new Set();
+  for (const m of text.matchAll(/\b[a-z][a-z0-9+.-]*:\/\/([^\s"'<>)\]}\\]+)/gi)) {
+    const authority = (m[1] ?? '').split(/[/?#]/, 1)[0] ?? '';
+    // Strip credentials and port; what remains is the host.
+    const host = authority.split('@').pop()?.replace(/:\d+$/, '').toLowerCase() ?? '';
+    if (host === '' || /^[a-z]\d*\.example$/.test(host)) continue;
+    leaked.add(host);
+  }
+  return [...leaked];
+}
+
+/**
  * Sanitize a bookmark file's text.
  *
  * @param {string} text
- * @returns {{ text: string, kind: 'html' | 'json' | 'csv' }}
+ * @returns {{ text: string | null, kind: 'html' | 'json' | 'csv' | null, leaked: string[] }}
+ *   `text` is null when the format was not recognised, or when the output
+ *   failed its own leak check. Both mean: write nothing.
  */
 export function sanitize(text) {
   const kind = detectKind(text);
+  if (kind === null) return { text: null, kind: null, leaked: [] };
+
   const mapUrl = makeUrlMapper();
   const mapTitle = makeTitleMapper();
-  if (kind === 'html') return { text: sanitizeHtml(text, mapUrl, mapTitle), kind };
-  if (kind === 'json') return { text: sanitizeJson(text, mapUrl, mapTitle), kind };
-  return { text: sanitizeCsv(text, mapUrl, mapTitle), kind };
+  const out =
+    kind === 'html'
+      ? sanitizeHtml(text, mapUrl, mapTitle)
+      : kind === 'json'
+        ? sanitizeJson(text, mapUrl, mapTitle)
+        : sanitizeCsv(text, mapUrl, mapTitle);
+
+  const leaked = findLeakedHosts(out);
+  return { text: leaked.length > 0 ? null : out, kind, leaked };
 }
 
 function main(argv) {
@@ -453,10 +581,33 @@ function main(argv) {
   }
 
   const text = raw.toString('utf8');
-  const { text: out, kind } = sanitize(text);
+  const { text: out, kind, leaked } = sanitize(text);
+
+  if (kind === null) {
+    console.error(
+      `${basename(input)} is not a bookmark file this tool recognises, so NOTHING WAS WRITTEN.\n` +
+        '  Expected: a Netscape HTML export (the usual bookmarks.html), a BookmarkMagic JSON\n' +
+        '  export, or a CSV whose header is exactly "folder_path,title,url,add_date".\n' +
+        '  Refusing to hand you a file it cannot promise is clean. Please attach the export\n' +
+        '  exactly as your browser wrote it, or describe the problem in the issue instead.',
+    );
+    return 1;
+  }
+
+  if (out === null) {
+    console.error(
+      `${basename(input)}: NOTHING WAS WRITTEN — the result still contained ${leaked.length} real ` +
+        `address(es), so this file is not safe to attach.\n  Leaked: ${leaked.slice(0, 5).join(', ')}` +
+        `${leaked.length > 5 ? `, and ${leaked.length - 5} more` : ''}\n` +
+        '  This is a bug in the sanitizer, not in your file. Please report it (without the file)\n' +
+        '  at https://github.com/poli0981/bookmarkmagic/issues — the address above is enough.',
+    );
+    return 1;
+  }
+
   const eol = text.includes('\r\n') ? 'CRLF' : 'LF';
   const bom = text.charCodeAt(0) === 0xfeff ? ', BOM' : '';
-  console.error(`${basename(input)}: ${kind}, ${eol}${bom} — ${out.length} bytes out`);
+  console.error(`${basename(input)}: ${kind}, ${eol}${bom} — ${out.length} bytes out, no leaks`);
 
   if (flags.includes('--check')) return 0;
   if (flags.includes('--stdout')) {

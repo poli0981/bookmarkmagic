@@ -49,6 +49,8 @@ const dict = {
     // chrome.bookmarks.create takes no dateAdded, so every imported bookmark is
     // stamped with the import time — indistinguishable from corruption to
     // someone migrating a decade-old archive.
+    cancelledAfterClear:
+      'You cancelled after your existing bookmarks had already been deleted, so what is left is only the part that was rebuilt.',
     dateNotice:
       'Imported bookmarks are dated today. Chrome does not let an extension set a bookmark’s original date — your exported files keep the real ones.',
     partialCreated:

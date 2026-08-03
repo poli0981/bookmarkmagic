@@ -1,7 +1,7 @@
 <script lang="ts">
   import { describeError } from '../browser/describe-error';
   import { timestampSuffix } from '../browser/download';
-  import { BmAborted, BmBackupError } from '../browser/errors';
+  import { BmAborted } from '../browser/errors';
   import { num, t } from '../i18n/index.svelte';
   import { prepareImport, runImport } from '../import/run-import';
   import { getSettings } from '../stores/settings.svelte';
@@ -60,6 +60,8 @@
     const signal = beginWrite();
     const now = new Date();
     const backupFilename = `bookmarkmagic-backup-${timestampSuffix(now)}.json`;
+    /** Set once the backup is on disk. Nothing may point at the file before. */
+    let backupProven = false;
 
     // runImport opens the save picker as its first statement, so the transient
     // activation from this click still holds when the dialog appears.
@@ -84,7 +86,11 @@
         // Backup proven; deletion starts now. No Cancel is offered here — the
         // button used to stay live through the whole delete, letting a user
         // cancel and be told "0 items created" after their tree was wiped.
+        //
+        // This callback is also the ONLY signal that the backup exists: it runs
+        // immediately after `proveBackup` returned, and nothing else does.
         onClearing: () => {
+          backupProven = true;
           setImportState({ kind: 'clearing', filename });
         },
         confirmUnprovenBackup: () => {
@@ -95,17 +101,27 @@
       setImportState({ kind: 'done', filename, created: outcome.created, plan: outcome.plan });
     } catch (err) {
       if (err instanceof BmAborted) {
-        setImportState({ kind: 'cancelled', filename, created: err.done });
+        setImportState({
+          kind: 'cancelled',
+          filename,
+          created: err.done,
+          // A cancel AFTER the clear is not "nothing happened": the tree is
+          // gone and only `created` of it has been rebuilt. Saying "N items
+          // created" alone reads as a harmless no-op on an empty browser.
+          ...(backupProven ? { backupFilename } : {}),
+        });
         return;
       }
       setImportState({
         kind: 'error',
         filename,
         ...describeError(err),
-        // Only when a backup was actually produced. On a BmBackupError the file
-        // may never have been written, and sending a frightened user to look
-        // for a backup that does not exist is worse than saying nothing.
-        ...(options.mode === 'replace' && !(err instanceof BmBackupError) && { backupFilename }),
+        // `backupProven`, not "mode was replace and this is not a BmBackupError".
+        // `runImport` resolves the roots BEFORE proving the backup, so a failure
+        // there — a policy-managed profile raising NO_WRITABLE_ROOTS, say —
+        // reaches this catch with no file on disk. Telling a frightened user to
+        // restore a backup that was never written is worse than saying nothing.
+        ...(backupProven ? { backupFilename } : {}),
       });
     }
   }
@@ -197,6 +213,10 @@
   </div>
 {:else if session.kind === 'cancelled'}
   <Callout tone="warn">{t('import.cancelledSummary', { created: num(session.created) })}</Callout>
+  {#if session.backupFilename !== undefined}
+    <Callout tone="danger">{t('import.cancelledAfterClear')}</Callout>
+    <p class="muted">{t('import.backupHint', { name: session.backupFilename })}</p>
+  {/if}
   <p class="muted">{t('import.dateNotice')}</p>
   <Button
     onclick={resetImport}>{t('import.another')}</Button
