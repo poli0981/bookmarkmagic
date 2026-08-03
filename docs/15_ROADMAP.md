@@ -22,6 +22,8 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | **v1.0.0 released** | ✔ 2026-07-26 | signed tag, GitHub Release with a `sha256sum -c`-verified zip, submitted to the Chrome Web Store |
 | **v1.0.0 published** | ✔ by 2026-08-03 | approved by CWS review with no rejection recorded; listing public, item id `eghnciphhegekmnofffpgbdfefckdhmg`, **real users installed** |
 | 6 — Post-launch stabilization | ✔ 2026-08-03 | doc reconciliation, user-intake machinery, the defects below, dependency bumps → v1.0.1 |
+| **v1.0.1 released** | ✔ 2026-08-03 | signed tag on `4654086`, GitHub Release with a `sha256sum -c`-verified zip; shipped manifest `1.0.1`, permissions unchanged. `announce` skipped (no `DISCORD_ANNOUNCE`), store publish skipped (no `CWS_AUTOPUBLISH`) |
+| **v1.0.1 submitted** | ✔ 2026-08-03 | uploaded to the CWS dashboard by hand (`13 §1b` step 6). ⚠️ **In review — not yet approved.** Add a "published" row only when the listing actually shows 1.0.1, and then run `13 §1b` step 10 |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
