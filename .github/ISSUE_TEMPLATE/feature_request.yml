@@ -1,0 +1,56 @@
+name: Suggest a feature
+description: An idea for something BookmarkMagic should do.
+title: '[feature] '
+labels: [enhancement]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Before writing: this project has a short, deliberate
+        [never list](https://github.com/poli0981/bookmarkmagic/blob/main/docs/15_ROADMAP.md).
+        Cloud sync, accounts, analytics of any kind, and anything that would
+        require new browser permissions are out of scope permanently — not
+        because they are hard, but because "offline, two permissions, no
+        network" is the entire point of the extension.
+
+        Everything else is genuinely open. The roadmap in that same file lists
+        what is already planned.
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: What are you trying to do?
+      description: >-
+        The situation, not the solution. "I move between four machines and
+        cannot tell which export is newest" tells us more than "add a
+        timestamp column".
+    validations:
+      required: true
+
+  - type: textarea
+    id: proposal
+    attributes:
+      label: What would you like it to do?
+    validations:
+      required: true
+
+  - type: textarea
+    id: workaround
+    attributes:
+      label: How do you handle it today?
+      description: Including "I don't" — that is useful signal about severity.
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: >-
+            As far as I can tell, this would not need any new browser
+            permission, and does not involve a server, an account, or sending
+            data anywhere.
+          required: true
+        - label: I checked the roadmap and the never list.
+          required: false

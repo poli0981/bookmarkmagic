@@ -1,0 +1,116 @@
+name: A bookmark file will not import correctly
+description: A file was rejected, or imported with the wrong structure, titles or dates.
+title: '[parser] '
+labels: [bug, parser]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you — this is the most useful kind of report this project gets.
+        A sanitized sample of the file becomes a permanent test, so the same
+        bug can never come back.
+
+        **Please sanitize the file first.** From a clone of this repository:
+
+        ```bash
+        node scripts/sanitize-bookmarks.mjs your-file.html
+        ```
+
+        It replaces every address and title but keeps the structure, encoding
+        and date format the bug actually depends on — so the sanitized file
+        still reproduces the problem, without telling us where you browse.
+
+  - type: input
+    id: source-browser
+    attributes:
+      label: Which browser produced the file, and which version?
+      description: >-
+        The exact version matters more than you would expect — export formats
+        differ between browsers and change between versions.
+      placeholder: Firefox 145, or Safari 18.2 on macOS, or "no idea, it is old"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: format
+    attributes:
+      label: File format
+      options:
+        - HTML (the usual "bookmarks.html" export)
+        - JSON
+        - CSV
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: symptom
+    attributes:
+      label: What went wrong?
+      options:
+        - The whole file was rejected
+        - It imported, but folders are missing
+        - It imported, but the nesting is wrong
+        - It imported, but titles are mangled or empty
+        - It imported, but the dates are wrong
+        - Duplicates were detected wrongly (too many, or not at all)
+        - Something else
+    validations:
+      required: true
+
+  - type: textarea
+    id: message
+    attributes:
+      label: The exact message the extension showed
+      description: Copy it as shown, including the technical detail block if there was one.
+      render: text
+    validations:
+      required: false
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: What did you expect instead?
+      description: >-
+        For a structure problem, describing the shape you expected — "these
+        three folders should be inside Bookmarks Bar" — is usually enough.
+    validations:
+      required: true
+
+  - type: textarea
+    id: sample
+    attributes:
+      label: Sanitized sample file
+      description: >-
+        Drag the sanitized file into this box to attach it. If the file is
+        large, a trimmed sanitized version that still reproduces the problem is
+        better than a complete one.
+      placeholder: Attach the file here.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: BookmarkMagic version
+      description: Shown in the About tab and at the bottom of the window.
+      placeholder: '1.0.0'
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: >-
+            I ran the sanitizer, or I checked the file by hand and it contains
+            no real addresses, titles or personal data.
+          required: true
+        - label: >-
+            I agree that this sanitized sample may be committed to this
+            repository as a test fixture under GPL-3.0, where it will stay
+            permanently and publicly.
+          required: true
+        - label: I searched the existing issues first.
+          required: false

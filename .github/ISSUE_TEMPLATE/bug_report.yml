@@ -1,0 +1,100 @@
+name: Something else is broken
+description: Anything that is not a bookmark file failing to import.
+title: '[bug] '
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        If a **bookmark file** will not import correctly, please use the
+        "A bookmark file will not import correctly" form instead — it asks for
+        the one thing that makes those fixable.
+
+        If this is a **security** problem, do not file it here. See
+        [SECURITY.md](https://github.com/poli0981/bookmarkmagic/blob/main/SECURITY.md).
+
+  - type: input
+    id: version
+    attributes:
+      label: BookmarkMagic version
+      description: Shown in the About tab and at the bottom of the window.
+      placeholder: '1.0.0'
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and version
+      placeholder: Chrome 138, or Brave 1.79, or Edge 138
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - macOS
+        - Linux
+        - ChromeOS
+        - Other
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - Import
+        - Export
+        - Edit
+        - Settings
+        - About / legal gate
+        - The toolbar popup
+        - Somewhere else
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the manager
+        2. …
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected-actual
+    attributes:
+      label: What did you expect, and what happened instead?
+    validations:
+      required: true
+
+  - type: textarea
+    id: console
+    attributes:
+      label: Console output
+      description: >-
+        Go to `chrome://extensions`, turn on Developer mode, and check whether
+        BookmarkMagic shows an "Errors" button. If it does, paste what is
+        there. Blank is a perfectly good answer.
+      render: shell
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: >-
+            Anything I attached contains no real addresses, titles or personal
+            data.
+          required: true
+        - label: I searched the existing issues first.
+          required: false

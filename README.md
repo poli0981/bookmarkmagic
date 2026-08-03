@@ -88,9 +88,23 @@ code and docs disagree, the docs win. Start with [`CLAUDE.md`](CLAUDE.md), then
 
 ## Contributing
 
-Bug reports and translation fixes are welcome via
-[issues](https://github.com/poli0981/bookmarkmagic/issues). A bug report about
-parsing is far more useful with a sanitized sample of the file that broke.
+Bug reports and translation fixes are welcome —
+[the issue forms](https://github.com/poli0981/bookmarkmagic/issues/new/choose)
+ask for what is needed, and none of them requires you to write code.
+
+If a bookmark file will not import, that is the most useful report there is,
+because the sample becomes a permanent test. Sanitize it first:
+
+```bash
+node scripts/sanitize-bookmarks.mjs your-bookmarks.html
+```
+
+That strips every address and title but keeps the structure, encoding and
+timestamps a parser bug depends on — so the sanitized file still reproduces the
+problem without handing over your browsing history.
+
+[`CONTRIBUTING.md`](CONTRIBUTING.md) has the rest: the setup, the rules that are
+not negotiable, and how a reported file becomes a regression test.
 
 Security issues: please follow [`SECURITY.md`](SECURITY.md) rather than opening
 a public issue.
