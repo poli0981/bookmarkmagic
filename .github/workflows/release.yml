@@ -90,13 +90,22 @@ jobs:
   # would silently never fire.
   announce:
     needs: release
-    # A Discord notification is not part of the release. The reusable exits 1
-    # on "No webhooks configured" when DISCORD_RELEASES_WEBHOOK and
+    # A Discord notification is not part of the release. The reusable exits 1 on
+    # "No webhooks configured" when DISCORD_RELEASES_WEBHOOK and
     # DISCORD_REPO_WEBHOOK are both unset (docs/12 §5 lists them as optional),
     # which turned the v1.0.0 run red even though the Release, the zip and
-    # SHA256SUMS.txt had all published correctly. A red run on a good release
-    # is worse than a missing announcement: it trains you to ignore the colour.
-    continue-on-error: true
+    # SHA256SUMS.txt had all published correctly. A red run on a good release is
+    # worse than a missing announcement: it trains you to ignore the colour.
+    #
+    # ⚠️ This used to say `continue-on-error: true`, which GitHub REJECTS on a
+    # job that calls a reusable workflow — "Property continue-on-error is not
+    # allowed". The whole file is then invalid and the run is a startup_failure
+    # with zero jobs and no log, exactly like the `contents: write` mistake in
+    # 2c8fba9. It was never caught because that fix landed after the v1.0.0 tag
+    # and no tag has been pushed since, so the first v1.0.1 tag would have been
+    # its first execution. Gate on a repo VARIABLE instead — allowed in `if:`,
+    # unlike a secret, and the same idiom as CWS_AUTOPUBLISH above.
+    if: vars.DISCORD_ANNOUNCE == 'true'
     uses: poli0981/.github/.github/workflows/announce-release.yml@main
     permissions:
       contents: read

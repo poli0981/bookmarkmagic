@@ -220,7 +220,7 @@ jobs:
 
   announce:
     needs: release
-    continue-on-error: true      # see below
+    if: vars.DISCORD_ANNOUNCE == 'true'     # see below — NOT continue-on-error
     uses: poli0981/.github/.github/workflows/announce-release.yml@main
     permissions:
       contents: read
@@ -236,11 +236,25 @@ tag: a re-run could not get past that line, and recovery meant deleting the
 Release and the tag by hand. `docs/13 §7` documents the manual escape; this
 removes the need for it in the common case.
 
-`continue-on-error` because the reusable exits 1 on "No webhooks configured"
-when both Discord secrets are unset — which §5 lists as optional. On the real
-v1.0.0 run the Release, the zip and `SHA256SUMS.txt` all published correctly
-and the run still showed red. A red run on a good release trains you to ignore
-the colour, so the notification must not be able to fail the release.
+The announcement is gated because the reusable exits 1 on "No webhooks
+configured" when both Discord secrets are unset — which §5 lists as optional. On
+the real v1.0.0 run the Release, the zip and `SHA256SUMS.txt` all published
+correctly and the run still showed red. A red run on a good release trains you
+to ignore the colour, so the notification must not be able to fail the release.
+
+⚠️ **It is gated with `if:` on a repo VARIABLE, not with `continue-on-error`.**
+GitHub **rejects** `continue-on-error` on a job that calls a reusable workflow —
+`Property continue-on-error is not allowed` — and a rejected file does not fail
+one job, it makes the whole run a `startup_failure` with zero jobs and no log.
+That is the same silent shape as the `contents: write` mistake in §2.1, and it
+sat undetected in this repo from `5f4c6e7` until 2026-08-03 precisely because
+that commit landed *after* the `v1.0.0` tag and no tag was pushed in between —
+the first v1.0.1 tag would have been its first execution.
+
+A **variable** and not a secret: secrets cannot be referenced in a job-level
+`if:`. `vars.DISCORD_ANNOUNCE` defaults to unset, so the announcement is skipped
+and the release stays green until the owner opts in — the same idiom as
+`CWS_AUTOPUBLISH`. Set the variable only once the webhook secrets exist.
 
 `tag_override` is **required here**, and for the same reason the announcement
 is a job rather than a caller. The reusable resolves
@@ -269,8 +283,7 @@ permissions:
 
 jobs:
   notify:
-    if: github.event.workflow_run.conclusion == 'failure'
-    continue-on-error: true
+    if: github.event.workflow_run.conclusion == 'failure' && vars.DISCORD_CI_NOTIFY == 'true'
     uses: poli0981/.github/.github/workflows/notify-ci-failure.yml@main
     permissions:
       contents: read
@@ -285,14 +298,17 @@ cost, and not for the failure below.
 ⚠️ **The reusable declares `DISCORD_CI_WEBHOOK` as `required: true`**, which
 GitHub validates before any of the reusable's own logic runs. With the secret
 unset (`00 §10.6`), the caller therefore failed on **every** CI completion —
-success or failure — from the first push after this file landed. The `if:` stops
-it being called on green runs at all, and `continue-on-error` keeps a missing
-optional webhook from turning a genuine CI *failure* into two failures.
+success or failure — from the first push after this file landed.
 
-This is the same reasoning as `2.3`'s `continue-on-error` on `announce`, learned
-the same way: a notification must never be able to change the colour of the
-thing it is reporting on, because a run that is red for a reason nobody acts on
-teaches everyone to stop reading the colour.
+Both halves of the condition earn their place: the conclusion check stops it
+running on green CI at all, and `vars.DISCORD_CI_NOTIFY` keeps it off entirely
+until the secret actually exists. **Not `continue-on-error`** — see §2.3: GitHub
+rejects that keyword on a reusable-workflow caller and invalidates the file.
+
+Same reasoning as §2.3's announce gate, learned the same way: a notification
+must never be able to change the colour of the thing it is reporting on, because
+a run that is red for a reason nobody acts on teaches everyone to stop reading
+the colour.
 
 ## 3. Chrome Web Store publishing automation
 
@@ -345,6 +361,11 @@ means "unknown", not "not done".
 - [ ] ⚠️ Repo variable `CWS_AUTOPUBLISH=false` initially. Note that when the
       variable does not exist the expression is simply false, so "not configured"
       and "configured off" are indistinguishable from a run's output.
+- [ ] ⚠️ Repo variables `DISCORD_ANNOUNCE` and `DISCORD_CI_NOTIFY`. Leave both
+      unset until the matching webhook secrets exist — the reusables declare
+      those secrets required, so calling them without one fails the job, and a
+      reusable-workflow caller cannot use `continue-on-error` to absorb it
+      (§2.3). Unset means skipped, which is the safe default.
 - [x] Dependabot: npm weekly, grouped dev minor+patch, `github-actions` too —
       `.github/dependabot.yml`. Note it has no awareness of the `package.json`
       `overrides` block, so those six pins must be reviewed by hand (`09 §3.1`).
