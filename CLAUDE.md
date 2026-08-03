@@ -141,6 +141,13 @@ the tag and performs the store update per docs/13 §1b.
   things appear to work, but knip reports every devDependency unused and
   `verify` fails; `tsconfig.json` extends `./.wxt/tsconfig.json`, which
   `wxt prepare` generates.
+  **Type resolution walks up too, and it does so even after a correct `npm ci`.**
+  A worktree under `E:\bookmarkmagic\.claude\worktrees\` inherits
+  `E:\bookmarkmagic\node_modules\@types\*`, so `npm run check` can pass locally
+  on types the package does not declare and CI does not have. That is exactly
+  how a missing `@types/node` survived a green local `verify` and failed CI on
+  the first push. A green local type-check in a worktree is weaker evidence than
+  it looks.
 - When a browser fixture contradicts the format spec: add the fixture, make
   the parser tolerant, note the quirk in code + docs/04 §1.2, then continue.
 - Do not invent features not in docs; park ideas as `docs/15` roadmap PRs.
