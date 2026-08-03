@@ -126,7 +126,23 @@ a **minor-version** event at minimum.
 
 ## 6. Vulnerability reporting
 
-`SECURITY.md` in repo root (⚠️ create at scaffold): report privately via
-GitHub Security Advisories; acknowledgment target 72h; fix-or-mitigate target
-14 days for High/Critical. No bounty (hobby project) — credit given in
-release notes.
+`SECURITY.md` in the repo root is the policy in force. Summary:
+
+- **Supported: the latest version published on the Chrome Web Store, only.** No
+  back-porting — Chrome auto-updates every installed copy once a release passes
+  review, so there is no population left behind to back-port for.
+- Report privately via GitHub Security Advisories, or `contact@poli0981.dev` for
+  reporters without a GitHub account. Never a public issue.
+- Acknowledgement 72 h; fix **prepared** within 14 days for High/Critical. Time
+  to *users* is that plus store review, which is outside our control — the
+  policy says so rather than implying a delivery guarantee we cannot make.
+- No bounty (hobby project); credit in the release notes.
+
+**Sample files from reporters.** A bookmark file is a browsing history, so the
+policy asks reporters to run `scripts/sanitize-bookmarks.mjs` first — it rewrites
+every hostname, path, query value and title while preserving the structure,
+encoding, and timestamp magnitudes a parser bug depends on, so the sanitized file
+still reproduces. Anything received by email is kept only as long as needed to
+reproduce and fix, then deleted; `legal/PRIVACY.md` states the same to users.
+This is the receiving-side counterpart to §3's rule that error messages never
+echo more than a 120-character excerpt of file content.

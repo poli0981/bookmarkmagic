@@ -27,6 +27,16 @@ workflows use the `reusable-*` naming family. There is **no
 
 ## 2. Workflows (caller stubs in this repo)
 
+⚠️ **The YAML below is a copy of live files, and copies drift.** It has already
+happened twice: a Dependabot bump moved `actions/setup-node` from v6 to v7 in
+`.github/workflows/` and never touched this doc, and the `check:manifest` step
+added to the release job in `674ac34` was missing here. Because docs win over
+code in this project, someone reconciling in the wrong direction would have
+downgraded a pinned action and deleted a security gate. Both are corrected
+below (2026-08-03). **When these disagree again, read the workflow file first
+and fix this doc — that is the one place the docs-win rule inverts, because the
+running pipeline is the ground truth about itself.**
+
 ### 2.1 `.github/workflows/ci.yml` — every push/PR to `main`
 
 The local `quality` job exists because the ops reusable workflow performs none
@@ -55,7 +65,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with: { node-version: '24', cache: npm }
       - run: npm ci
       - run: npm run lint          # biome check .
@@ -160,7 +170,7 @@ jobs:
       contents: write            # create the GitHub Release
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7
         with: { node-version: '24', cache: npm }
       - run: npm ci
 
@@ -172,6 +182,7 @@ jobs:
       - run: npm run guard
 
       - run: npm run zip         # wxt zip → .output/<name>-<version>-chrome.zip
+      - run: npm run check:manifest  # gate the artifact, not the config it came from
 
       - name: Verify tag matches manifest version
         run: |
@@ -245,6 +256,8 @@ permissions:
 
 jobs:
   notify:
+    if: github.event.workflow_run.conclusion == 'failure'
+    continue-on-error: true
     uses: poli0981/.github/.github/workflows/notify-ci-failure.yml@main
     permissions:
       contents: read
@@ -252,8 +265,21 @@ jobs:
     secrets: inherit
 ```
 
-The reusable already filters to `conclusion == 'failure'` on the default
-branch, so the caller needs no `if:`.
+The reusable filters to `conclusion == 'failure'` on the default branch
+internally, so the caller's `if:` is redundant *for behaviour* — but not for
+cost, and not for the failure below.
+
+⚠️ **The reusable declares `DISCORD_CI_WEBHOOK` as `required: true`**, which
+GitHub validates before any of the reusable's own logic runs. With the secret
+unset (`00 §10.6`), the caller therefore failed on **every** CI completion —
+success or failure — from the first push after this file landed. The `if:` stops
+it being called on green runs at all, and `continue-on-error` keeps a missing
+optional webhook from turning a genuine CI *failure* into two failures.
+
+This is the same reasoning as `2.3`'s `continue-on-error` on `announce`, learned
+the same way: a notification must never be able to change the colour of the
+thing it is reporting on, because a run that is red for a reason nobody acts on
+teaches everyone to stop reading the colour.
 
 ## 3. Chrome Web Store publishing automation
 
@@ -266,7 +292,7 @@ produces the four values above → store as **repo Actions secrets**.
 
 | Version | Method |
 |---|---|
-| v1.0.x (first listing + first reviews) | **Manual**: download the zip from the GitHub Release (not the CI artifact — the Release asset is the one `SHA256SUMS.txt` covers) → Dashboard upload → fill listing/privacy → submit. First reviews often ask questions; keep a human in the loop. |
+| v1.0.x | **Manual**, per the `13 §1b` runbook: download the zip from the GitHub Release (not the CI artifact — the Release asset is the one `SHA256SUMS.txt` covers) → Dashboard → Package → upload new package → submit. The original rationale was "first reviews often ask questions"; in the event the first review asked nothing. It stays manual because none of the four `CHROME_*` secrets exists yet and `CWS_AUTOPUBLISH` is unset. |
 | v1.1+ | **Automated**: the `Publish to Chrome Web Store` step in §2.3 runs after the Release succeeds, gated on the repo variable `CWS_AUTOPUBLISH=true` so it can be flipped off instantly if a review dispute is ongoing. |
 
 Notes: uploaded builds still go through CWS review before rollout (automation
@@ -287,19 +313,30 @@ release: bump package.json (semver) → CHANGELOG.md (Keep a Changelog) →
 
 ## 5. Repo settings checklist (one-time ⚠️)
 
-- [ ] Branch protection on `main`: require CI, require review, linear history.
-      Required checks are the **job** names — `Quality gates` and
-      `Build + package` — not the workflow name.
-- [ ] CodeQL **Default setup DISABLED** (Settings → Advanced Security),
-      otherwise `codeql.yml` fails at SARIF upload (§2.2).
-- [ ] Actions secrets: the four `CHROME_*` values (after `wxt submit init`).
-- [ ] Actions secrets for Discord notifications (all optional — the reusables
-      skip cleanly when unset, except `DISCORD_CI_WEBHOOK` which
-      `notify-ci-failure.yml` declares `required: true`):
-      `DISCORD_CI_WEBHOOK`, `DISCORD_RELEASES_WEBHOOK`, `DISCORD_REPO_WEBHOOK`,
-      `DISCORD_PING_ROLE_ID`.
-- [ ] Repo variable `CWS_AUTOPUBLISH=false` initially.
-- [ ] Dependabot: npm weekly, grouped minors; `github-actions` ecosystem too.
-- [ ] Issue templates: bug (asks for browser + a sanitized sample file),
-      feature, translation.
-- [ ] GPG signing required for tags (matches tracker-repo practice).
+Only the repo-visible items can be verified from a checkout; the rest live in
+GitHub settings and stay ⚠️ until the owner confirms them. An unticked box here
+means "unknown", not "not done".
+
+- [ ] ⚠️ Branch protection on `main`: require CI, require review, linear
+      history. Required checks are the **job** names — `Quality gates` and
+      `Build + package` — not the workflow name. (Both strings match `ci.yml`.)
+- [x] CodeQL **Default setup DISABLED** (Settings → Advanced Security) —
+      confirmed 2026-07-26; `codeql.yml` uploads SARIF cleanly, which is only
+      possible with it off (§2.2).
+- [ ] ⚠️ Actions secrets: the four `CHROME_*` values (after `wxt submit init`).
+      `CHROME_EXTENSION_ID` is already known — it is the published item id in
+      `00 §9`. Required before `CWS_AUTOPUBLISH` can be flipped for v1.1.
+- [ ] ⚠️ Actions secrets for Discord notifications. **`DISCORD_CI_WEBHOOK` is
+      not optional in practice** — see §2.4. The rest are:
+      `DISCORD_RELEASES_WEBHOOK`, `DISCORD_REPO_WEBHOOK`, `DISCORD_PING_ROLE_ID`.
+- [ ] ⚠️ Repo variable `CWS_AUTOPUBLISH=false` initially. Note that when the
+      variable does not exist the expression is simply false, so "not configured"
+      and "configured off" are indistinguishable from a run's output.
+- [x] Dependabot: npm weekly, grouped dev minor+patch, `github-actions` too —
+      `.github/dependabot.yml`. Note it has no awareness of the `package.json`
+      `overrides` block, so those six pins must be reviewed by hand (`09 §3.1`).
+- [x] Issue templates: `.github/ISSUE_TEMPLATE/` — bug, parser report (requires
+      a sanitized sample), translation, feature, plus a `config.yml` chooser.
+      Landed 2026-08-03; `13 §6` had asserted they existed since before launch.
+- [ ] ⚠️ GPG signing required for tags (matches tracker-repo practice). The
+      `v1.0.0` tag object is in fact PGP-signed, so the practice held once.

@@ -33,18 +33,31 @@ malformed/doctype-only.html          # valid doctype, zero <DL> → NO_BOOKMARKS
 malformed/script-injection.html      # <script> + onerror payloads (T1)
 malformed/js-url.html                # javascript: bookmark (T3)
 weird/deep-nesting.html              # depth 150 (under the 200 cap — tolerance)
-weird/over-depth.html                # depth 201 → TOO_DEEP (the cap itself)
 weird/folder-with-dd.html            # <DT><H3>/<DD>/<DL> — subtree must survive (04 §1.2)
 weird/explicit-close-dt.html         # literal </DT> → sibling-DL branch (05 §1)
-weird/hr-separator.html              # Firefox <HR> between entries → skipped
-weird/add-date-zero.html             # ADD_DATE="0" → omitted, NO warning
+weird/mixed-wrapper.html             # some roots wrapped, some not → root-list selection rule (04 §1.2)
+weird/safari-no-wrapper.html         # no wrapper <DL> at all → same rule, other branch
 weird/emoji-rtl-titles.html          # 🌸, RTL, CJK titles; & < > " entities
 weird/microsecond-dates.html         # Firefox-style timestamps
-generate-huge.ts                     # script: emits 100k+1 node file on demand (not committed output)
 ```
 
+Generated on demand, never committed: `scripts/gen-fixture.mjs` writes
+arbitrarily large Netscape files into `tests/fixtures/generated/` (git-ignored)
+for the 10k responsiveness item in §5 and the 100k parse measurement in §6.
+
+Three behaviours have **no dedicated fixture** because a real browser export
+already covers them, and a second file would only be a second thing to maintain:
+
+| Behaviour | Covered by |
+|---|---|
+| `<HR>` separators skipped | `firefox-html-export.html` (`fixtures.test.ts` "firefox: DD does not eat the subtree, HR is skipped") |
+| `ADD_DATE="0"` → omitted, **no** warning | `chrome-131-export.html` (same suite, asserted explicitly) |
+| Depth past the cap → `TOO_DEEP` | built synthetically in `parse/netscape-html.test.ts` — cheaper and clearer than committing a 201-level file |
+
 **Rule:** every browser-specific parser quirk discovered later gets a fixture
-+ regression test in the same PR.
++ regression test in the same PR. `CONTRIBUTING.md` documents the full ritual
+end to end; note `.gitattributes` sets `tests/fixtures/** -text` so EOL
+normalization cannot rewrite the CRLF/BOM bytes a bug may depend on.
 
 ## 3. Core test suites (one file per module, mirrored paths)
 
@@ -138,11 +151,40 @@ generate-huge.ts                     # script: emits 100k+1 node file on demand 
       confirms, and a failure says so instead.
 - [ ] Legal Gate "Close tab" either closes the tab or shows the
       manual-close message — never appears to do nothing.
-- [ ] Two Manager tabs open: accepting or changing a setting in one is
-      reflected in the other (or record it as the known limitation it is —
-      `15` decision log).
+- [ ] Two Manager tabs open: changing a setting in one **is** reflected in the
+      other, and accepting the gate in one drops the gate in the other. Also:
+      clearing storage in one must **not** re-raise the gate in the other —
+      acceptance is adopted in one direction only, by design (`03 §4`).
+- [ ] Browser **Back** during a write: stays on `#import`, progress and Cancel
+      remain reachable, and a "busy" toast explains the refusal.
+- [ ] Browser **Back** while the backup attestation is on screen: same. This is
+      the path that used to deadlock the Manager until the tab was closed.
+- [ ] Right-click → Options **while a write is running**, with a Manager tab
+      already open. The deep-link is refused by the same guard; confirm it
+      behaves as `02 §5` describes rather than appearing to do nothing.
+- [ ] The import report states that imported bookmarks carry today's date — in
+      EN, VI **and** JA.
 - [ ] chrome://extensions → no errors logged during the whole pass.
 - [ ] Edge (or Brave): smoke test install + import/export.
+
+**Upgrade + published-build pass (every submission after the first):**
+
+These have no equivalent in a first submission, and the upgrade item is the only
+failure mode that would hit every installed user at once.
+
+- [ ] Install the **currently published** version from the store on a clean
+      profile. Accept the gate, change two settings, import a fixture. This is
+      the prior state the upgrade test needs.
+- [ ] Update that profile to the new build (load unpacked over it, or wait for
+      the store rollout). Then: the legal gate does **not** reappear
+      (`legal.acceptedVersion` survived), both settings survived, bookmarks are
+      untouched, and chrome://extensions logs nothing.
+      ⚠️ If `LEGAL_VERSION` was bumped the gate *will* reappear for everyone —
+      that is `14 §2` working as designed, and it must be a deliberate decision
+      recorded in `15`, never a surprise found here.
+- [ ] After the update goes live: install from the store on a clean profile and
+      smoke it. This is the only check that the artifact users receive is the
+      artifact that was tested (`13 §1b` step 10).
 
 ## 6. Performance budgets (checked manually in v1)
 
@@ -170,7 +212,25 @@ and jsdom's parse5 implementation is roughly an order of magnitude slower than
 Chrome's native parser. The budget is about the real browser, so the honest
 reading is "≤ 2.9 s in the slowest environment we can measure from a test".
 
-The number that decides it has to come from Chrome. Added to the §5 checklist:
+The number that decides it has to come from Chrome. ⚠️ Still unmeasured
+(`00 §10.8`) — but no longer unmeasurable: the generator the original entry
+assumed now exists.
 
-- [ ] Generate a 100k-node HTML file, import it in a real browser, and time
-      from drop to preview. Record the number here rather than re-deriving it.
+**Procedure (reproducible, ~5 minutes):**
+
+```bash
+node scripts/gen-fixture.mjs --nodes 100000 --out tests/fixtures/generated/huge.html
+npm run build            # load .output/chrome-mv3 unpacked, fresh profile
+```
+
+Then in the Manager: open DevTools → Performance, drop the file on `#import`,
+and time **drop → preview rendered**. Record the number, the Chrome version and
+the machine below; a figure without those three is not comparable to anything.
+
+| Date | Chrome | Machine | Drop → preview |
+|---|---|---|---|
+| ⚠️ | | | |
+
+Re-measure whenever the jsdom major changes, since the table above is jsdom's
+parse5 and not Chrome's parser — a jsdom bump invalidates the 2 869 ms row
+rather than updating it. Add a column; do not overwrite.

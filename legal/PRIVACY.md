@@ -1,6 +1,6 @@
 # Privacy Policy — BookmarkMagic
 
-Last updated: 2026-07-25
+Last updated: 2026-08-03
 
 BookmarkMagic ("the Extension") is designed to work entirely on your device.
 
@@ -34,10 +34,33 @@ location you control.
 No data is shared with anyone, because no data is collected. The Extension
 ships with zero runtime dependencies.
 
+## If you contact us
+
+Everything above describes the Extension, which sends us nothing. This section
+describes what happens if *you* choose to send us something — reporting a bug,
+for example.
+
+- **Please do not send us your real bookmarks file.** A bookmarks export is a
+  browsing history. Run `scripts/sanitize-bookmarks.mjs` from the repository
+  first: it replaces every address and title while keeping the file structure
+  that a bug depends on, so the sanitized version still reproduces the problem.
+- **Anything you attach to a GitHub issue is public** and stays in the issue
+  history. Attach only a sanitized sample. If you agree, a sample may be
+  committed to the repository as a permanent test fixture under GPL-3.0 — the
+  bug report form asks you explicitly, and never assumes it.
+- **Anything you email us is kept only as long as it takes to reproduce and fix
+  the issue, and is then deleted.** It is not shared with anyone, and it is
+  never added to the repository unless you agreed to that.
+
 ## Changes
 
 Material changes will be published here and re-acceptance will be requested
 inside the Extension.
+
+*The section above was added on 2026-08-03. It is a clarification, not a change
+of practice: it describes handling of material you choose to send us, which was
+never part of what the Extension itself collects — which remains nothing. No
+re-acceptance was requested.*
 
 ## Contact
 
