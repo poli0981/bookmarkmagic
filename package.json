@@ -47,7 +47,7 @@
     "svelte": "^5.56.8",
     "svelte-check": "^4.7.4",
     "typescript": "~6.0.3",
-    "vitest": "^4.1.10",
+    "vitest": "^4.1.11",
     "wxt": "^0.21.3"
   },
   "overrides": {
