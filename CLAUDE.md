@@ -8,7 +8,8 @@ This file is the entry point; the `docs/` suite is the specification.
 >
 > **BookmarkMagic is published on the Chrome Web Store and has real users**
 > (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
-> 2026-10-28). Phases 0–6 are complete; the project is in **maintenance**.
+> 2026-10-28; v1.1.0 released on GitHub 2026-10-29, ⚠️ not yet submitted).
+> Phases 0–7 are complete; the project is in **maintenance**.
 > That changes the rules of the game:
 >
 > - Every change now reaches installed users through a store review. It needs a
@@ -148,9 +149,10 @@ around a store, with Sort A→Z, drag to reorder and batched live sync; a
 technical redesign of every surface; local diagnostics; a cross-tab write
 lock; docs and legal synced (clarifications only — `LEGAL_VERSION` stays 1);
 contact aliases per purpose.
-**Exit:** `main` tag-ready with `verify:full` green; the human runs the
-docs/11 §5 manual pass on real Chrome including the **1.0.1 → 1.1.0 upgrade
-over an existing profile** ⚠️, then uploads the release zip to the store ⚠️.
+**Exit:** ✔ v1.1.0 tagged and released 2026-10-29 (signed tag on `9040f84`,
+checksum-verified zip). Still human-only: the docs/11 §5 manual pass on real
+Chrome including the **1.0.1 → 1.1.0 upgrade over an existing profile** ⚠️,
+then the zip uploaded to the store ⚠️.
 
 ## Working style
 

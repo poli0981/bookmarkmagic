@@ -191,6 +191,9 @@ to read carefully.
    already seen, so a rejected 1.0.1 comes back as 1.0.2 — not as a re-upload.
 3. Never delete or move the tag of a rejected version. It is a real, published
    GitHub Release and moving it invalidates its checksum. Leave it and move on.
+   The one exception is a tag whose run failed **before** any Release existed —
+   nothing was published, so fix the workflow on `main` and re-point the tag,
+   as `v1.1.0` was (`15` decision log, 2026-10-29).
 4. Note the rejection and its resolution in `15`'s decision log — it is the only
    memory the project has of what the reviewers actually object to.
 
