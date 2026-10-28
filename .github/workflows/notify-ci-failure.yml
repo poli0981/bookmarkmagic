@@ -39,4 +39,7 @@ jobs:
     permissions:
       contents: read
       actions: read
-    secrets: inherit
+    # Named, not `inherit`: the reusable is pinned to a moving branch, so it gets
+    # the one secret it declares and nothing else.
+    secrets:
+      DISCORD_CI_WEBHOOK: ${{ secrets.DISCORD_CI_WEBHOOK }}

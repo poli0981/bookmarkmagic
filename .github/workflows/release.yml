@@ -4,6 +4,12 @@
 # runs `gh release create --generate-notes`. It produces no SHA256SUMS.txt
 # (required by docs/09 §5), performs no store submission, and exposes no
 # `outputs:`, so a caller cannot reference the zip it built.
+#
+# Three jobs, least privilege first. `build` installs, runs every gate and
+# packages with a READ-ONLY token; only `publish`, which installs nothing and
+# runs no repository code, ever holds `contents: write`. Before this split one
+# job ran `npm ci` — every dependency's install script plus our own tests —
+# while holding a write token that checkout had also left in .git/config.
 name: Release
 
 on:
@@ -14,18 +20,22 @@ permissions:
   contents: read
 
 jobs:
-  release:
+  build:
+    name: Gate + package
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
-      contents: write # create the GitHub Release
+      contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install wxt prepare
 
       # The same gates as CI. A tag must never ship what a PR would have
       # blocked — pushing a tag skips the CI workflow's branch triggers.
@@ -34,6 +44,7 @@ jobs:
       - run: npm run knip
       - run: npm run coverage
       - run: npm run guard
+      - run: npm audit --omit=dev --audit-level=low
 
       - run: npm run zip # wxt zip → .output/<name>-<version>-chrome.zip
 
@@ -53,67 +64,109 @@ jobs:
         working-directory: .output
         run: sha256sum *-chrome.zip > SHA256SUMS.txt
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: release-${{ github.ref_name }}
+          path: |
+            .output/*-chrome.zip
+            .output/SHA256SUMS.txt
+          if-no-files-found: error
+          retention-days: 90
+
+  publish:
+    name: GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write # create the GitHub Release — the only write in this file
+    steps:
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-${{ github.ref_name }}
+          path: dist
+
+      # The bytes about to be published are the bytes the build job hashed.
+      - name: Re-verify checksums
+        working-directory: dist
+        run: sha256sum -c SHA256SUMS.txt
+
       # Idempotent on purpose. `gh release create` fails outright if a Release
       # for the tag already exists, so any failure AFTER this step — realistically
-      # the CWS publish below, once CWS_AUTOPUBLISH is on — used to strand the
-      # tag: re-running the workflow could not get past this line, and the only
-      # recovery was deleting the Release and the tag by hand (docs/13 §7).
-      - name: GitHub Release
+      # the store job below, once CWS_AUTOPUBLISH is on — used to strand the tag:
+      # re-running could not get past this line (docs/13 §7).
+      - name: Create or update the Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
         run: |
           set -euo pipefail
           if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
             echo "Release $GITHUB_REF_NAME exists — re-uploading assets."
-            gh release upload "$GITHUB_REF_NAME" \
-              .output/*-chrome.zip .output/SHA256SUMS.txt --clobber
+            gh release upload "$GITHUB_REF_NAME" dist/*-chrome.zip dist/SHA256SUMS.txt --clobber
           else
-            gh release create "$GITHUB_REF_NAME" \
-              .output/*-chrome.zip .output/SHA256SUMS.txt --generate-notes
+            gh release create "$GITHUB_REF_NAME" dist/*-chrome.zip dist/SHA256SUMS.txt \
+              --verify-tag --generate-notes
           fi
 
-      # v1.0.x is published by hand (docs/12 §3) — first store reviews often
-      # ask questions and want a human in the loop. Flipping the repo variable
-      # CWS_AUTOPUBLISH to 'true' turns this on for v1.1+.
-      - name: Publish to Chrome Web Store
-        if: vars.CWS_AUTOPUBLISH == 'true'
+  store:
+    # v1.0.x/v1.1.x are published by hand (docs/12 §3). Flipping the repo
+    # variable CWS_AUTOPUBLISH to 'true' turns this on once the four CHROME_*
+    # secrets exist. A variable, not a secret: only variables are allowed here.
+    name: Publish to Chrome Web Store
+    needs: publish
+    if: vars.CWS_AUTOPUBLISH == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@v8
+        with:
+          name: release-${{ github.ref_name }}
+          path: dist
+      - name: Submit the Release asset
         env:
           CHROME_EXTENSION_ID: ${{ secrets.CHROME_EXTENSION_ID }}
           CHROME_CLIENT_ID: ${{ secrets.CHROME_CLIENT_ID }}
           CHROME_CLIENT_SECRET: ${{ secrets.CHROME_CLIENT_SECRET }}
           CHROME_REFRESH_TOKEN: ${{ secrets.CHROME_REFRESH_TOKEN }}
-        run: npx wxt submit --chrome-zip .output/*-chrome.zip
+        # The locally installed wxt, never `npx wxt`: npx may fetch and run an
+        # unpinned package with these four secrets in its environment.
+        run: ./node_modules/.bin/wxt submit --chrome-zip dist/*-chrome.zip
 
   # A job INSIDE this workflow, not an `on: release: [published]` caller.
   # A Release created by `gh release create` under the default GITHUB_TOKEN
   # emits no event that starts new workflow runs, so an event-driven caller
   # would silently never fire.
   announce:
-    needs: release
-    # A Discord notification is not part of the release. The reusable exits 1 on
-    # "No webhooks configured" when DISCORD_RELEASES_WEBHOOK and
-    # DISCORD_REPO_WEBHOOK are both unset (docs/12 §5 lists them as optional),
-    # which turned the v1.0.0 run red even though the Release, the zip and
-    # SHA256SUMS.txt had all published correctly. A red run on a good release is
-    # worse than a missing announcement: it trains you to ignore the colour.
-    #
-    # ⚠️ This used to say `continue-on-error: true`, which GitHub REJECTS on a
-    # job that calls a reusable workflow — "Property continue-on-error is not
-    # allowed". The whole file is then invalid and the run is a startup_failure
-    # with zero jobs and no log, exactly like the `contents: write` mistake in
-    # 2c8fba9. It was never caught because that fix landed after the v1.0.0 tag
-    # and no tag has been pushed since, so the first v1.0.1 tag would have been
-    # its first execution. Gate on a repo VARIABLE instead — allowed in `if:`,
-    # unlike a secret, and the same idiom as CWS_AUTOPUBLISH above.
+    needs: publish
+    # A Discord notification is not part of the release, so it can never turn a
+    # good release red (docs/12 §2.3). Gated on a repo VARIABLE — GitHub REJECTS
+    # `continue-on-error` on a job that calls a reusable workflow, which makes
+    # the whole file a startup_failure with zero jobs and no log.
     if: vars.DISCORD_ANNOUNCE == 'true'
     uses: poli0981/.github/.github/workflows/announce-release.yml@main
     permissions:
       contents: read
     with:
-      # REQUIRED here, and only because of the comment above. The reusable
-      # resolves `TAG="${INPUT_TAG:-$EVENT_TAG}"` with EVENT_TAG =
-      # github.event.release.tag_name — which is empty under `on: push: tags`,
-      # so without this the job exits 1 on "No release tag available" and the
-      # announcement never fires for any release.
+      # REQUIRED here: the reusable resolves `TAG="${INPUT_TAG:-$EVENT_TAG}"`
+      # with EVENT_TAG = github.event.release.tag_name — empty under
+      # `on: push: tags` — so without this the job exits 1 and never announces.
       tag_override: ${{ github.ref_name }}
-    secrets: inherit
+    # Named, not `inherit`: the reusable is pinned to a moving branch, so it gets
+    # only the two webhooks it reads — never the CHROME_* or SONAR secrets. The
+    # names also differ: this repo stores RELEASES_WEBHOOK / REPO_WEBHOOK, while
+    # the reusable reads DISCORD_* — with `inherit` it received neither and would
+    # have failed on "No webhooks configured" the day DISCORD_ANNOUNCE was set.
+    secrets:
+      DISCORD_RELEASES_WEBHOOK: ${{ secrets.RELEASES_WEBHOOK }}
+      DISCORD_REPO_WEBHOOK: ${{ secrets.REPO_WEBHOOK }}

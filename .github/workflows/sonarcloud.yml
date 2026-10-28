@@ -1,0 +1,79 @@
+# SonarCloud — docs/12 §2.5.
+#
+# A separate workflow on purpose, not a job in ci.yml: a SonarCloud outage or a
+# quality-gate opinion must never change the colour of CI, which is what branch
+# protection reads ("Quality gates", "Build + package / build"). The verdict
+# reaches the PR through the SonarCloud GitHub App's own check.
+#
+# ⚠️ Prerequisite: Automatic Analysis is OFF in the SonarCloud project
+# (Administration → Analysis Method). With it on, the scanner refuses to run.
+name: SonarCloud
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonarcloud-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  analyze:
+    name: SonarCloud analysis
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: Sonar's new-code detection and blame need it.
+          fetch-depth: 0
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # --ignore-scripts: no dependency gets to run code at install time. Our own
+      # postinstall (`wxt prepare`) is the one script we need, so it runs
+      # explicitly — from the local binary, never fetched on demand.
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install wxt prepare
+
+      # lcov for Sonar; the docs/11 §1 thresholds still gate core here too.
+      - run: npm run coverage
+
+      - name: Read the package version
+        id: pkg
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+
+      # The token is scoped to the two steps that need it, so the install and
+      # the test run above never see it. Dependabot and fork PRs get no repo
+      # secrets at all: they skip the scan with a notice instead of failing.
+      - name: Check for SONAR_TOKEN
+        id: token
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          if [ -n "$SONAR_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::SonarCloud scan skipped — SONAR_TOKEN is not available to this run (Dependabot or fork PR)."
+          fi
+
+      - name: SonarCloud scan
+        if: steps.token.outputs.present == 'true'
+        # Pinned to a commit, not a moving tag: this step holds a token. Dependabot
+        # proposes updates (with the repo's 7-day cooldown).
+        uses: SonarSource/sonarqube-scan-action@d209202bc7d53ff1cc128f7f907dac145c9d6ae9 # v8.3.0
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.projectVersion=${{ steps.pkg.outputs.version }}

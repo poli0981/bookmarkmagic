@@ -82,4 +82,21 @@ describe('markdown escaping', () => {
     });
     expect(md).toContain('- [\\[x\\]\\(y\\)](<https://a.example/(z)>)');
   });
+
+  it('ends with exactly one newline, however the tree ends', () => {
+    for (const style of ['nested', 'flat'] as const) {
+      expect(serializeMarkdown([], { date: 'd', style })).toBe('# Bookmarks — d\n');
+      const md = serializeMarkdown([{ title: 'Empty', children: [] }], { date: 'd', style });
+      expect(md.endsWith('\n')).toBe(true);
+      expect(md.endsWith('\n\n')).toBe(false);
+    }
+  });
+
+  it('keeps a long newline run that is not at the end (no backtracking trim)', () => {
+    // The old `/\n+$/` re-scanned this run once per newline before failing.
+    const run = '\n'.repeat(20_000);
+    const md = serializeMarkdown([{ title: `a${run}b`, children: [] }], { date: 'd' });
+    expect(md).toContain(`- **a${run}b**`);
+    expect(md.endsWith('**\n')).toBe(true);
+  });
 });
