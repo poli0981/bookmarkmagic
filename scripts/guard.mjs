@@ -75,8 +75,13 @@ const RULES = [
   ['network', 'RTCPeerConnection', /\bRTCPeerConnection\b/g],
   ['network', 'importScripts', /\bimportScripts\b/g],
   // `globalThis['fe' + 'tch']` — computed access on a global is how every
-  // identifier rule above is evaded, so it is banned as a shape.
-  ['network', 'computed global access', /\b(?:globalThis|window|self|navigator|document)\s*\[/g],
+  // identifier rule above is evaded, so it is banned as a shape, optional
+  // chaining included (`globalThis?.['fe' + 'tch']` got through until v1.1.0).
+  [
+    'network',
+    'computed global access',
+    /\b(?:globalThis|window|self|navigator|document)(?:\s*\?\.)?\s*\[/g,
+  ],
   // Resource hints fetch ahead of time. These words have no use in this
   // extension, so they are banned outright; `preload` is ordinary English, so
   // only as a rel value.
@@ -119,6 +124,20 @@ const RULES = [
   ['raw HTML', 'createContextualFragment', /\bcreateContextualFragment\b/g],
   ['raw HTML', 'srcdoc', /\bsrcdoc\b/gi],
   ['raw HTML', 'document.write', /\bdocument\s*\.\s*write(?:ln)?\b/g],
+  // Evasion. Every rule above matches a NAME; these are the ways of using a
+  // member without writing its name. `Reflect.get(globalThis, 'fe' + 'tch')`
+  // and `Reflect.set(el, 'outer' + 'HTML', h)` reach anything, and nothing
+  // here needs Reflect at all.
+  ['evasion', 'Reflect', /\bReflect\b/g],
+  // `el['inner' + 'HTML']`, `el?.[`inner${x}`]`: a member name assembled at
+  // runtime is only ever written to hide it. Only after something a member
+  // access can follow (an identifier, `)`, `]`, `?.`), so array literals such
+  // as `[`.${ext}`]` stay allowed.
+  [
+    'evasion',
+    'assembled member name',
+    /[\w$)\].]\s*\[\s*(?:(?:'[^'\n]*'|"[^"\n]*"|`[^`\n]*`)\s*\+|`[^`\n]*\$\{)/g,
+  ],
 ];
 
 /** @param {string[]} argv */

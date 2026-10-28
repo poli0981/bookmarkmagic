@@ -13,8 +13,10 @@
  *   1. the manifest: MV3, the exact permission list, the exact top-level key
  *      set, the Chrome floor, and the exact extension-page CSP;
  *   2. the file inventory: every file the manifest or the pages point at exists
- *      (WXT drops `_locales/` and `icon/` silently when publicDir is wrong);
- *   3. the bundle: no network API anywhere in the shipped JavaScript.
+ *      (WXT drops `_locales/` and `icon/` silently when publicDir is wrong),
+ *      and no page points anywhere but inside the package;
+ *   3. the bundle: none of the network identifiers `npm run guard` bans in the
+ *      source, anywhere in the shipped JavaScript.
  *
  * Usage: node scripts/check-manifest.mjs — checks <repo>/.output/chrome-mv3,
  * resolved from this file, not the cwd. It takes no arguments on purpose: a
@@ -36,9 +38,9 @@ const CHROME_FLOOR = '136';
  * It may only ever get stricter. Never add 'unsafe-eval' or a remote source.
  */
 const EXPECTED_CSP =
-  "script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' data: blob:; " +
-  "style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'none'; frame-src 'none'; " +
-  "worker-src 'self'; form-action 'none'; base-uri 'none'";
+  "default-src 'none'; script-src 'self'; object-src 'none'; connect-src 'none'; " +
+  "img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; " +
+  "media-src 'none'; frame-src 'none'; worker-src 'self'; form-action 'none'; base-uri 'none'";
 
 /**
  * The exact top-level key set the build is expected to emit.
@@ -95,10 +97,16 @@ const REQUIRED_FILES = [
 /**
  * Network APIs that must not appear in the shipped JavaScript — including code
  * that arrived through a dependency, which `npm run guard` (source only) never
- * sees. The CSP would refuse these at runtime; this refuses to ship them.
+ * sees. The same identifiers the source gate bans, matched as bare words: until
+ * v1.1.0 only `fetch(` counted, so `fetch.call(…)`, an alias, WebRTC and
+ * `importScripts` shipped unseen. WebRTC matters most — no CSP directive Chrome
+ * enforces governs it.
  */
 const NETWORK_IN_BUNDLE =
-  /\bfetch\s*\(|\bXMLHttpRequest\b|\bWebSocket\b|\bEventSource\b|\bsendBeacon\b|\bWebTransport\b/;
+  /\b(?:fetch|XMLHttpRequest|WebSocket|WebTransport|EventSource|sendBeacon|RTCPeerConnection|importScripts)\b/;
+
+/** `src`/`href` values in a built page. Vite writes them double-quoted. */
+const PAGE_REFS = /\b(?:src|href)="([^"]*)"/g;
 
 /** @param {string} a @param {string} b */
 const byName = (a, b) => a.localeCompare(b, 'en');
@@ -175,9 +183,36 @@ function referencedFiles(manifest) {
   );
 }
 
+/**
+ * What the built pages load: every `src`/`href` must be a path inside the
+ * package. A page pointing outside it would be a remote load (which the CSP
+ * refuses at runtime) or a file the build forgot (a blank page).
+ *
+ * @param {string} outDir @param {string[]} problems @returns {string[]}
+ */
+function pageReferences(outDir, problems) {
+  const refs = [];
+  for (const page of listFiles(outDir).filter((f) => f.endsWith('.html'))) {
+    const rel = relative(outDir, page).replace(/\\/g, '/');
+    for (const [, ref = ''] of readFileSync(page, 'utf8').matchAll(PAGE_REFS)) {
+      if (/^(?:[a-z][a-z\d+.-]*:|\/\/)/i.test(ref)) {
+        problems.push(`${rel} loads "${ref}" from outside the package (docs/08 §3)`);
+      } else if (ref !== '' && !ref.startsWith('#')) {
+        refs.push(ref.split(/[?#]/)[0] ?? '');
+      }
+    }
+  }
+  return refs;
+}
+
 /** @param {string} outDir @param {Record<string, unknown>} manifest @param {string[]} problems */
 function checkInventory(outDir, manifest, problems) {
-  for (const file of [...REQUIRED_FILES, ...referencedFiles(manifest)]) {
+  const files = [
+    ...REQUIRED_FILES,
+    ...referencedFiles(manifest),
+    ...pageReferences(outDir, problems),
+  ];
+  for (const file of new Set(files)) {
     const path = join(outDir, file.replace(/^\//, ''));
     if (!existsSync(path)) problems.push(`missing file in the build: ${file}`);
   }
