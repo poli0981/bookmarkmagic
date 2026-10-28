@@ -84,7 +84,7 @@ rather than assign `undefined`. Build nodes with conditional spreads
   doc edit into a reflow diff.
 - There is **no Biome rule that catches `{@html}`.** `noDangerouslySetInnerHtml`
   is a React rule and does not apply to Svelte. The ban in `09 §3` is enforced
-  by the canonical grep gate (`08 §3`, run as `npm run guard`) and by review —
+  by the source gate (`scripts/guard.mjs`, `08 §3`, run as `npm run guard`) and by review —
   not by the linter.
 - `overrides` block: `noDefaultExport` must be relaxed for **`**/*.svelte`**,
   not just `entrypoints/**` — every Svelte component is a default export,

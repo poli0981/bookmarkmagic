@@ -38,8 +38,10 @@ folder trees. English · Tiếng Việt · 日本語.
 This is the whole point of the project, so it is worth being precise.
 
 - **No network access at all.** Not analytics, not telemetry, not update pings.
-  There is no server. A grep gate (`npm run guard`) fails the build if anyone
-  adds `fetch`, `XMLHttpRequest`, `WebSocket`, `EventSource` or `sendBeacon`.
+  There is no server. The browser enforces it: the extension's content security
+  policy sets `connect-src 'none'`, so Chrome itself refuses any request an
+  extension page tries to make. On top of that, `npm run check:manifest` scans
+  the shipped bundle for network APIs and `npm run guard` scans the source.
 - **Exactly two permissions**: `bookmarks` and `storage`. No host permissions,
   no content scripts, no background worker. Two gates enforce it: a unit test
   over `wxt.config.ts`, and `npm run check:manifest`, which CI runs against the

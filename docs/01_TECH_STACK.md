@@ -67,7 +67,7 @@
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "knip": "knip",
-    "guard": "node scripts/guard.mjs",        // canonical grep gate, 08 §3
+    "guard": "node scripts/guard.mjs",        // the source gate, 08 §3
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",

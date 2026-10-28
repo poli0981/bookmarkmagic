@@ -49,7 +49,7 @@ bookmarkmagic/
 ├── biome.json / knip.json / tsconfig.json / vitest.config.ts
 ├── .nvmrc                       # 24
 ├── scripts/
-│   ├── guard.mjs                # canonical grep gate (08 §3), run by npm run guard
+│   ├── guard.mjs                # the source gate (08 §3), run by npm run guard
 │   └── gen-icons.mjs            # zero-dep placeholder PNG writer (16/32/48/128)
 ├── docs/                        # this suite (00–15)
 ├── legal/                       # EULA.md, DISCLAIMER.md, PRIVACY.md, THIRD_PARTY_NOTICES.md
