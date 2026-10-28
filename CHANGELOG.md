@@ -11,6 +11,15 @@ breaking format or schema changes (a BM JSON version bump).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.1.0] — 2026-10-29
+
+New import formats, a Merge that really merges, restores that put everything
+back where it was, Sort A→Z, drag to reorder, and a new look. Permissions are
+unchanged (`bookmarks` and `storage`), and nothing to do — Chrome updates
+itself. **Needs Chrome 136 or later.**
+
 ### Added
 
 - Import Chrome's own `Bookmarks` file — the JSON file in your profile folder,
@@ -175,6 +184,7 @@ from 2026-08-03.
 - Parsing is bounded: 25 MB per file, 100 000 nodes, 200 levels of nesting.
 - No network access of any kind at runtime, enforced by a grep gate in CI.
 
-[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.1.0...HEAD
+[1.1.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/poli0981/bookmarkmagic/releases/tag/v1.0.0
