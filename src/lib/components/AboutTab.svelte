@@ -23,7 +23,7 @@
     const settings = getSettings();
     const report = snapshot({ version, locale: settings.locale, theme: settings.theme });
     const copied = await copyToClipboard(report);
-    pushToast(t(copied ? 'about.diagnosticsCopied' : 'edit.copyFailed'), copied ? 'success' : 'danger');
+    pushToast(t(copied ? 'about.diagnosticsCopied' : 'about.diagnosticsCopyFailed'), copied ? 'success' : 'danger');
   }
 </script>
 

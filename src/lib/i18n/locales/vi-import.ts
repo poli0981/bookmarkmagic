@@ -18,6 +18,7 @@ export const importTab = {
   stepSource: 'Nguồn',
   stepOptions: 'Tùy chọn',
   stepWriting: 'Đang ghi',
+  stepResult: 'Kết quả',
   format: {
     'netscape-html': 'HTML',
     'bm-json': 'JSON của BookmarkMagic',

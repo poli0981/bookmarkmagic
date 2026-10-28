@@ -70,6 +70,23 @@ export function resolveNewFolderParent(
   return focused.parentId ?? writableRoot;
 }
 
+/**
+ * What to call a node in a sentence: its title, else its address, else the
+ * caller's "(untitled)". Dialogs used the bare title and asked to delete `""`
+ * while the tree row showed the address (v1.1.0 review).
+ */
+export function displayTitle(node: EditNode | undefined, untitled: string): string {
+  if (node === undefined) return '';
+  if (node.title !== '') return node.title;
+  return node.url !== undefined && node.url !== '' ? node.url : untitled;
+}
+
+/** The host a row shows beside its title; nothing for `javascript:`, `data:` or a malformed address. */
+export function hostOf(url: string | undefined): string {
+  if (url === undefined || !URL.canParse(url)) return '';
+  return new URL(url).host;
+}
+
 /** How many nodes sit inside `node`. Drives the delete confirmation's count. */
 export function countDescendants(node: EditNode | undefined): number {
   if (node === undefined) return 0;

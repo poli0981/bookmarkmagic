@@ -85,7 +85,11 @@ export type ImportState =
       where?: WriteSite;
     };
 
-let state = $state<ImportState>({ kind: 'idle' });
+// `.raw` for both: every update replaces the object, and a deep proxy breaks
+// identity. The preview's new/duplicate badges look nodes up in a WeakMap keyed
+// by the parsed objects; read through a proxy, every lookup missed and no badge
+// ever showed. It also spared a proxy over a 100k-node tree.
+let state = $state.raw<ImportState>({ kind: 'idle' });
 let options = $state<ImportOptionsState>({ mode: 'new-folder', dedupe: true });
 let controller: AbortController | undefined;
 
@@ -96,7 +100,7 @@ let controller: AbortController | undefined;
  * state would be lost while `state` still said 'parsed' — leaving a preview
  * with no badges and a permanently dead Import button.
  */
-let prepared = $state<PreparedImport | undefined>();
+let prepared = $state.raw<PreparedImport | undefined>();
 
 export function getPrepared(): PreparedImport | undefined {
   return prepared;

@@ -90,9 +90,10 @@ export function resolveKey(
       return focusAt(rows, rows.length - 1);
     case 'ArrowRight': {
       if (current === undefined) return NONE;
-      if (current.expandable && !current.expanded) return { kind: 'expand', id: current.node.id };
-      if (current.expanded) return focusAt(rows, index + 1);
-      return NONE;
+      if (!current.expandable) return NONE;
+      // An EMPTY folder can still be in `expanded` (after "Expand all"); it has
+      // no first child to step into, so → does nothing, per the ARIA pattern.
+      return current.expanded ? focusAt(rows, index + 1) : { kind: 'expand', id: current.node.id };
     }
     case 'ArrowLeft': {
       if (current === undefined) return NONE;

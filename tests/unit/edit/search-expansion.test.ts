@@ -89,3 +89,15 @@ describe('the whole cycle', () => {
     expect([...cleared]).toEqual(['root']);
   });
 });
+
+describe('mergeSearchExpansion — folders the user closed (v1.1.0 review)', () => {
+  it('leaves them closed when the search re-merges after a tree change', () => {
+    const first = mergeSearchExpansion(set(), set('a', 'b'), set());
+    // The user collapses `a` during the search …
+    const expanded = new Set([...first.expanded].filter((id) => id !== 'a'));
+    // … and a rename elsewhere re-runs the merge with the same wanted set.
+    const again = mergeSearchExpansion(expanded, set('a', 'b'), set('b'), set('a'));
+    expect(again.expanded.has('a')).toBe(false);
+    expect(again.expanded).toBe(expanded);
+  });
+});

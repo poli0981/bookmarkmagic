@@ -2,32 +2,29 @@
   import { describeError } from '../browser/describe-error';
   import { backupFilename as suggestBackupName } from '../browser/download';
   import { BmAborted } from '../browser/errors';
-  import { num, t, tPlural } from '../i18n/index.svelte';
+  import { t, tPlural } from '../i18n/index.svelte';
+  import { folderDate } from '../import/folder-name';
   import { prepareImport, previewPlan, runImport } from '../import/run-import';
   import {
-    answerAttestation,
     awaitAttestation,
     beginWrite,
-    cancelWrite,
     getImportOptions,
     getImportState,
     getPrepared,
-    resetImport,
     setImportOptions,
     setImportState,
     setPrepared,
     type WriteSite,
   } from '../stores/import-session.svelte';
-  import { navigate } from '../stores/route.svelte';
   import { getSettings } from '../stores/settings.svelte';
   import Button from './Button.svelte';
-  import Callout from './Callout.svelte';
   import ConfirmDialog from './ConfirmDialog.svelte';
   import DropZone from './DropZone.svelte';
-  import ErrorCallout from './ErrorCallout.svelte';
+  import { focusWhenShown } from './focus-heading';
+  import ImportAnnouncer from './ImportAnnouncer.svelte';
   import ImportOptions from './ImportOptions.svelte';
+  import ImportProgress from './ImportProgress.svelte';
   import ImportReport from './ImportReport.svelte';
-  import ProgressBar from './ProgressBar.svelte';
   import StatsCard from './StatsCard.svelte';
   import TreePreview from './TreePreview.svelte';
   import WarningList from './WarningList.svelte';
@@ -42,6 +39,8 @@
     prepared === undefined ? undefined : previewPlan(prepared, options.mode, options.dedupe),
   );
   let confirmingReplace = $state(false);
+  /** Set once a file is picked: only then does the step-01 heading take focus on return. */
+  let visited = $state(false);
 
   const counts = (bookmarks: number, folders: number): string =>
     t('import.countPair', {
@@ -50,6 +49,7 @@
     });
 
   async function onFile(file: File): Promise<void> {
+    visited = true;
     setImportState({ kind: 'validating', filename: file.name });
     try {
       const result = await prepareImport(file, {
@@ -86,7 +86,7 @@
     const signal = beginWrite();
     const now = new Date();
     const backupFilename = suggestBackupName(now);
-    const folder = t('import.folderName', { date: formatFolderDate(now) });
+    const folder = t('import.folderName', { date: folderDate(now) });
     const where: WriteSite = { mode: options.mode, folder: options.mode === 'new-folder' ? folder : '' };
     /** The name the backup was saved under, once it is on disk. Nothing may point at it before. */
     let savedAs: string | undefined;
@@ -136,31 +136,26 @@
       setImportState({ kind: 'error', filename, ...describeError(err), where, ...backup });
     }
   }
-
-  /**
-   * ISO date + local time (docs/07 §3), deliberately not Intl: it names a
-   * folder this extension creates in the user's browser.
-   */
-  function formatFolderDate(now: Date): string {
-    const pad = (n: number): string => String(n).padStart(2, '0');
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
-  }
 </script>
 
+<!-- Each step's heading takes focus as it replaces the step before, and the
+     announcer speaks what changed (docs/06 §5). -->
+<ImportAnnouncer state={session} />
+<div data-focus-scope>
 {#if session.kind === 'idle'}
   <section class="panel">
-    <h2 class="eyebrow">01 · {t('import.stepSource')}</h2>
+    <h2 class="eyebrow" tabindex="-1" {@attach visited && focusWhenShown}>01 · {t('import.stepSource')}</h2>
     <DropZone onfile={(file) => void onFile(file)} />
   </section>
 {:else if session.kind === 'validating'}
   <section class="panel">
-    <h2 class="eyebrow">01 · {t('import.stepSource')}</h2>
+    <h2 class="eyebrow" tabindex="-1" {@attach focusWhenShown}>01 · {t('import.stepSource')}</h2>
     <p class="muted mono">{t('import.reading', { name: session.filename })}</p>
   </section>
 {:else if session.kind === 'parsed'}
   <div class="split">
     <section class="panel">
-      <h2 class="eyebrow">
+      <h2 class="eyebrow" tabindex="-1" {@attach focusWhenShown}>
         02 · {t('import.preview')}
         <span class="file mono">{session.filename}</span>
         {#if prepared !== undefined}<span class="format mono">{t(`import.format.${prepared.format}`)}</span>{/if}
@@ -206,42 +201,12 @@
     onconfirm={() => void start(session.filename)}
     oncancel={() => (confirmingReplace = false)}
   />
-{:else if session.kind === 'backing-up'}
-  <Callout tone="warn">{t('import.backingUp')}</Callout>
-{:else if session.kind === 'attesting'}
-  <!-- The anchor download reports nothing, so this confirmation is the only
-       thing standing between the user and an unbacked-up deletion. -->
-  <Callout tone="danger">{t('import.attest', { name: session.backupFilename })}</Callout>
-  <div class="actions">
-    <Button variant="danger" onclick={() => answerAttestation(true)}>{t('import.attestConfirm')}</Button>
-    <Button onclick={() => answerAttestation(false)}>{t('common.cancel')}</Button>
-  </div>
-{:else if session.kind === 'clearing'}
-  <Callout tone="danger">{t('import.clearing')}</Callout>
-{:else if session.kind === 'writing'}
-  <section class="panel writing">
-    <h2 class="eyebrow">04 · {t('import.stepWriting')}</h2>
-    <ProgressBar done={session.progress.done} total={session.progress.total} label={t('common.import')} />
-    <p class="muted mono">
-      {t('import.progress', { done: num(session.progress.done), total: num(session.progress.total) })}
-      {#if session.progress.currentPath !== ''}<span class="path">{session.progress.currentPath}</span>{/if}
-    </p>
-    <Callout tone="warn">{t('import.keepTabOpen')}</Callout>
-    <div class="actions"><Button icon="close" onclick={cancelWrite}>{t('common.cancel')}</Button></div>
-  </section>
-{:else if session.kind === 'error'}
-  <ErrorCallout messageKey={session.messageKey} detail={session.detail} />
+{:else if session.kind === 'done' || session.kind === 'cancelled' || session.kind === 'error'}
   <ImportReport state={session} />
-  <div class="actions"><Button onclick={resetImport}>{t('import.another')}</Button></div>
 {:else}
-  <ImportReport state={session} />
-  <div class="actions">
-    {#if session.kind === 'done'}
-      <Button variant="primary" icon="edit" onclick={() => navigate('edit')}>{t('import.openEdit')}</Button>
-    {/if}
-    <Button onclick={resetImport}>{t('import.another')}</Button>
-  </div>
+  <ImportProgress state={session} />
 {/if}
+</div>
 
 <style>
   .panel {
@@ -297,19 +262,5 @@
     color: var(--fg-muted);
     font-size: var(--fs-1);
     margin: 0;
-  }
-
-  .path {
-    display: block;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .actions {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--sp-2);
-    margin-top: var(--sp-3);
   }
 </style>

@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { LiveNode } from '../browser/bookmarks';
   import type { CheckState } from '../core/select';
-  import { num, t } from '../i18n/index.svelte';
+  import { num, t, tPlural } from '../i18n/index.svelte';
   import Icon from './icons/Icon.svelte';
   import Self from './FolderPickNode.svelte';
 
@@ -74,8 +74,7 @@
     </ul>
     {#if folders.length > shown.length}
       <button class="more mono" style:--depth={depth} onclick={() => (limit += CHUNK)}>
-        {t('edit.showMore', {
-          n: num(Math.min(folders.length - shown.length, CHUNK)),
+        {tPlural('edit.showMore', Math.min(folders.length - shown.length, CHUNK), {
           total: num(folders.length - shown.length),
         })}
       </button>

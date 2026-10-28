@@ -8,11 +8,11 @@
   import { subscribe } from '../browser/bookmarks';
   import { copyToClipboard } from '../browser/clipboard';
   import { openBookmarkUrl } from '../browser/open-url';
-  import { countDescendants, toEditNode } from '../edit/edit-node';
+  import { countDescendants, displayTitle, toEditNode } from '../edit/edit-node';
   import { createBatcher } from '../edit/live-sync';
   import { moveTargets } from '../edit/move-target';
   import { type EditNode, findNode } from '../edit/patch-tree';
-  import { resolveKey } from '../edit/tree-keyboard';
+  import { onTreeKey } from '../edit/tree-keys';
   import { getLocale, num, t, tPlural } from '../i18n/index.svelte';
   import { EditSession } from '../stores/edit-session.svelte';
   import { pushToast } from '../stores/toast.svelte';
@@ -85,6 +85,7 @@
     session.movingNode === undefined ? [] : moveTargets(session.roots, session.movingNode),
   );
   const descendantCount = $derived(countDescendants(session.pendingDelete));
+  const pendingTitle = $derived(displayTitle(session.pendingDelete, t('edit.untitled')));
 
   const partialNote = $derived.by(() => {
     const partial = session.actionError?.partial;
@@ -94,7 +95,7 @@
   });
 
   function sort(folder: EditNode | undefined): void {
-    if (folder === undefined) return;
+    if (folder === undefined || session.busy) return;
     if (!session.requestSort(folder)) pushToast(t('edit.alreadySorted'), 'info');
   }
 
@@ -112,45 +113,11 @@
   }
 
   function onKeydown(event: KeyboardEvent): void {
-    if (session.renamingId !== undefined) return;
-    // Keys aimed at a row's own control (or the rename input) belong to it.
-    if (event.target !== event.currentTarget) return;
-    if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'c' && focusedNode !== undefined) {
-      event.preventDefault();
-      void copy(focusedNode);
-      return;
-    }
-    if (event.ctrlKey || event.metaKey || event.altKey) return;
-    const key = event.shiftKey && event.key === 'F10' ? 'ContextMenu' : event.key;
-
-    const action = resolveKey(key, session.focusedId, session.rows);
-    if (action.kind === 'none') return;
-    event.preventDefault();
-    const node = 'id' in action ? findNode(session.roots, action.id) : undefined;
-
-    switch (action.kind) {
-      case 'focus':
-        session.focusedId = action.id;
-        scrollFocusedIntoView();
-        break;
-      case 'expand':
-      case 'collapse':
-        session.toggle(action.id);
-        break;
-      case 'rename':
-        if (node !== undefined && session.isEditable(node)) session.renamingId = action.id;
-        break;
-      case 'delete':
-        if (node !== undefined && session.isEditable(node)) session.pendingDelete = node;
-        break;
-      case 'move':
-        if (node !== undefined && session.isEditable(node)) session.movingNode = node;
-        break;
-      case 'activate':
-        if (node?.url !== undefined) void open(node);
-        else if (node !== undefined) session.toggle(node.id);
-        break;
-    }
+    onTreeKey(event, session, {
+      open: (node) => void open(node),
+      copy: (node) => void copy(node),
+      scroll: scrollFocusedIntoView,
+    });
   }
 
   /** Keep the focused row on screen — the tree is a fixed-height scroller. */
@@ -172,8 +139,7 @@
 
   /** Focus follows a delete to the next row, not into the void (uM4). */
   async function confirmDelete(): Promise<void> {
-    const next = await session.confirmDelete();
-    if (next !== undefined) treeEl?.focus();
+    if (await session.confirmDelete()) treeEl?.focus();
   }
 </script>
 
@@ -218,7 +184,7 @@
         roots={session.roots}
         busy={session.busy}
         onclose={() => (session.showDuplicates = false)}
-        ondelete={(node) => (session.pendingDelete = node)}
+        ondelete={(node) => session.requestDelete(node, false)}
         onkeepFirst={() => (session.pendingKeepFirst = true)}
       />
     {/if}
@@ -241,8 +207,8 @@
   danger
   title={t('edit.deleteTitle')}
   body={descendantCount > 0
-    ? tPlural('edit.deleteFolderBody', descendantCount, { title: session.pendingDelete?.title ?? '' })
-    : t('edit.deleteBody', { title: session.pendingDelete?.title ?? '' })}
+    ? tPlural('edit.deleteFolderBody', descendantCount, { title: pendingTitle })
+    : t('edit.deleteBody', { title: pendingTitle })}
   confirmLabel={t('edit.delete')}
   cancelLabel={t('common.cancel')}
   onconfirm={() => void confirmDelete()}
@@ -265,10 +231,8 @@
 
 <ConfirmDialog
   open={session.pendingSort !== undefined}
-  title={t('edit.sortTitle', { title: session.pendingSort?.folder.title ?? '' })}
-  body={tPlural('edit.sortBody', session.pendingSort?.moves.length ?? 0, {
-    title: session.pendingSort?.folder.title ?? '',
-  })}
+  title={t('edit.sortTitle', { title: displayTitle(session.pendingSort?.folder, t('edit.untitled')) })}
+  body={tPlural('edit.sortBody', session.pendingSort?.moves.length ?? 0)}
   confirmLabel={t('edit.sort')}
   cancelLabel={t('common.cancel')}
   onconfirm={() => void session.confirmSort()}

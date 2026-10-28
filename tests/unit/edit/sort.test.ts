@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import type { EditNode } from '@/lib/edit/patch-tree';
-import { planSort, sortedOrder } from '@/lib/edit/sort';
+import { applySort, planSort, sortedOrder } from '@/lib/edit/sort';
 import { makeRng } from '../../helpers/tree';
 
 const b = (id: string, title: string, url = `https://${id}.example/`): EditNode => ({
@@ -62,5 +62,38 @@ describe('planSort', () => {
       const expected = sortedOrder(children, 'en').map((n) => n.id);
       expect(apply(children, planSort(children, 'en'))).toEqual(expected);
     }
+  });
+});
+
+describe('applySort', () => {
+  const moves = Array.from({ length: 60 }, (_, i) => ({ id: `n${i}`, index: i }));
+
+  it('applies every move in order and pauses every 25', async () => {
+    const seen: string[] = [];
+    const pause = vi.fn(async () => {});
+    const outcome = await applySort(
+      moves,
+      async () => {},
+      (step) => seen.push(step.id),
+      pause,
+    );
+    expect(outcome).toEqual({ done: 60, total: 60 });
+    expect(seen).toEqual(moves.map((m) => m.id));
+    expect(pause).toHaveBeenCalledTimes(2);
+  });
+
+  it('stops at the first refusal, says how far it got, and never throws', async () => {
+    const refusal = new Error("Can't modify the root bookmark folders.");
+    const onMoved = vi.fn();
+    const outcome = await applySort(
+      moves,
+      async (step) => {
+        if (step.id === 'n3') throw refusal;
+      },
+      onMoved,
+      async () => {},
+    );
+    expect(outcome).toEqual({ done: 3, total: 60, error: refusal });
+    expect(onMoved).toHaveBeenCalledTimes(3);
   });
 });

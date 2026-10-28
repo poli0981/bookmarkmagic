@@ -72,7 +72,7 @@
 
   .search {
     flex: 1;
-    min-width: 18ch;
+    min-width: min(18ch, 100%);
     display: flex;
     align-items: center;
     gap: var(--sp-2);
@@ -108,8 +108,12 @@
     color: var(--fg-muted);
   }
 
+  /* Wraps too: at 375 px the unwrapped group pushed the page 17–61 px wide,
+     depending on the language (v1.1.0 review). */
   .group {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--sp-1);
+    min-width: 0;
   }
 </style>

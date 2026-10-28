@@ -1,7 +1,7 @@
 <script lang="ts">
   import type { NodeStatus } from '../core/diff';
   import { type BookmarkNode, isFolder } from '../core/model';
-  import { num, t } from '../i18n/index.svelte';
+  import { num, t, tPlural } from '../i18n/index.svelte';
   import Icon from './icons/Icon.svelte';
   import Self from './TreePreviewNode.svelte';
 
@@ -80,8 +80,7 @@
     </ul>
     {#if children.length > shown.length}
       <button class="more mono" style:--depth={depth} onclick={() => (limit += CHUNK)}>
-        {t('edit.showMore', {
-          n: num(Math.min(children.length - shown.length, CHUNK)),
+        {tPlural('edit.showMore', Math.min(children.length - shown.length, CHUNK), {
           total: num(children.length - shown.length),
         })}
       </button>

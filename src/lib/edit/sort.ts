@@ -55,3 +55,38 @@ export function planSort(children: readonly EditNode[], locale: string): SortMov
   }
   return moves;
 }
+
+export interface SortOutcome {
+  /** How many moves the browser accepted. */
+  done: number;
+  total: number;
+  /** The refusal that stopped it, if one did. */
+  error?: unknown;
+}
+
+const YIELD_EVERY = 25;
+
+/**
+ * Apply the moves in order, one awaited move at a time, pausing now and then
+ * so the tab stays responsive. Never throws — like `deleteEach`, it stops at
+ * the first refusal and says how far it got, because sorting has no undo.
+ */
+export async function applySort(
+  moves: readonly SortMove[],
+  move: (step: SortMove) => Promise<void>,
+  onMoved: (step: SortMove) => void,
+  pause: () => Promise<void>,
+): Promise<SortOutcome> {
+  let done = 0;
+  for (const step of moves) {
+    try {
+      await move(step);
+    } catch (error) {
+      return { done, total: moves.length, error };
+    }
+    onMoved(step);
+    done++;
+    if (done % YIELD_EVERY === 0) await pause();
+  }
+  return { done, total: moves.length };
+}
