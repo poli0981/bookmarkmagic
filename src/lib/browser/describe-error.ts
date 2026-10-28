@@ -21,6 +21,7 @@
  * `browser/` may import `core/`, not the reverse (docs/02 §3).
  */
 import { BmParseError } from '../core/model';
+import { record } from './diagnostics';
 import { BmBackupError, BmBrowserError, BmEnvError, BmPartialWrite } from './errors';
 
 export interface DescribedError {
@@ -35,6 +36,18 @@ export interface DescribedError {
 }
 
 export function describeError(err: unknown): DescribedError {
+  const described = describe(err);
+  // Every failure the UI shows passes through here, so this is where the
+  // diagnostics log learns of it — by code, never by its detail text.
+  record({
+    kind: 'failure',
+    where: err instanceof Error ? err.name : typeof err,
+    code: described.messageKey,
+  });
+  return described;
+}
+
+function describe(err: unknown): DescribedError {
   if (err instanceof BmParseError) {
     return { messageKey: `errors.${err.code}`, detail: err.detail };
   }

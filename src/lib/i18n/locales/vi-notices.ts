@@ -72,6 +72,8 @@ export const errors = {
   BACKUP_CANCELLED: 'Bạn đã hủy bản sao lưu, nên không có gì bị xóa.',
   BACKUP_WRITE_FAILED: 'Không thể lưu bản sao lưu, nên không có gì bị xóa.',
   BROWSER: 'Trình duyệt đã từ chối một thao tác bookmark.',
+  WRITE_LOCKED:
+    'Một tab BookmarkMagic khác đang ghi bookmark. Hãy đợi nó xong rồi thử lại — chưa có gì bị thay đổi.',
   NO_WRITABLE_ROOTS:
     'Hồ sơ trình duyệt này không có thư mục bookmark nào mà BookmarkMagic được phép ghi vào. Bookmark do tổ chức quản lý thì không thể thay đổi.',
   PARTIAL_WRITE: 'Trình duyệt đã ngừng nhận bookmark khi quá trình nhập đang diễn ra.',

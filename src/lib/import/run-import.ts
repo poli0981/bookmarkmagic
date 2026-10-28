@@ -18,6 +18,7 @@ import {
   rootMarkersOf,
   toBookmarkNodes,
 } from '../browser/bookmarks';
+import { record } from '../browser/diagnostics';
 import {
   isPickerAvailable,
   openSaveTarget,
@@ -28,6 +29,7 @@ import {
 } from '../browser/download';
 import { BmAborted, BmBackupError } from '../browser/errors';
 import type { ImportMode } from '../browser/storage';
+import { withWriteLock } from '../browser/write-lock';
 import { type WriteProgress, writeTree } from '../browser/write-queue';
 import { textCapsBreach, treeCapsBreach } from '../core/caps';
 import { buildUrlIndex } from '../core/dedupe';
@@ -87,6 +89,12 @@ export async function prepareImport(
   // Blob.text() is UTF-8 decode, which consumes a leading BOM for us.
   const text = await file.text();
   const { format, result } = parseBookmarkFile(text, options);
+  record({
+    kind: 'import',
+    phase: 'parsed',
+    format,
+    nodes: result.stats.bookmarks + result.stats.folders,
+  });
 
   // One read: getRoots walks the whole tree, so the index and the counts come
   // from the same snapshot instead of a second getTree().
@@ -174,7 +182,7 @@ function destinationsOf(roots: BookmarkRoots): PlanDestinations {
  *     planning fails while the tree is still whole (docs/03 §1 step 7).
  */
 export async function runImport(options: RunImportOptions): Promise<ImportOutcome> {
-  const { prepared, mode, dedupe, newFolderTitle, now, signal, onProgress } = options;
+  const { mode, now } = options;
 
   // MUST be the first statement — see (1) above. Nothing is awaited before it.
   const backupFilename =
@@ -188,6 +196,17 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
   // rejection; `proveBackup` still receives it when it does await.
   pendingTarget?.catch(() => undefined);
 
+  // One writer across all Manager tabs (docs/03 §5). Taken AFTER the picker:
+  // waiting for it first would burn the click's transient activation.
+  return withWriteLock(() => writeAll(options, backupFilename, pendingTarget));
+}
+
+async function writeAll(
+  options: RunImportOptions,
+  backupFilename: string,
+  pendingTarget: Promise<SaveTarget> | undefined,
+): Promise<ImportOutcome> {
+  const { prepared, mode, dedupe, newFolderTitle, now, signal, onProgress } = options;
   const roots = await getRoots();
   const plan = buildImportPlan({
     roots: prepared.result.roots,
@@ -199,6 +218,8 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
     newFolderTitle,
   });
 
+  record({ kind: 'import', phase: `planned:${mode}`, nodes: plan.stats.toCreate });
+
   if (mode === 'replace') {
     const snapshot = toBookmarkNodes(roots.writable, rootMarkersOf(roots));
     const savedAs = await proveBackup(
@@ -208,12 +229,15 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
       pendingTarget,
       options.confirmUnprovenBackup,
     );
+    record({ kind: 'import', phase: 'backup-proven' });
     options.onClearing?.(savedAs);
     if (signal.aborted) throw new BmAborted(0);
     await clearRoots(roots.writable, signal);
+    record({ kind: 'import', phase: 'cleared' });
   }
 
   const { created } = await writeTree(plan, { signal, onProgress });
+  record({ kind: 'import', phase: 'written', nodes: created });
   return { plan, created };
 }
 

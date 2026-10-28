@@ -167,6 +167,11 @@ const dict = {
     resetDone: 'Settings reset to defaults',
   },
   about: {
+    diagnostics: 'Diagnostics',
+    copyDiagnostics: 'Copy diagnostics',
+    diagnosticsNote:
+      'A short local log of what this tab did — error codes and counts, never titles or addresses. It leaves your computer only if you paste it somewhere.',
+    diagnosticsCopied: 'Diagnostics copied',
     tagline:
       'Import, export and edit bookmarks between browsers — offline, no account, no cloud. Your data never leaves your device.',
     version: 'Version {version}',

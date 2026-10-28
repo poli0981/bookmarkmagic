@@ -81,6 +81,8 @@ export const errors = {
   BACKUP_CANCELLED: 'You cancelled the safety backup, so nothing was deleted.',
   BACKUP_WRITE_FAILED: 'The safety backup could not be saved, so nothing was deleted.',
   BROWSER: 'The browser refused a bookmark operation.',
+  WRITE_LOCKED:
+    'Another BookmarkMagic tab is writing bookmarks right now. Wait for it to finish, then try again — nothing was changed.',
   NO_WRITABLE_ROOTS:
     'This browser profile has no bookmark folder BookmarkMagic is allowed to write to. Bookmarks managed by an organisation cannot be changed.',
   PARTIAL_WRITE: 'The browser stopped accepting bookmarks part-way through the import.',

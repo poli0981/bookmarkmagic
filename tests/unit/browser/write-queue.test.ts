@@ -94,7 +94,7 @@ describe('writeTree — progress', () => {
   const wideTree = (n: number): BookmarkNode[] =>
     Array.from({ length: n }, (_, i) => ({ title: `b${i}`, url: `https://e${i}.example/` }));
 
-  it('reports every 50 creates and once at the end', async () => {
+  it('reports the first create, every 50, and once at the end', async () => {
     const fake = new FakeBookmarks();
     const events: WriteProgress[] = [];
     await writeTree(planOf([{ parentId: '2', nodes: wideTree(120) }]), {
@@ -102,7 +102,7 @@ describe('writeTree — progress', () => {
       onProgress: (p) => events.push({ ...p }),
     });
 
-    expect(events.map((e) => e.done)).toEqual([50, 100, 120]);
+    expect(events.map((e) => e.done)).toEqual([1, 50, 100, 120]);
     expect(events.every((e) => e.total === 120)).toBe(true);
   });
 
@@ -133,7 +133,9 @@ describe('writeTree — progress', () => {
       create: fake.create,
       onProgress: (p) => events.push({ ...p }),
     });
-    expect(events[0]?.currentPath).toBe('L1 / L2');
+    // events[0] is the first create (L1 itself, at the top); the 50th is inside L2.
+    expect(events[0]?.currentPath).toBe('');
+    expect(events[1]?.currentPath).toBe('L1 / L2');
   });
 
   it('prefixes the path with the trail of the folder a segment writes into', async () => {
@@ -157,8 +159,8 @@ describe('writeTree — progress', () => {
       { create: fake.create, onProgress: (p) => events.push({ ...p }) },
     );
     // 60 total, so the 50th create reports across the segment boundary.
-    expect(events.map((e) => e.done)).toEqual([50, 60]);
-    expect(events[0]?.total).toBe(60);
+    expect(events.map((e) => e.done)).toEqual([1, 50, 60]);
+    expect(events[1]?.total).toBe(60);
   });
 });
 

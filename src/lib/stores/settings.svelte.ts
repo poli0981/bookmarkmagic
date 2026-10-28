@@ -9,7 +9,7 @@
  *   report what happened instead of guessing. Theme and locale apply
  *   synchronously, before the write is even scheduled.
  */
-import { browser } from 'wxt/browser';
+import { getUiLanguage } from '../browser/app-info';
 import {
   DEFAULT_SETTINGS,
   readSettings,
@@ -184,15 +184,9 @@ function applyLocale(): void {
     applyDocumentLanguage();
     return;
   }
-  // A failing i18n lookup must not stop settings from loading — fall back to
-  // the default locale rather than leaving the Manager unrendered.
-  let uiLanguage = 'en';
-  try {
-    uiLanguage = browser.i18n.getUILanguage();
-  } catch {
-    uiLanguage = 'en';
-  }
-  setLocale(resolveLocale(uiLanguage));
+  // A failing i18n lookup falls back to English inside getUiLanguage, so it
+  // can never stop settings from loading and leave the Manager unrendered.
+  setLocale(resolveLocale(getUiLanguage()));
   applyDocumentLanguage();
 }
 

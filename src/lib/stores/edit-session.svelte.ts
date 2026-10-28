@@ -21,6 +21,8 @@ import {
   update,
 } from '../browser/bookmarks';
 import { type DescribedError, describeError } from '../browser/describe-error';
+import { record } from '../browser/diagnostics';
+import { withWriteLock } from '../browser/write-lock';
 import { yieldToEventLoop } from '../browser/write-queue';
 import { findDuplicateGroups } from '../core/dedupe';
 import { searchTree } from '../core/search';
@@ -278,9 +280,12 @@ export class EditSession {
     this.actionError = undefined;
     this.busy = true;
     try {
-      const outcome = await deleteEach(doomed, this.api.remove, (id) => {
-        this.roots = removeNode(this.roots, id);
-      });
+      record({ kind: 'edit', action: 'keep-first', count: doomed.length });
+      const outcome = await withWriteLock(() =>
+        deleteEach(doomed, this.api.remove, (id) => {
+          this.roots = removeNode(this.roots, id);
+        }),
+      );
       if (outcome.error === undefined) return;
       // The dialog promised an exact number; after a partial failure the
       // user must learn how many copies are left.
@@ -289,6 +294,9 @@ export class EditSession {
         partial: { done: outcome.deleted, total: outcome.total, kind: 'delete' },
       };
       await this.load();
+    } catch (err) {
+      // The cross-tab lock was refused before anything was deleted.
+      this.actionError = describeError(err);
     } finally {
       this.busy = false;
     }
@@ -340,13 +348,16 @@ export class EditSession {
     this.actionError = undefined;
     this.busy = true;
     let done = 0;
+    record({ kind: 'edit', action: 'sort', count: moves.length });
     try {
-      for (const move of moves) {
-        await this.api.move(move.id, { parentId: folder.id, index: move.index });
-        this.roots = moveNode(this.roots, move.id, folder.id, move.index);
-        done++;
-        if (done % YIELD_EVERY === 0) await yieldToEventLoop();
-      }
+      await withWriteLock(async () => {
+        for (const move of moves) {
+          await this.api.move(move.id, { parentId: folder.id, index: move.index });
+          this.roots = moveNode(this.roots, move.id, folder.id, move.index);
+          done++;
+          if (done % YIELD_EVERY === 0) await yieldToEventLoop();
+        }
+      });
     } catch (err) {
       this.actionError = {
         ...describeError(err),

@@ -11,6 +11,7 @@ import { browser } from 'wxt/browser';
 import type { CsvDelimiter } from '../core/csv-dialect';
 import type { MarkdownStyle } from '../core/serialize/markdown';
 import type { Locale } from '../i18n/resolve-locale';
+import { record } from './diagnostics';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
 export type ExportFormat = 'netscape-html' | 'bm-json' | 'csv' | 'markdown';
@@ -73,6 +74,7 @@ export async function readSettings(): Promise<Settings> {
     const stored = await browser.storage.local.get(SETTINGS_KEY);
     return coerceSettings(stored[SETTINGS_KEY]);
   } catch {
+    record({ kind: 'storage', issue: 'settings-read-failed' });
     return { ...DEFAULT_SETTINGS };
   }
 }
@@ -97,6 +99,7 @@ export async function readLegal(): Promise<LegalAcceptance | null> {
     const stored = await browser.storage.local.get(LEGAL_KEY);
     return coerceLegal(stored[LEGAL_KEY]);
   } catch {
+    record({ kind: 'storage', issue: 'legal-read-failed' });
     return null;
   }
 }
@@ -142,6 +145,7 @@ export function subscribeStorage(handler: (change: StorageChange) => void): () =
       if (LEGAL_KEY in changes) change.legal = coerceLegal(changes[LEGAL_KEY]?.newValue);
       if (change.settings !== undefined || 'legal' in change) handler(change);
     } catch {
+      record({ kind: 'storage', issue: 'change-decode-failed' });
       // A throw inside a chrome.* listener surfaces as an extension error in
       // chrome://extensions, which the QA pass treats as a failure. Nothing
       // here is worth that: the next read will pick up the same value.

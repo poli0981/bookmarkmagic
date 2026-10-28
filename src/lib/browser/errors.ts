@@ -52,7 +52,7 @@ export class BmBrowserError extends Error {
   }
 }
 
-export type BmEnvCode = 'NO_WRITABLE_ROOTS';
+export type BmEnvCode = 'NO_WRITABLE_ROOTS' | 'WRITE_LOCKED';
 
 /**
  * Thrown when the environment cannot support the operation at all.
