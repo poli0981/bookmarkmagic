@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+// @ts-check
 /**
  * Generate a large Netscape bookmark file on demand.
  *
@@ -20,7 +21,10 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname } from 'node:path';
 
-/** Mulberry32 — small, seeded, and good enough for shaping test data. */
+/**
+ * Mulberry32 — small, seeded, and good enough for shaping test data.
+ * @param {number} seed
+ */
 function rng(seed) {
   let a = seed >>> 0;
   return () => {
@@ -31,17 +35,38 @@ function rng(seed) {
   };
 }
 
+const USAGE =
+  'usage: node scripts/gen-fixture.mjs --nodes <n> --out <path> [--per-folder <n>] [--seed <n>]';
+
+/**
+ * Strict flags: whole numbers >= 1, every flag needs a value, no unknown flags.
+ * The old reader took arguments in blind pairs, so `--nodes 1.5` wrote 2 nodes,
+ * `--per-folder abc` silently wrote no bookmarks, and one missing value shifted
+ * every flag after it.
+ *
+ * @param {string[]} argv
+ * @returns {{ nodes: number, perFolder: number, seed: number, out: string } | string}
+ *   the options, or an error message
+ */
 function parseArgs(argv) {
-  const out = { nodes: 10_000, perFolder: 50, seed: 1, out: undefined };
+  const out = { nodes: 10_000, perFolder: 50, seed: 1, out: '' };
+  /** @type {Record<string, 'nodes' | 'perFolder' | 'seed'>} */
+  const numeric = { '--nodes': 'nodes', '--per-folder': 'perFolder', '--seed': 'seed' };
   for (let i = 0; i < argv.length; i += 2) {
-    const key = argv[i];
+    const flag = argv[i] ?? '';
     const value = argv[i + 1];
-    if (key === '--nodes') out.nodes = Number(value);
-    else if (key === '--per-folder') out.perFolder = Number(value);
-    else if (key === '--seed') out.seed = Number(value);
-    else if (key === '--out') out.out = value;
+    if (value === undefined || value.startsWith('--')) return `${flag} needs a value`;
+    if (flag === '--out') {
+      out.out = value;
+      continue;
+    }
+    const key = numeric[flag];
+    if (key === undefined) return `unknown flag ${flag}`;
+    const n = Number(value);
+    if (!Number.isInteger(n) || n < 1) return `${flag} must be a whole number >= 1, got "${value}"`;
+    out[key] = n;
   }
-  return out;
+  return out.out === '' ? '--out is required' : out;
 }
 
 /**
@@ -61,6 +86,10 @@ const TITLE_POOL = [
   'A rather long bookmark title that wraps in most reasonable window widths',
 ];
 
+/**
+ * @param {{ nodes: number, perFolder: number, seed: number }} options
+ * @returns {string}
+ */
 function build({ nodes, perFolder, seed }) {
   const rand = rng(seed);
   const lines = [
@@ -72,14 +101,21 @@ function build({ nodes, perFolder, seed }) {
     '<DL><p>',
   ];
 
-  let written = 0;
   let folderIndex = 0;
+  /** @param {number} depth */
   const indent = (depth) => '    '.repeat(depth);
 
-  // Depth 3 so the walk is exercised, but nowhere near the 200 cap — this file
-  // is for measuring the common case, not the limit.
-  const emitFolder = (depth) => {
-    if (written >= nodes) return;
+  /**
+   * Write one folder (and, below depth 3, one nested folder chain) using at
+   * most `budget` nodes. Returns how many it wrote — always at least 1, so the
+   * caller's loop provably makes progress.
+   *
+   * @param {number} depth
+   * @param {number} written nodes written before this call
+   * @param {number} budget nodes this call may write
+   * @returns {number}
+   */
+  const emitFolder = (depth, written, budget) => {
     folderIndex++;
     const stamp = 1700000000 + folderIndex;
     lines.push(
@@ -88,34 +124,37 @@ function build({ nodes, perFolder, seed }) {
       }>Folder ${folderIndex}</H3>`,
       `${indent(depth)}<DL><p>`,
     );
-    written++;
+    let used = 1;
 
-    const count = Math.min(perFolder, nodes - written);
+    const count = Math.min(perFolder, budget - used);
     for (let i = 0; i < count; i++) {
+      const n = written + used;
       const title = TITLE_POOL[Math.floor(rand() * TITLE_POOL.length)];
-      const stampB = 1700000000 + written;
       lines.push(
-        `${indent(depth + 1)}<DT><A HREF="https://host${written % 997}.example/p${written}?q=${written}" ` +
-          `ADD_DATE="${stampB}">${title}</A>`,
+        `${indent(depth + 1)}<DT><A HREF="https://host${n % 997}.example/p${n}?q=${n}" ` +
+          `ADD_DATE="${1700000000 + n}">${title}</A>`,
       );
-      written++;
+      used++;
     }
 
-    if (depth < 3 && written < nodes) emitFolder(depth + 1);
+    // Depth 3 so the walk is exercised, but nowhere near the 200 cap — this
+    // file is for measuring the common case, not the limit.
+    if (depth < 3 && used < budget) used += emitFolder(depth + 1, written + used, budget - used);
     lines.push(`${indent(depth)}</DL><p>`);
+    return used;
   };
 
-  while (written < nodes) emitFolder(1);
+  let written = 0;
+  while (written < nodes) written += emitFolder(1, written, nodes - written);
   lines.push('</DL><p>', '');
   return lines.join('\n');
 }
 
 const options = parseArgs(process.argv.slice(2));
 
-if (options.out === undefined || !Number.isFinite(options.nodes) || options.nodes < 1) {
-  console.error(
-    'usage: node scripts/gen-fixture.mjs --nodes <n> --out <path> [--per-folder <n>] [--seed <n>]',
-  );
+if (typeof options === 'string') {
+  console.error(`gen-fixture: ${options}
+${USAGE}`);
   process.exitCode = 1;
 } else {
   const html = build(options);

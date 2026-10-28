@@ -145,9 +145,16 @@ a **minor-version** event at minimum.
 
 **Sample files from reporters.** A bookmark file is a browsing history, so the
 policy asks reporters to run `scripts/sanitize-bookmarks.mjs` first — it rewrites
-every hostname, path, query value and title while preserving the structure,
-encoding, and timestamp magnitudes a parser bug depends on, so the sanitized file
-still reproduces. Anything received by email is kept only as long as needed to
+every hostname, path, query value, title, note, keyword and tag while preserving
+the structure, encoding, and timestamps a parser bug depends on, so the sanitized
+file still reproduces. It reads Netscape HTML, BookmarkMagic JSON, Chrome's
+profile `Bookmarks` file, Firefox `.json` backups and our CSV, and refuses
+anything else. JSON is rewritten default-deny (every string value except a short
+list of structural keys). Before writing, it checks its own output — no host but
+its `*.example` aliases, and for HTML no text left that is not a placeholder —
+and writes nothing if that check fails. Until 2026-10-28 it accepted any JSON
+and rewrote only `url`/`title`, so Chrome's profile file (titles under `name`)
+came out with every title intact. Anything received by email is kept only as long as needed to
 reproduce and fix, then deleted; `legal/PRIVACY.md` states the same to users.
 This is the receiving-side counterpart to §3's rule that error messages never
 echo more than a 120-character excerpt of file content.

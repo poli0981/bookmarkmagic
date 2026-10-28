@@ -1,20 +1,26 @@
+// @ts-check
 /**
- * Generate placeholder extension icons — a rounded violet square with a white
- * bookmark ribbon — at the four sizes Chrome needs. Zero dependencies: PNG is
- * written by hand (zlib deflate + a CRC32 table), so no image library enters
- * the tree.
+ * Generate the extension icons — a rounded violet square with a white bookmark
+ * ribbon — at the four sizes Chrome needs. Zero dependencies: PNG is written by
+ * hand (zlib deflate + a CRC32 table), so no image library enters the tree.
  *
- * These are functional placeholders so the manifest loads from Phase 0.
- * Replace with the designed icon before a store release (docs/00 §10 item 3,
- * docs/13 §2). Run: `npm run icons`.
+ * THIS SCRIPT IS THE SOURCE OF TRUTH for the shipped icons: the owner adopted
+ * its output as final on 2026-07-26 (docs/00 §10 item 3). There is no other
+ * master file. `npm run icons` overwrites src/public/icon/*.png — review the
+ * diff before committing, because those PNGs are what the store listing shows.
  */
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { deflateSync } from 'node:zlib';
 
+/** @typedef {readonly [number, number, number, number]} Rgba */
+
+/** @type {Rgba} */
 const ACCENT = [0x6d, 0x4a, 0xff, 255]; // --accent, docs/06 §1
+/** @type {Rgba} */
 const WHITE = [255, 255, 255, 255];
+/** @type {Rgba} */
 const TRANSPARENT = [0, 0, 0, 0];
 
 const CRC_TABLE = (() => {
@@ -27,12 +33,14 @@ const CRC_TABLE = (() => {
   return table;
 })();
 
+/** @param {Uint8Array} buf */
 function crc32(buf) {
   let c = 0xffffffff;
-  for (const byte of buf) c = CRC_TABLE[(c ^ byte) & 0xff] ^ (c >>> 8);
+  for (const byte of buf) c = (CRC_TABLE[(c ^ byte) & 0xff] ?? 0) ^ (c >>> 8);
   return (c ^ 0xffffffff) >>> 0;
 }
 
+/** @param {string} type @param {Buffer} data */
 function chunk(type, data) {
   const body = Buffer.concat([Buffer.from(type, 'ascii'), data]);
   const len = Buffer.alloc(4);
@@ -42,6 +50,7 @@ function chunk(type, data) {
   return Buffer.concat([len, body, crc]);
 }
 
+/** @param {number} x @param {number} y @param {number} size @param {number} radius */
 function insideRounded(x, y, size, radius) {
   const px = x + 0.5;
   const py = y + 0.5;
@@ -50,7 +59,10 @@ function insideRounded(x, y, size, radius) {
   return dx * dx + dy * dy <= radius * radius;
 }
 
-/** Bookmark ribbon: a tall rectangle with a triangular notch cut from the bottom. */
+/**
+ * Bookmark ribbon: a tall rectangle with a triangular notch cut from the bottom.
+ * @param {number} x @param {number} y @param {number} size
+ */
 function insideBookmark(x, y, size) {
   const u = (x + 0.5) / size;
   const v = (y + 0.5) / size;
@@ -64,12 +76,17 @@ function insideBookmark(x, y, size) {
   return true;
 }
 
+/**
+ * @param {number} x @param {number} y @param {number} size
+ * @returns {Rgba}
+ */
 function colorAt(x, y, size) {
   if (!insideRounded(x, y, size, size * 0.2)) return TRANSPARENT;
   if (insideBookmark(x, y, size)) return WHITE;
   return ACCENT;
 }
 
+/** @param {number} size */
 function makePng(size) {
   const stride = size * 4;
   const raw = Buffer.alloc((stride + 1) * size);

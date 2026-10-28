@@ -41,7 +41,7 @@ jobs:
       - run: npx --no-install wxt prepare
 
       - run: npm run lint # biome check .
-      - run: npm run check # svelte-check (TS 6 API) + tsc (TS 7)
+      - run: npm run check # svelte-check (TS 6 API) + tsc (TS 7) + scripts checkJs
       - run: npm run knip
       - run: npm run coverage # vitest --coverage, thresholds per docs/11 §1
       - run: npm run guard # the zero-network / no-raw-HTML gate, docs/08 §3

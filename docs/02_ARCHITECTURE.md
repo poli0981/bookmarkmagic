@@ -46,11 +46,16 @@ log gives no warning — verify the output tree, not just the exit code.
 bookmarkmagic/
 ├── CLAUDE.md                    # AI build instructions (root)
 ├── wxt.config.ts                # srcDir + manifest + svelte module
-├── biome.json / knip.json / tsconfig.json / vitest.config.ts
-├── .nvmrc                       # 24
-├── scripts/
+├── biome.json / knip.json / tsconfig.json / tsconfig.scripts.json / vitest.config.ts
+├── sonar-project.properties     # SonarCloud CI analysis (12 §2.5)
+├── .nvmrc / .npmrc              # Node 26; min-release-age=7 (01 §2, §6)
+├── scripts/                     # all plain .mjs, type-checked via checkJs
 │   ├── guard.mjs                # the source gate (08 §3), run by npm run guard
-│   └── gen-icons.mjs            # zero-dep placeholder PNG writer (16/32/48/128)
+│   ├── check-manifest.mjs       # the built-artifact gate (08 §3), npm run check:manifest
+│   ├── gen-icons.mjs            # zero-dep PNG writer — the icons' source of truth
+│   ├── gen-fixture.mjs          # large Netscape files for 11 §5/§6, never committed
+│   ├── sanitize-bookmarks.mjs   # reporter-facing sanitizer (CLI entry, 09 §6)
+│   └── sanitize/                # its format modules: detect, mappers, spans, html, json, csv, leaks
 ├── docs/                        # this suite (00–15)
 ├── legal/                       # EULA.md, DISCLAIMER.md, PRIVACY.md, THIRD_PARTY_NOTICES.md
 ├── src/

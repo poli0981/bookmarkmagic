@@ -7,9 +7,13 @@ node_modules/
 stats.html
 stats-*.json
 
-# Test / coverage
+# Test / coverage (Vitest 5 writes reporter output under .vitest/)
 coverage/
+.vitest/
 *.tsbuildinfo
+
+# WXT runner config — holds local browser paths, never shared
+web-ext.config.ts
 
 # Editors
 .idea/
@@ -33,8 +37,8 @@ npm-debug.log*
 .env.local
 .env.*.local
 
-# Generated fixtures that are too big to commit (tests/fixtures/generate-huge.ts
-# writes here on demand — docs/11 §2)
+# Generated fixtures that are too big to commit (scripts/gen-fixture.mjs writes
+# here on demand — docs/11 §2)
 tests/fixtures/generated/
 
 .claude/
