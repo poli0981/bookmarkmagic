@@ -80,3 +80,27 @@ export function countDescendants(node: EditNode | undefined): number {
 export function extraCopyIds(groups: readonly { nodes: readonly EditNode[] }[]): string[] {
   return groups.flatMap((group) => group.nodes.slice(1).map((node) => node.id));
 }
+
+/**
+ * Each node's folder path, "Bookmarks bar / Dev" — what the duplicate panel
+ * shows so two copies of one link can be told apart (uM22). Iterative: the
+ * live tree has no depth cap.
+ */
+export function folderPaths(roots: readonly EditNode[]): Map<string, string> {
+  const paths = new Map<string, string>();
+  const stack: { nodes: readonly EditNode[]; trail: string }[] = [{ nodes: roots, trail: '' }];
+  while (stack.length > 0) {
+    // SAFETY: the loop condition guarantees an entry.
+    const { nodes, trail } = stack.pop() as (typeof stack)[number];
+    for (const node of nodes) {
+      paths.set(node.id, trail);
+      if (node.children !== undefined && node.children.length > 0) {
+        stack.push({
+          nodes: node.children,
+          trail: trail === '' ? node.title : `${trail} / ${node.title}`,
+        });
+      }
+    }
+  }
+  return paths;
+}

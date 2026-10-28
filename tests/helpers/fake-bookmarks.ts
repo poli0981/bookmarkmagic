@@ -132,6 +132,41 @@ export class FakeBookmarks {
     this.nodes.delete(id);
   };
 
+  move = async (id: string, destination: { parentId?: string; index?: number }): Promise<void> => {
+    this.calls.push(`move:${id}:${destination.parentId ?? ''}:${destination.index ?? ''}`);
+    const node = this.nodes.get(id);
+    if (node === undefined) throw new Error(`no such node: ${id}`);
+    if (node.unmodifiable !== undefined) throw new Error("Can't modify managed bookmarks");
+    const from = this.nodes.get(node.parentId ?? '');
+    const to = this.nodes.get(destination.parentId ?? node.parentId ?? '');
+    if (from?.children === undefined || to === undefined) throw new Error('bad move');
+    const oldIndex = from.children.indexOf(node);
+    from.children.splice(oldIndex, 1);
+    const siblings = to.children ?? [];
+    let index = destination.index ?? siblings.length;
+    // Chrome reads a same-parent index as counted BEFORE the node was removed.
+    if (from === to && index > oldIndex) index--;
+    siblings.splice(Math.min(index, siblings.length), 0, node);
+    to.children = siblings;
+    node.parentId = to.id;
+  };
+
+  update = async (id: string, changes: { title?: string; url?: string }): Promise<void> => {
+    this.calls.push(`update:${id}`);
+    const node = this.nodes.get(id);
+    if (node === undefined) throw new Error(`no such node: ${id}`);
+    if (changes.title !== undefined) node.title = changes.title;
+    if (changes.url !== undefined) node.url = changes.url;
+  };
+
+  remove = async (id: string): Promise<void> => {
+    const node = this.nodes.get(id);
+    if (node?.children !== undefined && node.children.length > 0) {
+      throw new Error("Can't remove non-empty folder (use recursive to force).");
+    }
+    await this.removeTree(id);
+  };
+
   // --- assertions helpers ---------------------------------------------------
 
   /** The writable roots as a title/url outline, ids dropped — for whole-tree comparisons. */
