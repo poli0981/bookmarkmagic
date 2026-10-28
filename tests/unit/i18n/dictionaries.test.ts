@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BM_PARSE_ERROR_CODES, PARSE_WARNING_CODES } from '@/lib/core/model';
 import en from '@/lib/i18n/locales/en';
 import ja from '@/lib/i18n/locales/ja';
 import vi from '@/lib/i18n/locales/vi';
@@ -96,5 +97,26 @@ describe('dictionary completeness', () => {
       .filter(([, keys]) => keys.length !== 2)
       .map(([path]) => path);
     expect(malformed).toEqual([]);
+  });
+});
+
+describe('every code the core can emit has a message', () => {
+  // A code with no key renders as its own dotted path ("warnings.INVALID_URL")
+  // in the preview. The union types cannot catch that; this can.
+  const ALL: [name: string, dict: Node][] = [['en', en as Node], ...LOCALES];
+
+  it.each(ALL)('%s has a plural message for every ParseWarningCode', (_name, dict) => {
+    const leaves = flatten(dict);
+    for (const code of PARSE_WARNING_CODES) {
+      expect(leaves.get(`warnings.${code}.one`), code).toBeTypeOf('string');
+      expect(leaves.get(`warnings.${code}.other`), code).toBeTypeOf('string');
+    }
+  });
+
+  it.each(ALL)('%s has a message for every BmParseErrorCode', (_name, dict) => {
+    const leaves = flatten(dict);
+    for (const code of BM_PARSE_ERROR_CODES) {
+      expect(leaves.get(`errors.${code}`), code).toBeTypeOf('string');
+    }
   });
 });

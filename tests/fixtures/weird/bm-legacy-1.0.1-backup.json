@@ -1,0 +1,42 @@
+{
+  "format": "bookmarkmagic",
+  "version": 1,
+  "generator": "BookmarkMagic 1.0.1",
+  "exportedAt": "2026-08-10T09:15:00.000Z",
+  "roots": [
+    {
+      "title": "Bookmarks bar",
+      "toolbar": true,
+      "addDate": 1700000000,
+      "children": [
+        {
+          "title": "Bar item",
+          "url": "https://bar.example/",
+          "addDate": 1700000001
+        }
+      ]
+    },
+    {
+      "title": "Other bookmarks",
+      "addDate": 1700000000,
+      "children": [
+        {
+          "title": "Other item",
+          "url": "https://other.example/",
+          "addDate": 1700000002
+        }
+      ]
+    },
+    {
+      "title": "Mobile bookmarks",
+      "addDate": 1700000000,
+      "children": [
+        {
+          "title": "Phone item",
+          "url": "https://mobile.example/",
+          "addDate": 1700000003
+        }
+      ]
+    }
+  ]
+}

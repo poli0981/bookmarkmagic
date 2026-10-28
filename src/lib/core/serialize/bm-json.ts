@@ -14,6 +14,12 @@ export interface BmJsonOptions {
   version: string;
   /** ISO 8601 instant. Passed in so this module stays free of ambient time. */
   exportedAt: string;
+  /**
+   * 2 (default) for a file a person may open; 0 for the Replace safety backup,
+   * which must stay under the import size cap to be restorable at all and is
+   * roughly half the size without indentation (docs/03 §1 step 6b).
+   */
+  indent?: 0 | 2;
 }
 
 function toJsonNode(node: BookmarkNode): Record<string, unknown> {
@@ -21,13 +27,15 @@ function toJsonNode(node: BookmarkNode): Record<string, unknown> {
     title: node.title,
     ...(node.url !== undefined && { url: node.url }),
     ...(node.toolbar === true && { toolbar: true }),
+    // `root` is additive: v1 readers ignore unknown keys, so the version stays 1.
+    ...(node.root !== undefined && node.toolbar !== true && { root: node.root }),
     ...(node.addDate !== undefined && { addDate: node.addDate }),
     ...(node.lastModified !== undefined && { lastModified: node.lastModified }),
     ...(isFolder(node) && { children: (node.children ?? []).map(toJsonNode) }),
   };
 }
 
-/** Serialize a tree to BM JSON v1 (2-space indented, trailing newline). */
+/** Serialize a tree to BM JSON v1 (2-space indented by default, trailing newline). */
 export function serializeBmJson(roots: readonly BookmarkNode[], options: BmJsonOptions): string {
   const doc = {
     format: BM_JSON_FORMAT,
@@ -36,5 +44,5 @@ export function serializeBmJson(roots: readonly BookmarkNode[], options: BmJsonO
     exportedAt: options.exportedAt,
     roots: roots.map(toJsonNode),
   };
-  return `${JSON.stringify(doc, null, 2)}\n`;
+  return `${JSON.stringify(doc, null, options.indent ?? 2)}\n`;
 }

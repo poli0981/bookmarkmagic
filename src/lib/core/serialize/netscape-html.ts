@@ -9,8 +9,14 @@
  * `LAST_MODIFIED` is emitted on `<H3>` only, never on `<A>` — that is what
  * Chrome does, and it is why the round-trip suite projects `lastModified` away
  * for bookmarks (docs/11 §3).
+ *
+ * Root folders carry a marker so a re-import puts their contents back INTO the
+ * root rather than into a folder named after it (docs/04 §1.1):
+ * `PERSONAL_TOOLBAR_FOLDER` (Chrome's), `UNFILED_BOOKMARKS_FOLDER` (Firefox's,
+ * which Firefox's own importer honours) and `MOBILE_BOOKMARKS_FOLDER` (ours —
+ * importers ignore attributes they do not know).
  */
-import { type BookmarkNode, isFolder } from '../model';
+import { type BookmarkNode, isBookmark } from '../model';
 
 const HEADER = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <!-- This is an automatically generated file. It will be read and overwritten. DO NOT EDIT! -->
@@ -47,12 +53,19 @@ function indent(depth: number): string {
   return '    '.repeat(depth);
 }
 
+/** The one root-marker attribute a folder carries, if any. The toolbar wins. */
+function rootAttr(node: BookmarkNode): string {
+  if (node.toolbar === true) return ' PERSONAL_TOOLBAR_FOLDER="true"';
+  if (node.root === 'other') return ' UNFILED_BOOKMARKS_FOLDER="true"';
+  if (node.root === 'mobile') return ' MOBILE_BOOKMARKS_FOLDER="true"';
+  return '';
+}
+
 function writeNode(node: BookmarkNode, depth: number, out: string[]): void {
   const pad = indent(depth);
-  if (isFolder(node)) {
-    const toolbar = node.toolbar === true ? ' PERSONAL_TOOLBAR_FOLDER="true"' : '';
+  if (!isBookmark(node)) {
     out.push(
-      `${pad}<DT><H3${attr('ADD_DATE', node.addDate)}${attr('LAST_MODIFIED', node.lastModified)}${toolbar}>${escapeHtml(node.title)}</H3>`,
+      `${pad}<DT><H3${attr('ADD_DATE', node.addDate)}${attr('LAST_MODIFIED', node.lastModified)}${rootAttr(node)}>${escapeHtml(node.title)}</H3>`,
     );
     out.push(`${pad}<DL><p>`);
     for (const child of node.children ?? []) writeNode(child, depth + 1, out);
@@ -60,10 +73,8 @@ function writeNode(node: BookmarkNode, depth: number, out: string[]): void {
     return;
   }
 
-  // SAFETY: isFolder() is false, so url is defined by the model's invariant.
-  const url = node.url as string;
   out.push(
-    `${pad}<DT><A HREF="${escapeHtml(url)}"${attr('ADD_DATE', node.addDate)}>${escapeHtml(node.title)}</A>`,
+    `${pad}<DT><A HREF="${escapeHtml(node.url)}"${attr('ADD_DATE', node.addDate)}>${escapeHtml(node.title)}</A>`,
   );
 }
 

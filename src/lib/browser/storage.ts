@@ -8,7 +8,7 @@
  *   defaults, because a corrupt settings blob must not brick the Manager.
  */
 import { browser } from 'wxt/browser';
-import type { CsvDelimiter } from '../core/serialize/csv';
+import type { CsvDelimiter } from '../core/csv-dialect';
 import type { MarkdownStyle } from '../core/serialize/markdown';
 import type { Locale } from '../i18n/resolve-locale';
 

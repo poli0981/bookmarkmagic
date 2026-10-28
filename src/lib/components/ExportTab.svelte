@@ -3,7 +3,7 @@
   import { getRootChildren, type LiveNode } from '../browser/bookmarks';
   import { type DescribedError, describeError } from '../browser/describe-error';
   import type { ExportFormat } from '../browser/storage';
-  import type { CsvDelimiter } from '../core/serialize/csv';
+  import type { CsvDelimiter } from '../core/csv-dialect';
   import type { MarkdownStyle } from '../core/serialize/markdown';
   import { countSelected, FORMAT_META, runExport } from '../export/run-export';
   import { num, t } from '../i18n/index.svelte';

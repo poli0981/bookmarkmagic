@@ -11,6 +11,9 @@
  * OMITTING absent keys, never by assigning `undefined`.
  */
 
+/** A top-level folder that stands for a browser root other than the bar (docs/04 §1.1, §2). */
+export type RootMarker = 'other' | 'mobile';
+
 export interface BookmarkNode {
   title: string;
   /** Absent ⇒ this node is a folder. */
@@ -21,6 +24,13 @@ export interface BookmarkNode {
   lastModified?: number;
   /** Netscape `PERSONAL_TOOLBAR_FOLDER`. Routing hint only — never stored by Chrome. */
   toolbar?: boolean;
+  /**
+   * Folders only: this folder IS the browser's Other or Mobile bookmarks root,
+   * so an import unwraps it into that root instead of nesting a copy of it
+   * (docs/03 §1). `toolbar` wins when both are set. Routing reads it on
+   * top-level folders only; deeper, it is carried as data.
+   */
+  root?: RootMarker;
   children?: BookmarkNode[];
 }
 
@@ -30,15 +40,25 @@ export interface TreeStats {
   maxDepth: number;
 }
 
-/** Non-fatal anomalies. Tolerated input never throws — it warns (docs/04 §1.2). */
-export type ParseWarningCode =
-  | 'NO_BOOKMARKS'
-  | 'DESCRIPTIONS_DROPPED'
-  | 'FAVICONS_IGNORED'
-  | 'INVALID_DATE'
-  | 'MISSING_URL'
-  | 'NEWER_VERSION'
-  | 'EMPTY_TITLE';
+/**
+ * Non-fatal anomalies. Tolerated input never throws — it warns (docs/04 §1.2).
+ * A runtime list, so `dictionaries.test.ts` can require a message for each.
+ */
+export const PARSE_WARNING_CODES = [
+  'NO_BOOKMARKS',
+  'DESCRIPTIONS_DROPPED',
+  'FAVICONS_IGNORED',
+  'INVALID_DATE',
+  'MISSING_URL',
+  'NEWER_VERSION',
+  'EMPTY_TITLE',
+  'INVALID_URL',
+  'PLACE_QUERIES_SKIPPED',
+  'EXTRA_ROOTS_SKIPPED',
+  'UNREADABLE_ENTRIES',
+] as const;
+
+export type ParseWarningCode = (typeof PARSE_WARNING_CODES)[number];
 
 export interface ParseWarning {
   code: ParseWarningCode;
@@ -80,18 +100,22 @@ export interface ImportPlan {
   };
 }
 
-/** Closed code set — extend `docs/02 §7` before extending this union. */
-export type BmParseErrorCode =
-  | 'NOT_NETSCAPE'
-  | 'NOT_BM_JSON'
-  | 'MALFORMED_JSON'
-  | 'INVALID_NODE'
-  | 'BAD_CSV_HEADER'
-  | 'CSV_ROW_MISMATCH'
-  | 'UNKNOWN_FORMAT'
-  | 'FILE_TOO_LARGE'
-  | 'TOO_MANY_NODES'
-  | 'TOO_DEEP';
+/** Closed code set — extend `docs/02 §7` before extending this list. */
+export const BM_PARSE_ERROR_CODES = [
+  'NOT_NETSCAPE',
+  'NOT_BM_JSON',
+  'MALFORMED_JSON',
+  'INVALID_NODE',
+  'BAD_CSV_HEADER',
+  'CSV_ROW_MISMATCH',
+  'CSV_UNCLOSED_QUOTE',
+  'UNKNOWN_FORMAT',
+  'FILE_TOO_LARGE',
+  'TOO_MANY_NODES',
+  'TOO_DEEP',
+] as const;
+
+export type BmParseErrorCode = (typeof BM_PARSE_ERROR_CODES)[number];
 
 /**
  * The only error type `core/` throws. Carries a stable machine code plus a
@@ -112,19 +136,43 @@ export class BmParseError extends Error {
   }
 }
 
-/** True when the node is a folder (no url). Narrows for callers. */
+/** True when the node is a folder (no url). */
 export function isFolder(node: BookmarkNode): boolean {
   return node.url === undefined;
 }
 
-/** Walk a tree depth-first, parents before children, siblings in order. */
+/** True when the node is a bookmark — and narrows `url` to a string for the caller. */
+export function isBookmark(node: BookmarkNode): node is BookmarkNode & { url: string } {
+  return node.url !== undefined;
+}
+
+/**
+ * Walk a tree depth-first, parents before children, siblings in order.
+ *
+ * Iterative, with an explicit stack: the recursive `yield*` version cost
+ * O(depth) per node, and the live browser tree it also walks has no depth cap,
+ * so recursion could overflow on a pathological profile (docs/05 §1).
+ */
 export function* walkTree(
   nodes: readonly BookmarkNode[],
   depth = 1,
 ): Generator<{ node: BookmarkNode; depth: number }> {
-  for (const node of nodes) {
-    yield { node, depth };
-    if (node.children !== undefined) yield* walkTree(node.children, depth + 1);
+  const stack: { list: readonly BookmarkNode[]; index: number; depth: number }[] = [
+    { list: nodes, index: 0, depth },
+  ];
+  while (stack.length > 0) {
+    // SAFETY: the loop condition guarantees a top frame.
+    const frame = stack[stack.length - 1] as (typeof stack)[number];
+    const node = frame.list[frame.index];
+    if (node === undefined) {
+      stack.pop();
+      continue;
+    }
+    frame.index++;
+    yield { node, depth: frame.depth };
+    if (node.children !== undefined && node.children.length > 0) {
+      stack.push({ list: node.children, index: 0, depth: frame.depth + 1 });
+    }
   }
 }
 

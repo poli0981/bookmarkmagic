@@ -10,7 +10,7 @@
  *   (docs/02 §3 rule 1).
  */
 import type { ExportFormat, ImportMode, ThemePreference } from '../browser/storage';
-import type { CsvDelimiter } from '../core/serialize/csv';
+import type { CsvDelimiter } from '../core/csv-dialect';
 import type { MarkdownStyle } from '../core/serialize/markdown';
 import type { Locale } from '../i18n/resolve-locale';
 

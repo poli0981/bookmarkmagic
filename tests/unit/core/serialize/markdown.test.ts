@@ -92,11 +92,37 @@ describe('markdown escaping', () => {
     }
   });
 
-  it('keeps a long newline run that is not at the end (no backtracking trim)', () => {
-    // The old `/\n+$/` re-scanned this run once per newline before failing.
+  it('collapses a long newline run in a title, and still ends with one newline', () => {
+    // The old `/\n+$/` re-scanned a run like this once per newline before
+    // failing; line breaks in titles now collapse, so the run cannot reach it.
     const run = '\n'.repeat(20_000);
     const md = serializeMarkdown([{ title: `a${run}b`, children: [] }], { date: 'd' });
-    expect(md).toContain(`- **a${run}b**`);
+    expect(md).toContain(`- **a${' '.repeat(20_000)}b**`);
     expect(md.endsWith('**\n')).toBe(true);
+  });
+
+  it('makes raw HTML in a title inert text (docs/09 T1)', () => {
+    const md = serializeMarkdown(
+      [{ title: '<img src=x onerror=alert(1)>', url: 'https://a.example/' }],
+      {
+        date: 'd',
+      },
+    );
+    expect(md).not.toMatch(/(?<!\\)</);
+    expect(md).toContain('\\<img src=x onerror=alert\\(1\\)\\>');
+  });
+
+  it('escapes emphasis, code, heading and list markers', () => {
+    expect(escapeMarkdown('**bold** _it_ `code` # h + - . ! | ~ &amp;')).toBe(
+      '\\*\\*bold\\*\\* \\_it\\_ \\`code\\` \\# h \\+ \\- \\. \\! \\| \\~ \\&amp;',
+    );
+  });
+
+  it('keeps a title with a line break on its own list line', () => {
+    const md = serializeMarkdown([{ title: 'a\r\n\r\n# b\nc', url: 'https://a.example/' }], {
+      date: 'd',
+    });
+    expect(md).toContain('- [a  \\# b c](https://a.example/)');
+    expect(md.split('\n').filter((line) => line.startsWith('#'))).toHaveLength(1);
   });
 });

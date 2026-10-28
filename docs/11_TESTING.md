@@ -42,6 +42,10 @@ weird/mixed-wrapper.html             # some roots wrapped, some not → root-lis
 weird/safari-no-wrapper.html         # no wrapper <DL> at all → same rule, other branch
 weird/emoji-rtl-titles.html          # 🌸, RTL, CJK titles; & < > " entities
 weird/microsecond-dates.html         # Firefox-style timestamps
+weird/loose-first.html               # loose bookmark before the wrapper list, no </DT> (v1.1.0)
+weird/unclosed-format-tag.html       # unescaped <b> in a title re-opened around every entry (v1.1.0)
+weird/invalid-urls.html              # addresses Chrome rejects, place:, bookmarklet, blank (v1.1.0)
+weird/bm-legacy-1.0.1-backup.json    # a 1.0.x Replace backup, read with root markers (v1.1.0)
 ```
 
 Generated on demand, never committed: `scripts/gen-fixture.mjs` writes

@@ -11,9 +11,10 @@ import { getGeneratorVersion } from '../browser/app-info';
 import { getRootChildren, getRoots, type LiveNode, toBookmarkNodes } from '../browser/bookmarks';
 import { sanitizeFilename, timestampSuffix, triggerDownload } from '../browser/download';
 import type { ExportFormat } from '../browser/storage';
+import type { CsvDelimiter } from '../core/csv-dialect';
 import { filterBySelection } from '../core/select';
 import { serializeBmJson } from '../core/serialize/bm-json';
-import { type CsvDelimiter, serializeCsv } from '../core/serialize/csv';
+import { serializeCsv } from '../core/serialize/csv';
 import { type MarkdownStyle, serializeMarkdown } from '../core/serialize/markdown';
 import { serializeNetscapeHtml } from '../core/serialize/netscape-html';
 
