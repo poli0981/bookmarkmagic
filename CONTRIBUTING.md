@@ -21,8 +21,15 @@ node scripts/sanitize-bookmarks.mjs your-bookmarks.html
 It needs nothing installed — plain Node. It writes
 `your-bookmarks.sanitized.html` next to the original, and prints what it found.
 
+It reads the usual `bookmarks.html` export, a BookmarkMagic JSON file, Chrome's
+profile `Bookmarks` file (also Edge, Brave and Vivaldi), a Firefox
+`bookmarks-YYYY-MM-DD.json` backup, and our CSV. It refuses anything else rather
+than guess, and it refuses to write if its own output still looks personal.
+
 What it **destroys**: every hostname, path, query value and fragment; every
-bookmark and folder title; Firefox keywords and tags; favicon data.
+bookmark and folder title and description; Firefox keywords and tags; favicon
+data; local `file:` paths; in JSON, every string except structural fields
+(types, ids, timestamps), including Chrome's `meta_info` and sync blob.
 
 What it **keeps**, because this is where the bug lives: the byte order mark, the
 doctype, the `<META>` line, comments, line endings, indentation, tag and
@@ -110,7 +117,7 @@ The full ritual, in order, because it is easy to do four fifths of it:
    line-ending normalization cannot rewrite the CRLF or BOM bytes the bug may
    depend on — do not "fix" that.
 2. **Add the regression test** to `tests/unit/core/fixtures.test.ts`, the only
-   fixture-driven suite. A browser export goes in its `BROWSER_EXPORTS` array,
+   parser regression suite. A browser export goes in its `BROWSER_EXPORTS` array,
    which drives a shared set of assertions; anything else gets its own case.
    There is no shared fixture-loading helper — that file has its own loader.
 3. **Fix the parser** in `src/lib/core/parse/`. The test and the fix land in the

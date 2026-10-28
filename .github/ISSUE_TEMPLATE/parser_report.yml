@@ -37,7 +37,9 @@ body:
       label: File format
       options:
         - HTML (the usual "bookmarks.html" export)
-        - JSON
+        - Chrome / Edge / Brave profile "Bookmarks" file
+        - Firefox JSON backup (bookmarks-YYYY-MM-DD.json)
+        - BookmarkMagic JSON
         - CSV
         - Not sure
     validations:

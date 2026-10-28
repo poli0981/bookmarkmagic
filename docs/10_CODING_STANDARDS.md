@@ -4,7 +4,7 @@
 
 | Unit | Soft limit | Hard limit |
 |---|---|---|
-| File (.ts / .svelte) | **300 lines** | **500 lines** — split before merging |
+| File (.ts / .svelte / .mjs) | **300 lines** | **500 lines** — split before merging |
 | Function / method | 50 lines | 80 lines |
 | Svelte component script block | 150 lines | move logic to a `.svelte.ts` store or `core/` |
 | Nesting depth | 3 | 4 |

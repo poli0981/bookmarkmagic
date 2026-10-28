@@ -63,11 +63,14 @@
     "dev:firefox": "wxt -b firefox",          // build sanity only, no store release
     "build": "wxt build",
     "zip": "wxt zip",
-    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit",   // TS 6 API, then the TS 7 tsc (§2)
+    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit && tsc -p tsconfig.scripts.json",
+                                              // TS 6 API, the TS 7 tsc, then scripts/*.mjs via checkJs
     "lint": "biome check .",
     "lint:fix": "biome check --write .",
     "knip": "knip",
     "guard": "node scripts/guard.mjs",        // the source gate, 08 §3
+    "check:manifest": "node scripts/check-manifest.mjs",  // the built-artifact gate, 08 §3
+    "icons": "node scripts/gen-icons.mjs",    // regenerates the shipped icons (source of truth)
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",

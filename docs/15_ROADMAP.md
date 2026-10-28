@@ -92,7 +92,9 @@ There is exactly one path, and every step has an owner in the repo:
    `tests/fixtures/** -text`, so EOL normalization cannot destroy the CRLF/BOM
    bytes the bug may depend on.
 3. A regression test lands in `tests/unit/core/fixtures.test.ts` — the only
-   fixture-driven suite — **in the same PR** as the parser fix (`11 §2`).
+   parser regression suite — **in the same PR** as the parser fix (`11 §2`). The
+   sanitizer suite (`tests/unit/scripts/sanitize-bookmarks.test.ts`) also walks
+   every fixture automatically, so the new file is covered there too.
 4. The quirk is noted in the parser source and in `04 §1.2` (`CLAUDE.md`
    working style makes this mandatory, not optional).
 5. `11 §2`'s inventory and `CHANGELOG.md [Unreleased]` are updated.
@@ -223,3 +225,6 @@ independently of the package (`13 §5`), though the copy should still go through
 | 2026-10-28 | **The zero-network promise becomes browser-enforced.** The production manifest gains an extension-page CSP that keeps the MV3 minimum and adds `connect-src 'none'` plus closed image/font/media/frame/form sources — no `default-src`, so styles are untouched; dev builds omit it so HMR works. Reverses `08 §3`'s old "never add a custom CSP", whose reason was that MV3 forbids *loosening*; tightening was always allowed. The rule now: only ever tighten, and `check:manifest` pins the exact string | 08 §3 |
 | 2026-10-28 | **Three gates instead of one grep:** the CSP (runtime), `check:manifest` scanning the shipped JS for network APIs (catches dependency code), and a rewritten `guard.mjs` — whole-file matching, identifiers banned outright, computed global access banned, `.html/.css` scanned, no test exemption, fails on zero files. The old one let all 28 audited bypasses through and printed "clean" for a checkout path with a space or diacritic. Vite's modulepreload polyfill (the one network call in the bundle) is off | 08 §3 |
 | 2026-10-28 | **The guard's rule list lives in `scripts/guard.mjs` only.** `08 §3` restating it was the "single source" that had already diverged (`\{@html\}` matched only the literal text) | 08 §3 |
+| 2026-10-28 | **The sanitizer reads the browser JSON formats and is default-deny for JSON.** It accepted any JSON and rewrote only `url`/`title`, so Chrome's profile `Bookmarks` file — titles under `name`, plus `meta_info` and a base64 sync blob — came out with every title intact and passed its own host check. JSON dialects are now recognised by shape (anything else refused), every string value is rewritten except structural keys, Firefox root GUIDs and the timestamps survive | 09 §6 |
+| 2026-10-28 | **The sanitizer's backstop reads the output's text, not just its hosts.** For HTML it strips markup and refuses on any word that is not a placeholder — independent of the rewriting rules, unlike the old check (and its test), which shared their blind spots. It also stopped overwriting the input when the output path equalled it, checks size before reading, decodes attributes once (CodeQL double-escaping) and finds `<DD>` notes in linear time (Sonar S8786), attributes included | 09 §6 |
+| 2026-10-28 | **`scripts/` obeys the size rule and is type-checked.** `docs/10 §1` now names `.mjs`; the 627-line sanitizer is split into `scripts/sanitize/` modules; every script carries `// @ts-check` and `tsconfig.scripts.json` runs them through the TS 7 `tsc` in `npm run check`. The sanitizer stays plain `.mjs` on purpose — reporters run it on whatever Node they have | 10 §1 |
