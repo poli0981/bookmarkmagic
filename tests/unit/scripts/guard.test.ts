@@ -50,6 +50,12 @@ const BANNED: readonly (readonly [string, string, string, string])[] = [
   ['EventSource', 'a.ts', 'new EventSource(u);', 'EventSource'],
   ['sendBeacon', 'a.ts', 'navigator.sendBeacon(u, d);', 'sendBeacon'],
   ['RTCPeerConnection', 'a.ts', 'new RTCPeerConnection({ iceServers: [] });', 'RTCPeerConnection'],
+  [
+    'the webkit-prefixed RTCPeerConnection',
+    'a.ts',
+    'new webkitRTCPeerConnection({ iceServers: [] });',
+    'RTCPeerConnection',
+  ],
   ['importScripts', 'a.ts', "importScripts('x.js');", 'importScripts'],
   ['computed globalThis access', 'a.ts', "globalThis['fe' + 'tch'](u);", 'computed global access'],
   [

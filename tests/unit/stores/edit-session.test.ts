@@ -137,8 +137,8 @@ describe('EditSession — rename, delete, new folder', () => {
     session.focusedId = a;
     const node = session.roots[0]?.children?.[0];
     if (node === undefined) throw new Error('no row');
-    session.requestDelete(node, true);
-    expect(await session.confirmDelete()).toBe(true);
+    session.requestDelete(node, 'tree');
+    expect(await session.confirmDelete()).toBe('tree');
     expect(session.focusedId).toBe(b);
     expect(fake.childTitles('1')).toEqual(['b']);
   });
@@ -149,8 +149,8 @@ describe('EditSession — rename, delete, new folder', () => {
     session.focusedId = a;
     const copy = session.roots[0]?.children?.find((n) => n.id === b);
     if (copy === undefined) throw new Error('no row');
-    session.requestDelete(copy, false);
-    expect(await session.confirmDelete()).toBe(false);
+    session.requestDelete(copy, 'panel');
+    expect(await session.confirmDelete()).toBe('panel');
     expect(session.focusedId).toBe(a);
     expect(fake.childTitles('1')).toEqual(['a']);
   });
@@ -163,6 +163,29 @@ describe('EditSession — rename, delete, new folder', () => {
     expect(session.filtering).toBe(false);
     expect(session.renamingId).toBe(session.focusedId);
     expect(session.rows.some((row) => row.node.id === session.renamingId)).toBe(true);
+  });
+
+  it('does not insert a new folder twice when the live event wins the race (v1.1.0 review)', async () => {
+    // Chrome fires onCreated before create() resolves: let the event land first.
+    const create = fake.create;
+    fake.create = async (details) => {
+      const node = await create(details);
+      session.applyLiveEvents([
+        {
+          kind: 'created',
+          parentId: details.parentId,
+          index: undefined,
+          node: { id: node.id, title: node.title, children: [] },
+        },
+      ]);
+      return node;
+    };
+    session = new EditSession(api(fake), () => 'en');
+    await session.load();
+    await session.newFolder('New folder');
+    const id = session.renamingId;
+    expect(id).toBeDefined();
+    expect(session.rows.filter((row) => row.node.id === id)).toHaveLength(1);
   });
 
   it('keeps a new folder visible when the search that opened its parent clears (v1.1.0 review)', async () => {
@@ -267,7 +290,7 @@ describe('EditSession — one bulk command at a time (v1.1.0 review)', () => {
     const row = session.roots[0]?.children?.find((n) => n.id === x);
     if (row === undefined) throw new Error('no row');
     session.startRename(row);
-    session.requestDelete(row, true);
+    session.requestDelete(row, 'tree');
     await session.newFolder('New');
     expect(session.renamingId).toBeUndefined();
     expect(session.pendingDelete).toBeUndefined();

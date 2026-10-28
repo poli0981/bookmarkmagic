@@ -61,6 +61,17 @@
     untrack(() => session.repairFocus());
   });
 
+  // Keep the focused row on screen — the tree is a fixed-height scroller.
+  // Tracks the focus alone: following every tree change would yank the view
+  // back to the focus each time a live event landed while the user scrolled.
+  $effect(() => {
+    const id = session.focusedId;
+    if (id === undefined || element === undefined) return;
+    untrack(() =>
+      element?.querySelector(`[data-node-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' }),
+    );
+  });
+
   function grow(next: (current: RowWindow, total: number) => RowWindow): void {
     win = next(follow(win, focusIndex, rows.length), rows.length);
   }

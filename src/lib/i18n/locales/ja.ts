@@ -99,6 +99,7 @@ export default {
       other: '「{title}」と、その中の {n} 件を削除しますか？元に戻せません。',
     },
     duplicates: '重複',
+    duplicateSummary: '{links}・{copies}',
     duplicateLinks: { one: '重複リンク {n} 件', other: '重複リンク {n} 件' },
     extraCopies: { one: '余分なコピー {n} 件', other: '余分なコピー {n} 件' },
     noDuplicates: '重複するリンクは見つかりませんでした。',

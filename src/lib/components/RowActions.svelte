@@ -52,7 +52,7 @@
     <button tabindex="-1" disabled={session.busy} title={t('edit.moveTo')} aria-label={t('edit.moveTo')} onclick={act(() => session.startMove(node))}>
       <Icon name="move" size={14} motion="bob" />
     </button>
-    <button tabindex="-1" disabled={session.busy} class="delete" title={t('edit.delete')} aria-label={t('edit.delete')} onclick={act(() => session.requestDelete(node, true))}>
+    <button tabindex="-1" disabled={session.busy} class="delete" title={t('edit.delete')} aria-label={t('edit.delete')} onclick={act(() => session.requestDelete(node, 'tree'))}>
       <Icon name="trash" size={14} motion="tilt" />
     </button>
   {/if}

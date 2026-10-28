@@ -12,37 +12,49 @@
   } from '../stores/import-session.svelte';
   import Button from './Button.svelte';
   import Callout from './Callout.svelte';
-  import { focusWhenShown } from './focus-heading';
+  import { focusLost, focusWhenShown } from './focus-heading';
   import ProgressBar from './ProgressBar.svelte';
 
   type Writing = Extract<ImportState, { kind: 'backing-up' | 'attesting' | 'clearing' | 'writing' }>;
 
   interface Props {
-    state: Writing;
+    phase: Writing;
   }
 
-  let { state }: Props = $props();
+  let { phase }: Props = $props();
+  let heading = $state<HTMLElement | undefined>();
+
+  // The step stays mounted from the backup to the last write, so its heading
+  // takes focus once on its own. A phase change can then remove the control
+  // that had focus — confirming the backup removes both of its buttons — and
+  // focus fell to `<body>`: hand it to the heading again.
+  $effect(() => {
+    void phase.kind;
+    if (heading !== undefined && focusLost()) heading.focus();
+  });
 </script>
 
 <section class="panel">
-  <h2 class="eyebrow" tabindex="-1" {@attach focusWhenShown}>04 · {t('import.stepWriting')}</h2>
-  {#if state.kind === 'backing-up'}
+  <h2 class="eyebrow" tabindex="-1" bind:this={heading} {@attach focusWhenShown}>
+    04 · {t('import.stepWriting')}
+  </h2>
+  {#if phase.kind === 'backing-up'}
     <Callout tone="warn">{t('import.backingUp')}</Callout>
-  {:else if state.kind === 'attesting'}
+  {:else if phase.kind === 'attesting'}
     <!-- The anchor download reports nothing, so this confirmation is the only
          thing standing between the user and an unbacked-up deletion. -->
-    <Callout tone="danger">{t('import.attest', { name: state.backupFilename })}</Callout>
+    <Callout tone="danger">{t('import.attest', { name: phase.backupFilename })}</Callout>
     <div class="actions">
       <Button variant="danger" onclick={() => answerAttestation(true)}>{t('import.attestConfirm')}</Button>
       <Button onclick={() => answerAttestation(false)}>{t('common.cancel')}</Button>
     </div>
-  {:else if state.kind === 'clearing'}
+  {:else if phase.kind === 'clearing'}
     <Callout tone="danger">{t('import.clearing')}</Callout>
   {:else}
-    <ProgressBar done={state.progress.done} total={state.progress.total} label={t('common.import')} />
+    <ProgressBar done={phase.progress.done} total={phase.progress.total} label={t('common.import')} />
     <p class="muted mono">
-      {t('import.progress', { done: num(state.progress.done), total: num(state.progress.total) })}
-      {#if state.progress.currentPath !== ''}<span class="path">{state.progress.currentPath}</span>{/if}
+      {t('import.progress', { done: num(phase.progress.done), total: num(phase.progress.total) })}
+      {#if phase.progress.currentPath !== ''}<span class="path">{phase.progress.currentPath}</span>{/if}
     </p>
     <Callout tone="warn">{t('import.keepTabOpen')}</Callout>
     <div class="actions"><Button icon="close" onclick={cancelWrite}>{t('common.cancel')}</Button></div>
