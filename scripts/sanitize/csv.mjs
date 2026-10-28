@@ -128,7 +128,9 @@ export function sanitizeCsv(text, mapUrl, mapTitle) {
     const value = text.slice(f.start, f.end).replace(/""/g, '"');
     const aligned = width.get(f.row) === header.length;
     // A number says nothing about anyone, and dates are what parsers branch on.
-    if (/^\s*\d*\s*$/.test(value) && (f.col === dateCol || !aligned)) continue;
+    // trim() first: `^\s*\d*\s*$` let two `\s*` compete for the same blanks,
+    // which backtracks quadratically on a long run of them (S8786).
+    if (/^\d*$/.test(value.trim()) && (f.col === dateCol || !aligned)) continue;
     let mapped;
     if (f.col === folderCol) mapped = mapFolderPath(value, mapTitle);
     else if (aligned && f.col === urlCol) mapped = mapUrl(value);

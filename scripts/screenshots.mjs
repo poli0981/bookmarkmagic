@@ -24,10 +24,10 @@
  * on 127.0.0.1 alone, and it never touches the network beyond it.
  */
 import { execFile } from 'node:child_process';
-import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { extname, join, normalize, resolve, sep } from 'node:path';
+import { extname, join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { promisify } from 'node:util';
 
@@ -111,8 +111,32 @@ function shim() {
 })();`;
 }
 
+/**
+ * Every file of the build, by the URL path that serves it. A request is looked
+ * up here and never joined onto a directory, so no request can name a file
+ * outside the build — `..`, encoded separators and prefix tricks included.
+ * (A prefix check after `join` did the same job, but SonarCloud's taint
+ * analysis, S2083, cannot see it; an allowlist it can.)
+ *
+ * @returns {Map<string, string>}
+ */
+function buildIndex() {
+  const index = new Map();
+  /** @param {string} dir */
+  const walk = (dir) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else index.set(`/${relative(OUT, full).split(sep).join('/')}`, full);
+    }
+  };
+  walk(OUT);
+  return index;
+}
+
 function serve() {
   const csp = productionCsp();
+  let files = buildIndex();
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', `http://${HOST}:${PORT}`);
     if (url.pathname === '/__shim.js') {
@@ -127,9 +151,10 @@ function serve() {
       res.writeHead(400).end('bad request');
       return;
     }
-    const path = normalize(join(OUT, decoded));
-    // `OUT + sep`, not `OUT`: a bare prefix test also let `chrome-mv3-evil/…` through.
-    if ((path !== OUT && !path.startsWith(OUT + sep)) || !existsSync(path)) {
+    // A rebuild while the harness runs renames the hashed chunks: re-list once.
+    if (!files.has(decoded)) files = buildIndex();
+    const path = files.get(decoded);
+    if (path === undefined) {
       res.writeHead(404).end('not found');
       return;
     }
