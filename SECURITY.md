@@ -17,7 +17,7 @@ see which version you are running in the extension's **About** tab, or on
 Report privately via **GitHub Security Advisories**:
 <https://github.com/poli0981/bookmarkmagic/security/advisories/new>
 
-No GitHub account? Email **contact@poli0981.dev** instead. Please say up front
+No GitHub account? Email **security@poli0981.dev** instead. Please say up front
 that it is a security report.
 
 Please do not open a public issue for a security problem.

@@ -25,6 +25,7 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | **v1.0.1 released** | ✔ 2026-08-03 | signed tag on `4654086`, GitHub Release with a `sha256sum -c`-verified zip; shipped manifest `1.0.1`, permissions unchanged. `announce` skipped (no `DISCORD_ANNOUNCE`), store publish skipped (no `CWS_AUTOPUBLISH`) |
 | **v1.0.1 submitted** | ✔ 2026-08-03 | uploaded to the CWS dashboard by hand (`13 §1b` step 6) |
 | **v1.0.1 published** | ✔ observed 2026-10-28 | listing shows version 1.0.1 (`Updated: August 3, 2026`), 5 users. ⚠️ Exact approval date not recorded; `13 §1b` step 10 (clean-profile install of the published build + upgrade re-check) has no recorded result |
+| 7 — v1.1.0 | in review 2026-10-29 | PR-A toolchain/CI/Sonar merged as #26; PR-B (import redesign, Chrome/Firefox formats, Merge reuse, Edit store + Sort A→Z + reorder, technical UI, diagnostics, docs/legal) on `release/1.1.0` |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
@@ -125,7 +126,34 @@ independently of the package (`13 §5`), though the copy should still go through
 | ✔ Import Firefox `.json` backup | **Shipped in v1.1.0** (`04 §2b`). The compressed automatic backups (`.jsonlz4`) are a separate item: a ~80-line pure-TS LZ4 block decoder, no dependency. |
 | "Export all formats as .zip" | First runtime dep decision: `fflate` (gated, `01 §4`; About/THIRD_PARTY updates per `14 §5`). |
 | Aggressive-dedupe toggle | Optional `www.`/`utm_*` stripping in normalize (off by default). |
-| Sort folder A→Z action | In #edit context menu (bulk `move` with index). |
+| ✔ Sort folder A→Z action | **Shipped in v1.1.0** — a row action and a toolbar button, planned first and confirmed with a count (`03 §3`). |
+
+### Next direction (written 2026-10-29, ordered by value per risk)
+
+1. **v1.1.x — automate the upgrade test.** An end-to-end run with Playwright's
+   bundled Chromium (`--load-extension` still works there; branded Chrome
+   dropped it in 137) that installs 1.0.1, upgrades over the same profile and
+   runs the `11 §5` smoke in CI. Needs a dev-dependency approval (`01 §4`).
+2. **v1.1.x — Firefox automatic backups** (`.jsonlz4`): a ~80-line pure-TS LZ4
+   block decoder, no dependency. Also: capture a real Chrome HTML + `Bookmarks`
+   pair to sit beside the hand-built `chrome-156-*` fixtures, and the JA native
+   review.
+3. **v1.2 — the aggressive-dedupe toggle** (deferred this round), a
+   session-scoped import undo, Biome linting of `.svelte` files, and true
+   virtualization of the edit tree if 500-row chunks prove too coarse.
+4. **v1.2+ — automated CWS publishing** once the owner creates the `CHROME_*`
+   secrets; Edge Add-ons and Firefox AMO listings through WXT's multi-target
+   build (each a separate go/no-go).
+
+### Backlog carried from the v1.1.0 audit
+
+Items found by the 2026-10-28 audit and not closed in v1.1.0, with their IDs:
+cL6 non-UTF-8 charsets in HTML imports; cL9 an extension allowlist on drop
+(content sniffing is the gate, so not planned); cL13 a newline inside a title
+for Chrome's line-based importer; sA8.1 Biome does not lint `.svelte`; uH4's
+windowed renderer (500-row chunking shipped instead); the edit-session store
+(364 lines) and TreeRow (353) sit between the 300-line target and the 500 hard
+limit and should be split before they grow.
 
 ## v1.2 — resilience
 
@@ -243,3 +271,18 @@ independently of the package (`13 §5`), though the copy should still go through
 | 2026-10-29 | **Replace never dedupes, and the plan says so** (`plan.dedupe` is the effective value). In-file repeats are part of a backup; 1.0.x collapsed them while the box showed unchecked. Merge dedupes against the Start-time read, not the preview snapshot | 03 §1 |
 | 2026-10-29 | **The plan is built before the backup, and the backup is refused if the import could not read it back.** Compact BM JSON, checked against the node, depth and byte caps before anything is written, downloaded or deleted (`BACKUP_EXCEEDS_LIMITS`). The still-open save dialog's rejection is marked handled, so a later Cancel cannot surface as an unhandled rejection | 03 §1 step 6b, 02 §7 |
 | 2026-10-29 | **The seeded round-trip suite had been testing 200 empty trees since Phase 1.** xorshift32 seeded with 1–200 draws near-zero values first, so every generated tree had 0 children. `makeRng` now scrambles the seed, and every seeded suite asserts its corpus is non-trivial before asserting anything else. Found by the new merge property suite's own non-vacuity check | 11 §3 |
+| 2026-10-29 | **Sort A→Z is planned before it runs and moves only what is out of place.** Folders first, `Intl.Collator` numeric and accent/case-insensitive, stable; left-to-right moves, each taking a child from further right, so the target index needs no correction for `chrome.bookmarks.move`'s same-parent rule. The confirmation states the count; a refusal part-way says how far it got and re-reads | 03 §3 |
+| 2026-10-29 | **Drag to reorder, with before/after/into zones.** `planDrop` converts once between Chrome's pre-removal move index and `onMoved`'s post-removal one; dropping a node beside itself is no move; the permanent roots take drops into only | 03 §3, 06 §3.3 |
+| 2026-10-29 | **Live sync is batched per animation frame and re-reads on bursts** (more than 500 queued events), after a wholesale reorder and after Chrome's own import. Each listener is isolated in try/catch. 1.0.x patched the whole tree — and rescanned it for duplicates — once per event | 03 §3 |
+| 2026-10-29 | **Bounded rendering ships as 500-row chunks, not windowing.** The edit tree, the import preview and the export picker mount 500 rows at a time with "Show more"; the focused row is always mounted. Windowing was the plan; chunking gives the same bound with none of the keyboard/DnD risk, and windowing moves to the backlog | 05 §9 |
+| 2026-10-29 | **One modal for every dialog** (`Modal.svelte`, native `<dialog>`): focus in, Esc, focus returned, and no cancel callback after a confirm. Move-to was a positioned `<div>` that focus never entered | 06 §5 |
+| 2026-10-29 | **The v1.1 look is "technical"**: cool neutrals, a mono stack for labels and numbers, a faint grid, 6/4 px radii, a self-drawn SVG icon set, an IDE-style status bar. No font is bundled. Every animation and moving transition sits inside `prefers-reduced-motion: no-preference`, enforced by `motion.test.ts`; text clears 4.5:1 and control boundaries 3:1 on every surface, enforced by `contrast.test.ts` | 06 §1 |
+| 2026-10-29 | **Replace asks first, with numbers.** The confirmation states how many bookmarks and folders will be deleted and how many written; the Start button counts what a preview plan will really import, not what the file holds | 03 §1, 09 T4 |
+| 2026-10-29 | **One writer across Manager tabs** (Web Locks, `ifAvailable`): a second tab's import, sort or duplicate clean-up is refused at once with `WRITE_LOCKED`. The import takes the lock after opening the save picker, so the click's activation still holds | 03 §5, 08 §2 |
+| 2026-10-29 | **The popup routes an open Manager** over a `BroadcastChannel` instead of only focusing it; the Manager refuses while an import writes | 02 §6 |
+| 2026-10-29 | **A local diagnostics log, copied by the user.** In memory, 200 allowlisted events (phases, codes, counts, error names), recorded at the one place failures are described — by code, never detail text. No storage, no network, no new permission. A PRIVACY clarification, not a bump | 09 §5, 14 §3.1 |
+| 2026-10-29 | **Failure toasts stay until dismissed**; success and info still leave after 4 s | 06 §4 |
+| 2026-10-29 | **About and THIRD_PARTY_NOTICES stop saying "no third-party code"** — the build always compiled in the Svelte runtime and WXT's browser shim (both MIT). The notices now ship as `THIRD_PARTY_NOTICES.txt`, required by `check:manifest` | 14 §5 |
+| 2026-10-29 | **Contact aliases per purpose**: security@ (SECURITY.md), privacy@ (PRIVACY), legal@ and dmca@ (EULA, DISCLAIMER), copyright@ (licensing), takedown@ (impersonating copies), code@ (CoC, contributing, issue chooser), sponsor@/collab@/press@ (README); contact@ retired. Still none inside the product — `links.test.ts` now scans all of `src/` | 14 §3.1, 09 §6 |
+| 2026-10-29 | **Legal clarifications, no `LEGAL_VERSION` bump**: version/date headers, a copyright line, EULA clause 3 as a non-binding note (GPL §10), DISCLAIMER's Replace description, PRIVACY on diagnostics, the Web Store and opening a bookmark | 14 §3.1 |
+| 2026-10-29 | **`scripts/screenshots.mjs`** serves the built extension with a fake `chrome`, neutral sample data and the production CSP as a meta tag; `--shoot` drives headless Chrome for `capture/` and the store set. Visual QA and listing screenshots stop depending on anyone's real profile | 11 §5, 13 |

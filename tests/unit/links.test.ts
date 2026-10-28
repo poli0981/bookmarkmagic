@@ -1,4 +1,4 @@
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { getAppVersion } from '@/lib/browser/app-info';
@@ -106,10 +106,19 @@ describe('store listing', () => {
     // receipt of personal data legal/PRIVACY.md exists to bound. The address
     // belongs in SECURITY.md and CONTRIBUTING.md, where it arrives alongside
     // the instruction to sanitize first.
-    const source = readFileSync(join(REPO_ROOT, 'src', 'lib', 'links.ts'), 'utf8');
-    const code = source.replace(/\/\*\*[\s\S]*?\*\//g, '');
-    expect(code).not.toMatch(/mailto:/);
-    expect(code).not.toMatch(/@poli0981\.dev/);
+    //
+    // Widened in v1.1.0 from links.ts to everything under src/ — strings,
+    // components, locale files and the files src/public/ ships verbatim.
+    const offenders: string[] = [];
+    const walk = (dir: string): void => {
+      for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const path = join(dir, entry.name);
+        if (entry.isDirectory()) walk(path);
+        else if (/mailto:|@poli0981\.dev/.test(readFileSync(path, 'utf8'))) offenders.push(path);
+      }
+    };
+    walk(join(REPO_ROOT, 'src'));
+    expect(offenders).toEqual([]);
   });
 });
 

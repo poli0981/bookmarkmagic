@@ -85,6 +85,8 @@ const FORBIDDEN_KEYS = [
 const REQUIRED_FILES = [
   'manager.html',
   'popup.html',
+  // The MIT notices for the code the build compiles in (legal/THIRD_PARTY_NOTICES.md).
+  'THIRD_PARTY_NOTICES.txt',
   '_locales/en/messages.json',
   '_locales/vi/messages.json',
   '_locales/ja/messages.json',

@@ -56,7 +56,7 @@ spaces.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the maintainers at **contact@poli0981.dev**. All complaints will be
+reported to the maintainers at **code@poli0981.dev**. All complaints will be
 reviewed and investigated promptly and fairly.
 
 Maintainers are obligated to respect the privacy and security of the reporter of

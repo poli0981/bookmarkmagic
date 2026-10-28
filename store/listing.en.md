@@ -17,17 +17,19 @@ Move your bookmarks between browsers the simple way: with a file. No account.
 No cloud sync. 100% offline.
 
 WHAT IT DOES
-• Import bookmark files (HTML, JSON, CSV) with a full preview before anything
-  is written — see counts, folders, and duplicates first.
+• Import bookmark files (HTML, JSON, CSV) — including Chrome's own
+  "Bookmarks" file from your profile folder and Firefox JSON backups — with a
+  full preview before anything is written: counts, folders and duplicates
+  first.
 • Choose how to import: into a new dated folder (safe default), merge into
-  your existing folders, or replace everything (with an automatic safety
-  backup downloaded first).
-• Skip duplicates automatically.
+  the folders you already have, or replace everything (it shows exactly what
+  will be deleted and saves a safety backup first).
+• Can skip links you already have.
 • Export everything — or just the folders you pick — to HTML (works with
   Chrome, Edge, Brave, Firefox, Safari, Vivaldi, Opera), JSON, CSV, or
   Markdown.
-• Edit your bookmark tree: search, rename, drag & drop, create folders,
-  delete, and find duplicate links.
+• Edit your bookmark tree: search, rename, drag to move or reorder, sort a
+  folder A→Z, create folders, delete, and find duplicate links.
 
 PRIVACY BY DESIGN
 • Works entirely on your device. No servers, no analytics, no tracking.

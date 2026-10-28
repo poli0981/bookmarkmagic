@@ -111,11 +111,12 @@ install, privacy summary, donate), full manual QA (docs/11 §5), `wxt zip`
 clean-install test. Also carried in from the Phase 4 review:
 - ✔ About's "Changelog" link now targets `CHANGELOG.md`, pinned by
   `tests/unit/links.test.ts`;
-- ✔ `EditTab.svelte` split (589 → 459, under the hard limit). It grew back
-  through the Phase 5 and 6 review commits — **476 lines with a 356-line script
-  block** as of 2026-10-28, against a 150-line soft limit for script blocks
-  (docs/10 §1). Anything added there has to come out first; `src/lib/edit/` is
-  where extracted logic goes;
+- ✔ `EditTab.svelte` split (589 → 459, under the hard limit). It grew back to
+  481, and in v1.1.0 its state and commands moved to
+  `src/lib/stores/edit-session.svelte.ts` — the component is now ~295 lines of
+  wiring and markup. The store itself (364) and `TreeRow.svelte` (353) sit
+  between the 300 target and the 500 hard limit: split them before adding to
+  them;
 - ✔ contrast tokens fixed, and `tests/unit/styles/contrast.test.ts` now fails
   the build on any text pair under 4.5:1. Two blind spots to know about: it is
   token-level, so it cannot see the `opacity`-on-text bypass it was written to
@@ -134,6 +135,22 @@ CI hardening → the About store link → cut 1.0.1.
 **Exit:** ✔ v1.0.1 tagged and released 2026-08-03, live on the store
 (confirmed 2026-10-28).
 
+### Phase 7 — v1.1.0: toolchain, import redesign, new formats, technical UI
+Two PRs. **PR-A** (toolchain): Node 26, TypeScript 7 beside the TS 6 API,
+ES2025 with Chrome ≥ 136, SonarCloud in CI, a browser-enforced zero-network
+CSP, gates that cannot be talked past. **PR-B** (product): the import pipeline
+redesigned — every entry a file holds read, addresses Chrome would refuse
+skipped up front, Chrome's `Bookmarks` file and Firefox JSON backups imported,
+root markers so restores stop nesting, a Merge that reuses folders, a Replace
+that plans first and refuses an unrestorable backup; the Edit tab rebuilt
+around a store, with Sort A→Z, drag to reorder and batched live sync; a
+technical redesign of every surface; local diagnostics; a cross-tab write
+lock; docs and legal synced (clarifications only — `LEGAL_VERSION` stays 1);
+contact aliases per purpose.
+**Exit:** `main` tag-ready with `verify:full` green; the human runs the
+docs/11 §5 manual pass on real Chrome including the **1.0.1 → 1.1.0 upgrade
+over an existing profile** ⚠️, then uploads the release zip to the store ⚠️.
+
 ## Working style
 
 - Small commits per module; tests land with (or before) implementation.
@@ -149,6 +166,16 @@ CI hardening → the About store link → cut 1.0.1.
   how a missing `@types/node` survived a green local `verify` and failed CI on
   the first push. A green local type-check in a worktree is weaker evidence than
   it looks.
+- **TypeScript 7 runs beside the TS 6 API.** `tsc` is TS 7 (`@typescript/native`,
+  aliased `npm:typescript@~7`); the `typescript` package is aliased to
+  `@typescript/typescript6` for svelte-check, which needs the classic API TS 7
+  does not have yet. `npm run check` runs svelte-check (TS 6, `.svelte` files)
+  and then `tsc` (TS 7, `.ts` and `scripts/*.mjs`). Never "fix" one by
+  removing the other.
+- **Installs run with `--ignore-scripts`**, in CI and locally when in doubt:
+  `npm ci --ignore-scripts && npx --no-install wxt prepare`. The `postinstall`
+  hook only runs `wxt prepare`; every other package's install script is
+  untrusted code.
 - When a browser fixture contradicts the format spec: add the fixture, make
   the parser tolerant, note the quirk in code + docs/04 §1.2, then continue.
 - Do not invent features not in docs; park ideas as `docs/15` roadmap PRs.

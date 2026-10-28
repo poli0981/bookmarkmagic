@@ -19,17 +19,18 @@ Chuyển bookmark giữa các trình duyệt theo cách đơn giản nhất: b�
 Không tài khoản. Không đồng bộ đám mây. Hoàn toàn offline.
 
 TIỆN ÍCH NÀY LÀM GÌ
-• Nhập tệp bookmark (HTML, JSON, CSV) và xem trước đầy đủ trước khi ghi bất
-  cứ thứ gì — số lượng, thư mục và các mục trùng lặp đều hiện ra trước.
+• Nhập tệp bookmark (HTML, JSON, CSV) — kể cả tệp "Bookmarks" của chính
+  Chrome trong thư mục hồ sơ và bản sao lưu JSON của Firefox — và xem trước
+  đầy đủ trước khi ghi bất cứ thứ gì: số lượng, thư mục và mục trùng lặp.
 • Chọn cách nhập: vào một thư mục mới theo ngày (mặc định an toàn), gộp vào
-  các thư mục sẵn có, hoặc thay thế toàn bộ (tệp sao lưu an toàn sẽ được tải
-  về trước).
-• Tự động bỏ qua các mục trùng lặp.
+  các thư mục bạn đã có, hoặc thay thế toàn bộ (cho biết chính xác những gì
+  sẽ bị xóa và lưu bản sao lưu an toàn trước).
+• Có thể bỏ qua các liên kết bạn đã có.
 • Xuất toàn bộ — hoặc chỉ những thư mục bạn chọn — ra HTML (dùng được với
   Chrome, Edge, Brave, Firefox, Safari, Vivaldi, Opera), JSON, CSV hoặc
   Markdown.
-• Chỉnh sửa cây bookmark: tìm kiếm, đổi tên, kéo thả, tạo thư mục, xoá và tìm
-  các liên kết trùng lặp.
+• Chỉnh sửa cây bookmark: tìm kiếm, đổi tên, kéo thả để di chuyển hoặc đổi
+  thứ tự, sắp xếp thư mục A→Z, tạo thư mục, xoá và tìm liên kết trùng lặp.
 
 RIÊNG TƯ NGAY TỪ THIẾT KẾ
 • Chạy hoàn toàn trên máy bạn. Không máy chủ, không phân tích, không theo dõi.
