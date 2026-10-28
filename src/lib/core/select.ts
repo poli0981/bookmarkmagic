@@ -45,19 +45,30 @@ export function pathTo(roots: readonly TreeLike[], targetId: string): TreeLike[]
   return walk(roots, []) ?? [];
 }
 
-/** Checked when selected outright or covered by a selected ancestor. */
-export function checkStateOf(
+/**
+ * Every node's check state, in one pass: checked when selected outright or
+ * covered by a selected ancestor; indeterminate when only something below is.
+ *
+ * One map for the whole picker. The per-row lookup it replaces walked the tree
+ * from the roots for every visible row — quadratic on a large profile.
+ */
+export function checkStates(
   roots: readonly TreeLike[],
-  node: TreeLike,
   selection: ReadonlySet<string>,
-): CheckState {
-  const path = pathTo(roots, node.id);
-  if (path.some((ancestor) => selection.has(ancestor.id))) return 'checked';
-
-  for (const id of subtreeIds(node)) {
-    if (id !== node.id && selection.has(id)) return 'indeterminate';
-  }
-  return 'unchecked';
+): Map<string, CheckState> {
+  const states = new Map<string, CheckState>();
+  /** Whether anything at or below `node` is selected or covered. */
+  const visit = (node: TreeLike, covered: boolean): boolean => {
+    const self = covered || selection.has(node.id);
+    let below = false;
+    for (const child of node.children ?? []) {
+      if (visit(child, self)) below = true;
+    }
+    states.set(node.id, self ? 'checked' : below ? 'indeterminate' : 'unchecked');
+    return self || below;
+  };
+  for (const root of roots) visit(root, false);
+  return states;
 }
 
 /**

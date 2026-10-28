@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { type BookmarkNode, computeStats } from '@/lib/core/model';
+import { type BookmarkNode, computeStats, type ParseResult } from '@/lib/core/model';
 import { parseBmJson } from '@/lib/core/parse/bm-json';
 import { parseCsv } from '@/lib/core/parse/csv';
 import { parseNetscapeHtml } from '@/lib/core/parse/netscape-html';
@@ -74,13 +74,18 @@ describe.each(FORMATS)('round-trip: %s', (format) => {
     for (let seed = 1; seed <= 200; seed++) {
       const tree = generateTree(makeRng(seed));
       const expected = project(tree, format);
-      let actual: BookmarkNode[];
+      let actual: ParseResult;
       try {
-        actual = parse(serialize(tree)).roots;
+        actual = parse(serialize(tree));
       } catch (err) {
         throw new Error(`seed ${seed} (${format}) threw: ${String(err)}`);
       }
-      expect(actual, `seed ${seed} (${format})`).toEqual(expected);
+      expect(actual.roots, `seed ${seed} (${format})`).toEqual(expected);
+      // A parser that silently degrades must not pass (docs/11 §3). An empty
+      // tree is the one legitimate warning.
+      expect(actual.warnings, `seed ${seed} (${format}) warnings`).toEqual(
+        expected.length === 0 ? [{ code: 'NO_BOOKMARKS', count: 1 }] : [],
+      );
     }
   });
 });
