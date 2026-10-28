@@ -17,10 +17,25 @@ breaking format or schema changes (a BM JSON version bump).
   which has no extension — and Firefox's JSON backups
   (`bookmarks-YYYY-MM-DD.json`). Both still know which bookmarks were in
   "Mobile bookmarks", which the browsers' own HTML exports throw away.
+- **Sort A→Z** for any folder: folders first, then bookmarks, in natural order
+  ("Item 2" before "Item 10"). It tells you how many items will move before
+  doing anything.
+- **Drag to reorder**: drop above or below a row to place an item exactly
+  there, or onto a folder to move it inside.
+- A new look: clearer panels, a status bar, readable numbers, and icons that
+  move a little — never if your system asks for reduced motion.
+- **Copy diagnostics** in the About tab: a short log of what the tab did
+  (error codes and counts — never titles or addresses) to paste into a bug
+  report. It stays on your computer unless you paste it somewhere.
+- The import preview marks which folders go straight into the Bookmarks bar,
+  Other or Mobile bookmarks, and names the format it detected.
 
 ### Changed
 
 - **Requires Chrome 136 or later** (was 120). Older Chrome keeps version 1.0.1.
+- Chrome itself now enforces that the extension makes no network requests: a
+  stricter content security policy refuses any connection, remote image, font
+  or frame an extension page might try. Nothing it did before needed one.
 - "Merge into existing folders" now really merges: a folder you already have is
   reused and the new bookmarks are added at the end of it. Before, every folder
   in the file was created again beside yours.
@@ -35,6 +50,19 @@ breaking format or schema changes (a BM JSON version bump).
   half the size.
 - The file picker shows every file; BookmarkMagic recognises the format from
   the content.
+- "Replace everything" now asks first, showing exactly how many bookmarks and
+  folders will be deleted and how many will be written.
+- The import button counts what will really be imported (duplicates you chose
+  to skip are not counted), and the report lists bookmarks and folders
+  separately, what was skipped, which existing folders were reused, and where
+  everything went.
+- Error messages stay on screen until you dismiss them.
+- The popup opens an already-open manager on the page you clicked, and its
+  folder count no longer includes the three built-in root folders.
+- Very large folders show 500 items at a time, with "Show more", so expanding
+  everything no longer freezes the tab.
+- Two manager tabs can no longer write bookmarks at the same time — the second
+  one is told to wait, and nothing is changed.
 
 ### Fixed
 
@@ -58,6 +86,17 @@ breaking format or schema changes (a BM JSON version bump).
   guard character is removed again when the file is imported.
 - Titles in Markdown exports can no longer turn into links, HTML or broken
   lines.
+- A link ending in a bare `?` or `#` is recognised as a duplicate of the same
+  link without it.
+- Keyboard: "Move to…" is now a real dialog that keyboard focus enters and
+  leaves properly, with a filter; the menu key or Shift+F10 opens it from the
+  tree, and Ctrl+C copies the focused link. Cancelling a drag no longer leaves
+  rows highlighted. Pressing Esc while renaming no longer saves the new name.
+- The edit tree no longer collapses or loses your place after a failed edit,
+  and focus moves to the next row after a delete.
+- The About tab and the third-party notices now name the two small MIT-licensed
+  pieces the build has always compiled in (the Svelte runtime and WXT's
+  browser shim), instead of saying there were none.
 
 ## [1.0.1] — 2026-08-03
 
