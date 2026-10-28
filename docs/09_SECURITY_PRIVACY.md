@@ -206,8 +206,12 @@ page loaded.
 
 - `DiagEvent` is a closed union with no field for a title, an address or a
   path — adding one is a type change under review, not a call site — and every
-  string field it has is filled from a fixed identifier: a phase name, an i18n
-  code, an error's `name`. The copied report adds only the extension version, the language and
+  string field is itself a **union of fixed values**: the import phases,
+  `FileFormat`, the `ErrorKey`s `describeError` can return, the two edit
+  actions, the three storage issues, and an allowlist of error names (anything
+  else is logged as `'other'`, since a name is just a string property). 1.1.0's
+  first cut typed them all `string`; the test file now carries
+  `@ts-expect-error` cases, so a title stops compiling, not just reviewing. The copied report adds only the extension version, the language and
   theme *preferences*, and Chrome's major version from the user agent.
 - Never written to `storage`, never sent (the CSP would refuse it anyway,
   `08 §3`), gone when the tab closes. The log is per page: the popup installs

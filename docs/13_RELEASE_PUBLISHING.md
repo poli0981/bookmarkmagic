@@ -111,12 +111,13 @@ what the dashboard really required.
 
 ### README screenshots (not store assets — do not confuse them)
 
-`capture/` holds five PNGs at 2512×1440 / 2560×1440 used by `README.md`, taken
-of the 1.0.0 UI on 2026-07-26. They are the wrong dimensions for the store and
-cover only four of the five subjects first planned for it. `capture/Edit.png` is committed
-but unreferenced. `--shoot` writes into `capture/` as well — read the script's
-header for which files before running it in a checkout whose README images you
-mean to keep.
+`capture/` holds the README set — `import`, `export`, `edit`, `settings`,
+`about` (light, English, 1280×800) and `popup` (360×420) — regenerated for
+1.1.0 by `node scripts/screenshots.mjs --shoot` from neutral sample data. The
+1.0.0 shots (2512×1440, a real profile) are gone. `store/screenshots/` holds
+the dark 1280×800 store candidates (`edit`, `export`, `import`); which of them
+to upload, alongside or instead of what the listing has now, is the owner's
+call (⚠️ `13 §1b`).
 
 ## 3. Store listing — EN (canonical)
 

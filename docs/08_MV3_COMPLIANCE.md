@@ -66,16 +66,19 @@ object-src 'self';`) restricts code execution only; it has no `connect-src` or
 the product and its zero-network claim. The production manifest now declares:
 
 ```
-script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' data: blob:;
-style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'none'; frame-src 'none';
-worker-src 'self'; form-action 'none'; base-uri 'none'
+default-src 'none'; script-src 'self'; object-src 'none'; connect-src 'none';
+img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self';
+media-src 'none'; frame-src 'none'; worker-src 'self'; form-action 'none'; base-uri 'none'
 ```
 
 `connect-src 'none'` makes Chrome refuse every fetch, XHR, WebSocket,
 EventSource and beacon from an extension page; the rest closes remote images,
-stylesheets, fonts, media, frames and form posts. `style-src` keeps
-`'unsafe-inline'` because Svelte sets `style` attributes; there is **no
-`default-src`**, on purpose, because it would govern every unlisted directive. User-initiated
+stylesheets, fonts, media, frames and form posts, and `default-src 'none'`
+closes everything left unlisted (web app manifests, prefetches). Every directive
+the pages use is listed explicitly, so `default-src` changes nothing for them.
+`style-src` keeps `'unsafe-inline'` because Svelte sets `style` attributes.
+**WebRTC is not governed by any CSP directive Chrome enforces**, so it is held
+by the other two layers: both scan for `RTCPeerConnection`. User-initiated
 navigation — an About link, or "Open" on a bookmark via `tabs.create` — is not
 governed by a page CSP and is not a request the extension makes (`09 §1`).
 
@@ -92,10 +95,12 @@ governed by a page CSP and is not a request the extension makes (`09 §1`).
 #### Layer 2 — the built-artifact gate
 
 `npm run check:manifest` (`scripts/check-manifest.mjs`) scans every `.js` file
-in `.output/chrome-mv3` for network APIs — including code that arrived through
-a dependency, which no source gate can see — and pins the manifest: MV3, the
-permission list, the exact key set, the Chrome floor, the exact CSP, and that
-every file the manifest and pages reference exists.
+in `.output/chrome-mv3` for the network identifiers the source gate bans, as
+bare words — including code that arrived through a dependency, which no source
+gate can see — and pins the manifest: MV3, the permission list, the exact key
+set, the Chrome floor, the exact CSP, that every file the manifest and the
+built pages reference exists, and that no page loads anything from outside the
+package.
 
 #### Layer 3 — the source gate
 

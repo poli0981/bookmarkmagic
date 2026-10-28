@@ -150,10 +150,16 @@ independently of the package (`13 §5`), though the copy should still go through
 Items found by the 2026-10-28 audit and not closed in v1.1.0, with their IDs:
 cL6 non-UTF-8 charsets in HTML imports; cL9 an extension allowlist on drop
 (content sniffing is the gate, so not planned); cL13 a newline inside a title
-for Chrome's line-based importer; sA8.1 Biome does not lint `.svelte`; uH4's
-windowed renderer (500-row chunking shipped instead); the edit-session store
-(364 lines) and TreeRow (353) sit between the 300-line target and the 500 hard
-limit and should be split before they grow.
+for Chrome's line-based importer; sA8.1 Biome does not lint `.svelte`. From
+the post-implementation review: a keyboard way to place an item before or after
+a sibling (drag has it; "Move to…" only appends); true virtualization of the
+edit tree (a 500-row window around the focus shipped — `05 §9`); a
+`require-trusted-types-for 'script'` CSP, which would make Chrome itself
+enforce the raw-HTML ban (the Svelte runtime already creates the policy;
+untested in extension pages); an input on the ops repo's reusable workflow to
+skip install scripts in the `Build + package` job (`12 §2`); whether a
+screen reader reads a focused row's button labels with its name (unconfirmed
+without one).
 
 ## v1.2 — resilience
 
@@ -285,4 +291,8 @@ limit and should be split before they grow.
 | 2026-10-29 | **About and THIRD_PARTY_NOTICES stop saying "no third-party code"** — the build always compiled in the Svelte runtime, its `clsx` helper and WXT's browser shim (all MIT; `clsx` was found by the review, not by the first fix). The notices now ship as `THIRD_PARTY_NOTICES.txt`, required by `check:manifest`, and `wxt.config.ts` fails the build when an uncredited package would ship | 14 §5 |
 | 2026-10-29 | **Contact aliases per purpose**: security@ (SECURITY.md), privacy@ (PRIVACY), legal@ and dmca@ (EULA, DISCLAIMER), copyright@ (licensing), takedown@ (impersonating copies), code@ (CoC, contributing, issue chooser), sponsor@/collab@/press@ (README); contact@ retired. Still none inside the product — `links.test.ts` now scans all of `src/` | 14 §3.1, 09 §6 |
 | 2026-10-29 | **Legal clarifications, no `LEGAL_VERSION` bump**: version/date headers, a copyright line, EULA clause 3 as a non-binding note (GPL §10), DISCLAIMER's Replace description, PRIVACY on diagnostics, the Web Store and opening a bookmark | 14 §3.1 |
-| 2026-10-29 | **`scripts/screenshots.mjs`** serves the built extension with a fake `chrome`, neutral sample data and the production CSP as a meta tag; `--shoot` drives headless Chrome for `capture/` and the store set. Visual QA and listing screenshots stop depending on anyone's real profile | 11 §5, 13 |
+| 2026-10-29 | **`scripts/screenshots.mjs`** serves the built extension with a fake `chrome`, neutral sample data and the production CSP as a meta tag; `--shoot` drives headless Chrome for `capture/` and the store set. Visual QA and listing screenshots stop depending on anyone's real profile. It listens on 127.0.0.1 only, and runs Chrome asynchronously — `execFileSync` blocked the very server Chrome was waiting on | 11 §5, 13 |
+| 2026-10-29 | **Review of the 1.1.0 UI, acted on before release**: the edit tree keeps focus on a rendered row and returns it from the rename box; a bulk command locks every other write in the session, not just the toolbar; a folder closed during a search stays closed; #edit mounts a 500-row window around the focus instead of a growing prefix; failures get a pinned toast slot so later toasts still show; the import moves focus to each step's heading and announces its outcome; dialogs name their × "Dismiss"; the import preview's new/dup badges show again (a deep `$state` proxy broke their WeakMap lookups — already broken in 1.0.x) | 03 §3, 05 §9, 06 §4–§5 |
+| 2026-10-29 | **The extension-page CSP gains `default-src 'none'`** — reversing the earlier "deliberately no default-src". Every directive the pages use is listed, so it changes nothing for them, and it closes what was left open (manifests, prefetch). WebRTC, which no CSP directive Chrome enforces governs, stays covered by the bundle and source scans | 08 §3 |
+| 2026-10-29 | **Diagnostics allowlist enforced by types**: every `DiagEvent` string field is a union of fixed values, error names pass through an allowlist (`'other'` otherwise), and `@ts-expect-error` tests keep a title from compiling | 09 §7 |
+| 2026-10-29 | **SonarCloud runs in two jobs**: coverage with no secret, then a scan that installs nothing and gets the lcov report as an artifact — a job's secrets are readable by every step on its runner | 12 §2.5 |

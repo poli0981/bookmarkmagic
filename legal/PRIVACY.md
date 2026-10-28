@@ -21,8 +21,10 @@ contains no analytics, telemetry, or crash reporting.
   `chrome.storage.sync`, so even your settings stay off any vendor cloud.
 
 The Extension requests no other permissions. It has no host permissions, no
-content scripts, and no background service worker. Its Content-Security-Policy
-forbids it from opening network connections at all.
+content scripts, and no background service worker. It contains no code that
+makes network requests, and its Content-Security-Policy additionally makes the
+browser refuse fetch, XHR, WebSocket, EventSource and beacon requests and
+remote images, fonts, media and frames from its pages.
 
 - **Diagnostics** (no permission needed): while a BookmarkMagic tab is open,
   it keeps a short log of what it did — import steps, error codes, counts —

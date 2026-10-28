@@ -113,7 +113,9 @@ bookmarkmagic/
 │   │   ├── import/run-import.ts     # the import pipeline (03 §1)
 │   │   ├── export/run-export.ts     # the export pipeline (03 §2)
 │   │   ├── edit/                    # edit-node, patch-tree, move-target (incl. planDrop),
-│   │   │                            # tree-keyboard, sort, live-sync, search-expansion (03 §3)
+│   │   │                            # tree-keyboard, tree-keys, sort, live-sync,
+│   │   │                            # search-expansion, focus-repair, row-window (03 §3)
+│   │   ├── import/folder-name.ts    # the new-folder import's date (07 §3)
 │   │   ├── settings/options.ts      # the six Settings choice tables (06 §3.4)
 │   │   ├── links.ts                 # repo / legal / donate URLs (14 §4, §5)
 │   │   ├── stores/                  # Svelte 5 runes state (.svelte.ts)
@@ -122,13 +124,16 @@ bookmarkmagic/
 │   │   │   ├── toast.svelte.ts      # transient status queue + its timers (06 §4)
 │   │   │   ├── route.svelte.ts      # location.hash + hashchange wrapper (§5)
 │   │   │   ├── import-session.svelte.ts
-│   │   │   └── edit-session.svelte.ts   # the #edit tab's state + commands (03 §3)
+│   │   │   ├── edit-view.svelte.ts      # #edit: what the tree shows (03 §3)
+│   │   │   ├── edit-commands.svelte.ts  # #edit: single-item writes, extends the view
+│   │   │   └── edit-session.svelte.ts   # #edit: duplicates + bulk commands, extends both
 │   │   ├── i18n/                    # runtime UI i18n (see 07_I18N.md)
 │   │   │   ├── index.svelte.ts
 │   │   │   ├── format.ts            # pure Intl number/date helpers (07 §3)
 │   │   │   ├── resolve-locale.ts
 │   │   │   └── locales/{en,vi,ja}{,-notices,-import}.ts   # split by namespace (07 §2)
-│   │   └── components/              # Svelte components (see 06_UI.md); icons/Icon.svelte
+│   │   └── components/              # Svelte components (see 06_UI.md); icons/Icon.svelte,
+│   │                                # focus-heading.ts (the step-heading focus attachment)
 │   └── styles/
 │       ├── tokens.css               # CSS custom properties, themes
 │       └── base.css
