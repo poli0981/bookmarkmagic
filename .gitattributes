@@ -1,5 +1,10 @@
-# Default: normalize to LF in the repo, check out native.
-* text=auto
+# Default: normalize to LF in the repo AND in every checkout.
+#
+# `eol=lf` and not "check out native": Biome's formatter (and every gate built
+# on it) expects LF, so a Windows clone with core.autocrlf=true used to fail
+# `npm run lint` on all 114 files before a single line had been edited. The
+# two `#!/usr/bin/env node` scripts are also unusable from WSL with CRLF.
+* text=auto eol=lf
 
 # Fixtures are byte-exact samples of what real browsers and spreadsheets emit.
 # EOL normalization would rewrite the CRLF records in the CSV exports, so a
