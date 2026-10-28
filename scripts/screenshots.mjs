@@ -20,19 +20,24 @@
  * install paths) headless, on a throwaway profile — never the user's own:
  * every route × theme × language at 1280×800 into `.output/qa-screens/` (for
  * review, git-ignored), the README set into `capture/`, and the store set into
- * `store/screenshots/`. Dev tool only: nothing here ships, and it never touches
- * the network beyond localhost.
+ * `store/screenshots/`. Dev tool only: nothing here ships, the server listens
+ * on 127.0.0.1 alone, and it never touches the network beyond it.
  */
-import { execFileSync } from 'node:child_process';
+import { execFile } from 'node:child_process';
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { tmpdir } from 'node:os';
-import { extname, join, normalize, resolve } from 'node:path';
+import { extname, join, normalize, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { promisify } from 'node:util';
+
+const run = promisify(execFile);
 
 const ROOT = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const OUT = join(ROOT, '.output', 'chrome-mv3');
 const PORT = Number(process.env.PORT ?? 4318);
+/** Loopback only: the harness serves the build and a fake API to this machine, nobody else. */
+const HOST = '127.0.0.1';
 const TYPES = /** @type {Record<string, string>} */ ({
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript; charset=utf-8',
@@ -100,7 +105,7 @@ function shim() {
     bookmarks, storage,
     runtime: { id: 'harness', getManifest: () => manifest, getURL: (p) => location.origin + (p.startsWith('/') ? p : '/' + p), getContexts: async () => [], lastError: undefined },
     i18n: { getUILanguage: () => lang, getMessage: (k) => k },
-    tabs: { create: async () => ({}), update: async () => ({}) },
+    tabs: { create: async () => ({}), update: async () => ({}), getCurrent: async () => ({ id: 1 }) },
     windows: { update: async () => ({}) },
   };
 })();`;
@@ -109,13 +114,22 @@ function shim() {
 function serve() {
   const csp = productionCsp();
   const server = createServer((req, res) => {
-    const url = new URL(req.url ?? '/', `http://localhost:${PORT}`);
+    const url = new URL(req.url ?? '/', `http://${HOST}:${PORT}`);
     if (url.pathname === '/__shim.js') {
       res.writeHead(200, { 'content-type': TYPES['.js'] ?? '' }).end(shim());
       return;
     }
-    const path = normalize(join(OUT, decodeURIComponent(url.pathname)));
-    if (!path.startsWith(OUT) || !existsSync(path)) {
+    let decoded;
+    try {
+      decoded = decodeURIComponent(url.pathname);
+    } catch {
+      // A malformed escape (`%E0%A4%A`) used to throw out of the handler.
+      res.writeHead(400).end('bad request');
+      return;
+    }
+    const path = normalize(join(OUT, decoded));
+    // `OUT + sep`, not `OUT`: a bare prefix test also let `chrome-mv3-evil/…` through.
+    if ((path !== OUT && !path.startsWith(OUT + sep)) || !existsSync(path)) {
       res.writeHead(404).end('not found');
       return;
     }
@@ -127,7 +141,9 @@ function serve() {
     }
     res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' }).end(body);
   });
-  server.listen(PORT, () => console.log(`harness: http://localhost:${PORT}/manager.html#import`));
+  server.listen(PORT, HOST, () =>
+    console.log(`harness: http://${HOST}:${PORT}/manager.html#import`),
+  );
   return server;
 }
 
@@ -144,21 +160,30 @@ function findChrome() {
 }
 
 /**
+ * One headless screenshot. Asynchronous on purpose: the server answering
+ * Chrome's requests runs in this same process, and 1.1.0's first cut used
+ * `execFileSync`, which blocked the event loop — Chrome waited for a page the
+ * blocked server could never send, and `--shoot` hung forever.
+ *
  * @param {string} chrome @param {string} profile @param {string} url
  * @param {string} file @param {string} size
  */
-function shoot(chrome, profile, url, file, size) {
-  execFileSync(chrome, [
-    '--headless=new',
-    `--user-data-dir=${profile}`,
-    '--no-first-run',
-    '--disable-gpu',
-    '--hide-scrollbars',
-    `--window-size=${size}`,
-    '--virtual-time-budget=4000',
-    `--screenshot=${file}`,
-    url,
-  ]);
+async function shoot(chrome, profile, url, file, size) {
+  await run(
+    chrome,
+    [
+      '--headless=new',
+      `--user-data-dir=${profile}`,
+      '--no-first-run',
+      '--disable-gpu',
+      '--hide-scrollbars',
+      `--window-size=${size}`,
+      '--virtual-time-budget=4000',
+      `--screenshot=${file}`,
+      url,
+    ],
+    { timeout: 60_000 },
+  );
 }
 
 if (!existsSync(join(OUT, 'manifest.json'))) {
@@ -179,19 +204,25 @@ if (!existsSync(join(OUT, 'manifest.json'))) {
       for (const dir of [qa, capture, store]) mkdirSync(dir, { recursive: true });
       const profile = mkdtempSync(join(tmpdir(), 'bookmarkmagic-harness-'));
       const page = (/** @type {string} */ query, /** @type {string} */ route) =>
-        `http://localhost:${PORT}/manager.html?${query}#${route}`;
+        `http://${HOST}:${PORT}/manager.html?${query}#${route}`;
       const ROUTES = ['import', 'export', 'edit', 'settings', 'about'];
       try {
         for (const lang of ['en', 'vi', 'ja']) {
           for (const theme of ['light', 'dark']) {
             for (const route of ROUTES) {
               const file = join(qa, `${route}-${theme}-${lang}.png`);
-              shoot(chrome, profile, page(`theme=${theme}&lang=${lang}`, route), file, '1280,800');
+              await shoot(
+                chrome,
+                profile,
+                page(`theme=${theme}&lang=${lang}`, route),
+                file,
+                '1280,800',
+              );
             }
           }
         }
         for (const route of ROUTES) {
-          shoot(
+          await shoot(
             chrome,
             profile,
             page('theme=light&lang=en', route),
@@ -200,7 +231,7 @@ if (!existsSync(join(OUT, 'manifest.json'))) {
           );
         }
         for (const route of ['edit', 'export', 'import']) {
-          shoot(
+          await shoot(
             chrome,
             profile,
             page('theme=dark&lang=en', route),
@@ -208,10 +239,10 @@ if (!existsSync(join(OUT, 'manifest.json'))) {
             '1280,800',
           );
         }
-        shoot(
+        await shoot(
           chrome,
           profile,
-          `http://localhost:${PORT}/popup.html?theme=light&lang=en`,
+          `http://${HOST}:${PORT}/popup.html?theme=light&lang=en`,
           join(capture, 'popup.png'),
           '360,420',
         );

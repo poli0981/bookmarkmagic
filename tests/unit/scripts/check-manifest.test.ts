@@ -15,9 +15,9 @@ import { checkExtension } from '../../../scripts/check-manifest.mjs';
 
 const SCRIPT = join(process.cwd(), 'scripts', 'check-manifest.mjs');
 const CSP =
-  "script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' data: blob:; " +
-  "style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'none'; frame-src 'none'; " +
-  "worker-src 'self'; form-action 'none'; base-uri 'none'";
+  "default-src 'none'; script-src 'self'; object-src 'none'; connect-src 'none'; " +
+  "img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; font-src 'self'; " +
+  "media-src 'none'; frame-src 'none'; worker-src 'self'; form-action 'none'; base-uri 'none'";
 
 const MANIFEST = {
   manifest_version: 3,
@@ -35,8 +35,11 @@ const MANIFEST = {
 };
 
 const FILES: Record<string, string> = {
-  'manager.html': '<!doctype html>',
+  'manager.html':
+    '<!doctype html><script type="module" src="/chunks/manager.js"></script>' +
+    '<link rel="stylesheet" href="/assets/manager.css">',
   'popup.html': '<!doctype html>',
+  'assets/manager.css': 'body{}',
   'THIRD_PARTY_NOTICES.txt': 'notices',
   '_locales/en/messages.json': '{}',
   '_locales/vi/messages.json': '{}',
@@ -130,13 +133,32 @@ describe('check-manifest.mjs', () => {
 
   it.each([
     ['fetch', 'chunks/x.js', 'fetch("https://x.example")'],
+    ['fetch', 'chunks/x.js', 'const g=fetch;g.call(null,u)'],
     ['XMLHttpRequest', 'chunks/x.js', 'new XMLHttpRequest'],
     ['sendBeacon', 'assets/deep/y.js', 'navigator.sendBeacon(u)'],
+    ['RTCPeerConnection', 'chunks/x.js', 'new RTCPeerConnection({iceServers:[]})'],
+    ['importScripts', 'chunks/x.js', 'importScripts("x.js")'],
   ])('fails on %s anywhere in the shipped JavaScript', (api, file, code) => {
     const { status, output } = check(build(MANIFEST, { [file]: code }));
     expect(status).toBe(1);
     expect(output).toContain(`network API "${api}`);
   });
+
+  it('fails when a page loads a file the build does not contain', () => {
+    const { status, output } = check(build(MANIFEST, { 'assets/manager.css': null }));
+    expect(status).toBe(1);
+    expect(output).toContain('missing file in the build: /assets/manager.css');
+  });
+
+  it.each(['https://cdn.example/x.js', '//cdn.example/x.js'])(
+    'fails when a page loads %s from outside the package',
+    (url) => {
+      const page = `<!doctype html><script src="${url}"></script>`;
+      const { status, output } = check(build(MANIFEST, { 'popup.html': page }));
+      expect(status).toBe(1);
+      expect(output).toContain('from outside the package');
+    },
+  );
 
   it('fails clearly when there is no build at all', () => {
     const empty = mkdtempSync(join(tmpdir(), 'check-manifest-empty-'));
@@ -152,7 +174,8 @@ describe('check-manifest.mjs', () => {
     const result = spawnSync(process.execPath, [SCRIPT, '/etc'], { encoding: 'utf8' });
     const output = `${result.stdout}${result.stderr}`;
     expect([0, 1]).toContain(result.status);
-    expect(output).toMatch(/check-manifest: (clean|cannot read|.*permissions)/);
+    // Any stated outcome: a stale build legitimately fails on whatever changed.
+    expect(output).toMatch(/check-manifest: \S/);
     expect(output).not.toContain('/etc');
   });
 });

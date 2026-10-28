@@ -5,6 +5,13 @@
 # protection reads ("Quality gates", "Build + package / build"). The verdict
 # reaches the PR through the SonarCloud GitHub App's own check.
 #
+# Two jobs, so the token never shares a runner with dependency code. Secrets
+# are loaded into the runner for the whole job, and a step can read them from
+# the runner process whatever its own `env:` says — the shape of the March 2025
+# tj-actions compromise. So `coverage` installs and runs the dev dependencies
+# with no secret at all, and `scan` installs nothing: it gets the lcov report as
+# an artifact.
+#
 # ⚠️ Prerequisite: Automatic Analysis is OFF in the SonarCloud project
 # (Administration → Analysis Method). With it on, the scanner refuses to run.
 name: SonarCloud
@@ -22,8 +29,8 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  analyze:
-    name: SonarCloud analysis
+  coverage:
+    name: Coverage for SonarCloud
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -31,8 +38,6 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # Full history: Sonar's new-code detection and blame need it.
-          fetch-depth: 0
           persist-credentials: false
       - uses: actions/setup-node@v7
         with:
@@ -48,13 +53,39 @@ jobs:
       # lcov for Sonar; the docs/11 §1 thresholds still gate core here too.
       - run: npm run coverage
 
+      - uses: actions/upload-artifact@v7
+        with:
+          name: lcov
+          path: coverage/lcov.info
+          retention-days: 1
+          if-no-files-found: error
+
+  scan:
+    name: SonarCloud analysis
+    needs: coverage
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Full history: Sonar's new-code detection and blame need it.
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: lcov
+          path: coverage
+
+      # No npm here: the runner's own Node reads one field of a JSON file.
       - name: Read the package version
         id: pkg
         run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
-      # The token is scoped to the two steps that need it, so the install and
-      # the test run above never see it. Dependabot and fork PRs get no repo
-      # secrets at all: they skip the scan with a notice instead of failing.
+      # Dependabot and fork PRs get no repo secrets at all: they skip the scan
+      # with a notice instead of failing.
       - name: Check for SONAR_TOKEN
         id: token
         env:

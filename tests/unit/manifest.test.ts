@@ -100,6 +100,7 @@ describe('manifest', () => {
       CONFIG.indexOf("].join('; ')"),
     );
     for (const directive of [
+      "default-src 'none'",
       "script-src 'self'",
       "object-src 'none'",
       "connect-src 'none'",
@@ -113,7 +114,9 @@ describe('manifest', () => {
     // never for script.
     expect(csp).toContain(`"style-src 'self' 'unsafe-inline'"`);
     const withoutInlineStyle = csp.replace(`"style-src 'self' 'unsafe-inline'"`, '');
-    expect(withoutInlineStyle).not.toMatch(/unsafe-|https?:|\*|default-src/);
+    expect(withoutInlineStyle).not.toMatch(/unsafe-|https?:|\*/);
+    // `default-src` exists only to close everything unlisted — so only as 'none'.
+    expect(csp.match(/default-src[^"]*/g)).toEqual(["default-src 'none'"]);
   });
 
   it('keeps the manifest at v3 by not overriding WXT’s default', () => {

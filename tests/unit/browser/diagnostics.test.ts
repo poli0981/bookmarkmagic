@@ -1,6 +1,12 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { describeError } from '@/lib/browser/describe-error';
-import { clearDiagnostics, installCrashHooks, record, snapshot } from '@/lib/browser/diagnostics';
+import {
+  clearDiagnostics,
+  errorName,
+  installCrashHooks,
+  record,
+  snapshot,
+} from '@/lib/browser/diagnostics';
 import { BmParseError } from '@/lib/core/model';
 
 const CONTEXT = { version: '1.1.0', locale: 'vi', theme: 'dark' };
@@ -58,5 +64,30 @@ describe('diagnostics', () => {
       { kind: 'crash', name: 'RangeError' },
     ]);
     expect(snapshot(CONTEXT)).not.toContain('x.example');
+  });
+
+  it('names an error only from the allowlist (v1.1.0 review)', () => {
+    const custom = new Error('m');
+    custom.name = 'https://leak.example/Jane Doe';
+    expect(errorName(custom)).toBe('other');
+    expect(errorName(new TypeError('x'))).toBe('TypeError');
+    expect(errorName(new BmParseError('INVALID_NODE'))).toBe('BmParseError');
+    expect(errorName('a string')).toBe('string');
+    expect(errorName(undefined)).toBe('undefined');
+  });
+
+  it('refuses free text at compile time — the allowlist is the type (v1.1.0 review)', () => {
+    const title = 'Jane Doe — payroll';
+    // @ts-expect-error a title is not an import phase
+    record({ kind: 'import', phase: `parsed:${title}` });
+    // @ts-expect-error nor a file format
+    record({ kind: 'import', phase: 'parsed', format: title });
+    // @ts-expect-error nor an error key
+    record({ kind: 'failure', where: 'TypeError', code: 'https://leak.example/' });
+    // @ts-expect-error nor an edit action
+    record({ kind: 'edit', action: title });
+    // @ts-expect-error nor an error name
+    record({ kind: 'crash', name: title });
+    expect(events()).toHaveLength(5);
   });
 });

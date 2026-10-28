@@ -26,20 +26,22 @@ const CHROME_FLOOR = 136;
  * thing between the product and its "no network" claim. `connect-src 'none'`
  * makes Chrome itself refuse every fetch, XHR, WebSocket, EventSource and
  * beacon; the other directives close remote images, fonts, media, frames and
- * form posts. There is deliberately no `default-src`, so Svelte's styles are
- * untouched. `scripts/check-manifest.mjs` pins this exact string in the built
- * manifest.
+ * form posts, and `default-src 'none'` closes whatever is left unlisted (web
+ * app manifests, prefetches). Every directive the pages use is listed, so it
+ * changes nothing for them — styles included. `scripts/check-manifest.mjs`
+ * pins this exact string in the built manifest.
  *
  * Production builds only: the dev server (`wxt`, command "serve") reloads the
  * extension over a localhost websocket that `connect-src 'none'` would block.
  */
 const EXTENSION_PAGE_CSP = [
+  "default-src 'none'",
   "script-src 'self'",
   "object-src 'none'",
   "connect-src 'none'",
   "img-src 'self' data: blob:",
   // Inline styles stay allowed (Svelte sets style attributes); remote
-  // stylesheets do not — with no default-src, style-src was otherwise open.
+  // stylesheets do not.
   "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "media-src 'none'",

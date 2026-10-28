@@ -64,6 +64,23 @@ const BANNED: readonly (readonly [string, string, string, string])[] = [
     "new (window['XMLHttp' + 'Request'])();",
     'computed global access',
   ],
+  [
+    'optional-chained computed access',
+    'a.ts',
+    "globalThis?.['fe' + 'tch'](u);",
+    'computed global access',
+  ],
+  ['Reflect.get on a global', 'a.ts', "Reflect.get(globalThis, 'fe' + 'tch')(u);", 'Reflect'],
+  ['Reflect.set of a raw-HTML sink', 'a.ts', "Reflect.set(el, 'outer' + 'HTML', h);", 'Reflect'],
+  ['an assembled member name', 'a.ts', "el['inner' + 'HTML'] = h;", 'assembled member name'],
+  [
+    'an assembled member name behind ?.',
+    'a.ts',
+    "el?.['inner' + 'HTML'] = h;",
+    'assembled member name',
+  ],
+  // biome-ignore lint/suspicious/noTemplateCurlyInString: source text for the guard to scan
+  ['a template member name', 'a.ts', 'el[`inner${kind}`] = h;', 'assembled member name'],
   ['a prefetch hint in markup', 'a.svelte', '<link rel="prefetch" href="/x">', 'resource hint'],
   ['a prefetch hint in code', 'a.ts', "link.rel = 'prefetch';", 'resource hint'],
   ['a preload rel', 'a.ts', "link.rel = 'preload';", 'resource hint'],
@@ -138,6 +155,12 @@ describe('guard.mjs — things that must stay allowed', () => {
       'function myFunction() {}',
       'const transport = "web";',
       '// "network calls are banned" — prose without the API names',
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: source text for the guard to scan
+      'const accept = { [mime]: [`.${ext}`] };',
+      // biome-ignore lint/suspicious/noTemplateCurlyInString: source text for the guard to scan
+      "const lines = [`# ${title}`, ''];",
+      'const first = rows?.[0];',
+      "const key = map[prefix + 'x'];",
     ].join('\n'),
   };
 

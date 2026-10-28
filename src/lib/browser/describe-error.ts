@@ -20,13 +20,30 @@
  * Lives in `browser/` because that is where the error taxonomy lives;
  * `browser/` may import `core/`, not the reverse (docs/02 §3).
  */
-import { BmParseError } from '../core/model';
-import { record } from './diagnostics';
-import { BmBackupError, BmBrowserError, BmEnvError, BmPartialWrite } from './errors';
+import { BmParseError, type BmParseErrorCode } from '../core/model';
+import { errorName, record } from './diagnostics';
+import {
+  BmBackupError,
+  type BmBackupErrorCode,
+  BmBrowserError,
+  type BmEnvCode,
+  BmEnvError,
+  BmPartialWrite,
+} from './errors';
+
+/** Every key `describeError` can return — and so every code the diagnostics log can hold. */
+export type ErrorKey = `errors.${
+  | BmParseErrorCode
+  | BmBackupErrorCode
+  | BmEnvCode
+  | 'PARTIAL_CLEAR'
+  | 'PARTIAL_WRITE'
+  | 'BROWSER'
+  | 'UNKNOWN'}`;
 
 export interface DescribedError {
   /** Dotted i18n path, e.g. `errors.TOO_DEEP`. */
-  messageKey: string;
+  messageKey: ErrorKey;
   /** Raw, untranslated technical text for the copyable detail block. */
   detail?: string | undefined;
   /** Nodes written before a partial failure, when the failure knows. */
@@ -39,11 +56,7 @@ export function describeError(err: unknown): DescribedError {
   const described = describe(err);
   // Every failure the UI shows passes through here, so this is where the
   // diagnostics log learns of it — by code, never by its detail text.
-  record({
-    kind: 'failure',
-    where: err instanceof Error ? err.name : typeof err,
-    code: described.messageKey,
-  });
+  record({ kind: 'failure', where: errorName(err), code: described.messageKey });
   return described;
 }
 
