@@ -71,7 +71,10 @@
 </script>
 
 <section aria-label={t('common.settings')}>
+  <h2 class="eyebrow">{t('common.settings')}</h2>
   <p class="muted">{t('settings.autosave')}</p>
+
+  <div class="panel">
 
   <SettingRow label={t('settings.language')} description={t('settings.languageNote')}>
     {#snippet control()}
@@ -155,6 +158,8 @@
     {/snippet}
   </SettingRow>
 
+  </div>
+
   {#if saveDetail !== undefined}
     <pre class="detail">{saveDetail}</pre>
   {/if}
@@ -176,19 +181,34 @@
 
 <style>
   section {
-    max-width: 640px;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
   }
 
   .muted {
-    margin: 0 0 var(--sp-3);
+    margin: 0;
     color: var(--fg-muted);
     font-size: var(--fs-1);
   }
 
+  h2 {
+    margin: 0;
+  }
+
+  /* The rows sit in one bordered panel, like a preferences pane. */
+  .panel {
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg);
+  }
+
   select {
     font: inherit;
-    padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border);
+    font-size: var(--fs-1);
+    padding: 5px var(--sp-2);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
     background: var(--bg);
     color: var(--fg);
@@ -199,18 +219,19 @@
   }
 
   .detail {
-    margin: var(--sp-3) 0 0;
-    padding: var(--sp-2);
-    border: 1px solid var(--border);
+    margin: 0;
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
-    background: var(--bg-raised);
+    background: var(--bg-sunken);
     color: var(--fg-muted);
+    font-family: var(--font-mono);
     font-size: var(--fs-0);
     white-space: pre-wrap;
     overflow-x: auto;
   }
 
   footer {
-    padding-top: var(--sp-4);
+    padding-top: var(--sp-2);
   }
 </style>

@@ -1,5 +1,6 @@
 /**
- * Transient status messages — docs/06 §4 (queue, auto-dismiss 4 s, ARIA status).
+ * Transient status messages — docs/06 §4 (queue, auto-dismiss 4 s — failures
+ * excepted, ARIA status).
  *
  * Purpose: one place that owns toast state AND its timers.
  * Inputs: `pushToast` calls from anywhere in the Manager.
@@ -75,6 +76,9 @@ function shift(): void {
 
 function startTimer(id: string): void {
   clearTimer();
+  // A failure stays until it is dismissed: 4 s is not long enough to read an
+  // error, let alone act on it, and it is the one toast that matters (uM7).
+  if (queue.find((item) => item.id === id)?.tone === 'danger') return;
   timer = setTimeout(() => {
     timer = undefined;
     // The identity check is what stops a user dismiss racing this timeout from

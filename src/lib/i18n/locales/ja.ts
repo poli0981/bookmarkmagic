@@ -1,4 +1,5 @@
 import type { Dict } from './en';
+import { importTab } from './ja-import';
 import { errors, warnings } from './ja-notices';
 
 /**
@@ -17,85 +18,34 @@ export default {
     cancel: 'キャンセル',
     dismiss: '閉じる',
     sections: 'セクション',
+    detail: '技術的な詳細',
   },
   popup: {
     import: 'ブックマークをインポート…',
+    importHint: 'HTML、CSV、JSON バックアップ、Chrome の Bookmarks ファイル',
     export: 'ブックマークをエクスポート…',
+    exportHint: 'HTML、JSON、CSV、Markdown',
     manage: 'マネージャーを開く',
-    counts: 'ブックマーク {bookmarks} 件 · フォルダ {folders} 件',
+    manageHint: '編集、並べ替え、重複の検出',
+    bookmarks: { one: 'ブックマーク', other: 'ブックマーク' },
+    folders: { one: 'フォルダ', other: 'フォルダ' },
   },
-  import: {
-    dropHint: 'ブックマークファイルをドロップするかクリックして選択してください · 最大 {size}',
-    dropFormats:
-      'ブラウザの HTML エクスポート、CSV、BookmarkMagic と Firefox の JSON バックアップ、Chrome 自身の Bookmarks ファイル（拡張子なし）に対応しています。',
-    reading: '{name} を読み込んでいます…',
-    preview: 'プレビュー',
-    folderName: 'インポート {date}',
-    start: '{n} 件のブックマークをインポート',
-    backingUp:
-      '置き換える前に安全のためのバックアップを保存しています。続行するには保存ダイアログを確認してください。',
-    keepTabOpen: 'インポートが完了するまでこのタブを開いたままにしてください。',
-    progress: 'インポート中… {done} / {total}',
-    doneSummary: '完了しました — {created} 件を作成しました。',
-    skipped:
-      'このブラウザに既にある {existing} 件と、ファイル内で重複する {inFile} 件をスキップしました。',
-    reused: {
-      one: 'コピーを作らずに、既存の {n} 個のフォルダに追加しました。',
-      other: 'コピーを作らずに、既存の {n} 個のフォルダに追加しました。',
-    },
-    rootTitle: {
-      toolbar: 'ブックマークツールバー',
-      unfiled: '他のブックマーク',
-      mobile: 'モバイルブックマーク',
-    },
-    cancelledSummary: 'キャンセルしました — 既に作成された {created} 件はそのまま残されています。',
-    cancelledAfterClear:
-      '既存のブックマークが削除された後にキャンセルされたため、残っているのは再作成された分だけです。',
-    dateNotice:
-      'インポートしたブックマークの日付は本日になります。拡張機能がブックマークの元の作成日を設定することを Chrome が許可していないためです。エクスポートしたファイルには本来の日付が残ります。',
-    partialCreated: 'エラーが発生する前に作成された {created} 件はそのまま残されています。',
-    partialCleared:
-      'エラーが発生する前に、最上位の {removed} 件が既に削除されています。バックアップから復元してください。',
-    backupHint:
-      '安全のためのバックアップは {name} として保存されています。その JSON ファイルをインポートすると復元できます。',
-    openEdit: '編集タブを開く',
-    another: '別のファイルをインポート',
-    dedupe: 'このブラウザに既にあるものをスキップする（{n} 件見つかりました）',
-    dedupeDisabled: '対象外です。「すべて置き換える」は現在のブックマークを先に削除します。',
-    replaceWarning:
-      'この操作は現在のブックマークをすべて削除します。先に JSON のバックアップを保存し、それが成功するまで何も削除しません。',
-    attest:
-      'バックアップが保存されたことをブラウザが確認できませんでした。ダウンロードフォルダで {name} を確認してから続行してください。まだ何も削除されていません。',
-    attestConfirm: 'バックアップを確認しました — 削除して置き換える',
-    clearing: '現在のブックマークを削除しています。このタブを閉じないでください。',
-    badgeNew: '新規',
-    badgeDup: '重複',
-    expand: 'フォルダを展開',
-    collapse: 'フォルダを折りたたむ',
-    stats: {
-      bookmarks: 'ブックマーク',
-      folders: 'フォルダ',
-      depth: '最大の深さ',
-      duplicates: '重複',
-    },
-    mode: {
-      legend: 'どのように追加しますか？',
-      newFolder: '新しいフォルダに入れる（推奨）',
-      merge: '既存のフォルダに統合する',
-      replace: 'すべて置き換える',
-    },
-    warnings: {
-      // 日本語は単複の区別がありませんが、docs/07 §5 に従い両方のキーを
-      // 保持します（`satisfies Dict` の形状チェックを成立させるため）。
-      title: { one: '警告 {n} 件', other: '警告 {n} 件' },
-    },
+  status: {
+    local: 'ローカルのみ',
+    localNote: 'ネットワークなし：この拡張機能はどこにも何も送信できません。',
+    permissionsNote: 'この拡張機能が持つ権限はこの 2 つだけです。',
+    more: 'その他',
   },
+  import: importTab,
   export: {
     scope: 'エクスポートする範囲',
     everything: 'すべて',
     format: '形式',
-    start: '{n} 件のブックマークをエクスポート',
-    saved: '{name} を保存しました',
+    start: {
+      one: '{n} 件のブックマークをエクスポート',
+      other: '{n} 件のブックマークをエクスポート',
+    },
+    started: 'ダウンロードを開始しました：{name}',
     markdownNote: 'Markdown は共有専用です。BookmarkMagic では読み込めません。',
     csvNote: 'CSV は平坦化された形式です。空のフォルダやブックマークバーの区別は保持されません。',
     csvDelimiter: '区切り文字',

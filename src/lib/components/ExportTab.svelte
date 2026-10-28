@@ -6,7 +6,7 @@
   import type { CsvDelimiter } from '../core/csv-dialect';
   import type { MarkdownStyle } from '../core/serialize/markdown';
   import { countSelected, FORMAT_META, runExport } from '../export/run-export';
-  import { num, t } from '../i18n/index.svelte';
+  import { t, tPlural } from '../i18n/index.svelte';
   import {
     CSV_DELIMITER_CHOICES,
     MARKDOWN_STYLE_CHOICES,
@@ -26,6 +26,9 @@
   let loadError = $state<DescribedError | undefined>();
   let csvDelimiter = $state<CsvDelimiter>(',');
   let markdownStyle = $state<MarkdownStyle>('nested');
+  let loading = $state(true);
+  /** An export failure keeps its technical detail, like every other tab (uM7). */
+  let exportError = $state<DescribedError | undefined>();
 
   onMount(() => {
     void load();
@@ -43,6 +46,8 @@
       // Was `err.detail` alone — a raw English Chrome string as the entire
       // screen, in all three languages (docs/02 §7).
       loadError = describeError(err);
+    } finally {
+      loading = false;
     }
   }
 
@@ -54,6 +59,7 @@
   const bookmarkCount = $derived(countSelected(roots, selection));
 
   function download(): void {
+    exportError = undefined;
     void (async () => {
       try {
         const result = await runExport({
@@ -63,13 +69,11 @@
           markdownStyle,
           now: new Date(),
         });
-        pushToast(t('export.saved', { name: result.filename }), 'success');
+        // "Started", not "saved": the anchor download gives no signal at all,
+        // and the browser may still ask where to put it (uM8).
+        pushToast(t('export.started', { name: result.filename }), 'success');
       } catch (err) {
-        // Tone matters: this used to share a variable with the success message
-        // and rendered failures in success-green. The message is the localized
-        // sentence — a toast has no room for a detail block, which is the same
-        // reasoning the header's save-failure toast records.
-        pushToast(t(describeError(err).messageKey), 'danger');
+        exportError = describeError(err);
       }
     })();
   }
@@ -79,11 +83,17 @@
   <ErrorCallout messageKey={loadError.messageKey} detail={loadError.detail} />
 {:else}
   <div class="split">
-    <section aria-label={t('export.scope')}>
-      <FolderPickTree {roots} {selection} onchange={(next) => (selection = next)} />
+    <section class="panel">
+      <h2 class="eyebrow">01 · {t('export.scope')}</h2>
+      {#if loading}
+        <p class="muted">{t('edit.loading')}</p>
+      {:else}
+        <FolderPickTree {roots} {selection} onchange={(next) => (selection = next)} />
+      {/if}
     </section>
 
-    <section class="side">
+    <section class="panel side">
+      <h2 class="eyebrow">02 · {t('export.format')}</h2>
       <FormatSelect {format} onchange={(next) => (format = next)} />
 
       {#if !FORMAT_META[format].importable}
@@ -124,12 +134,18 @@
         </label>
       {/if}
 
+      {#if exportError !== undefined}
+        <ErrorCallout messageKey={exportError.messageKey} detail={exportError.detail} />
+      {/if}
+
       <Button
         variant="primary"
+        icon="download"
+        iconMotion="bob"
         disabled={bookmarkCount === 0}
         onclick={download}
       >
-        {t('export.start', { n: num(bookmarkCount) })}
+        {tPlural('export.start', bookmarkCount)}
       </Button>
 
     </section>
@@ -139,21 +155,32 @@
 <style>
   .split {
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: minmax(0, 1fr) var(--width-side);
     gap: var(--sp-5);
     align-items: start;
   }
 
-  @media (max-width: 780px) {
+  @media (max-width: 820px) {
     .split {
       grid-template-columns: 1fr;
     }
   }
 
-  .side {
+  .panel {
     display: flex;
     flex-direction: column;
     gap: var(--sp-3);
+    min-width: 0;
+  }
+
+  h2 {
+    margin: 0;
+  }
+
+  .muted {
+    margin: 0;
+    color: var(--fg-muted);
+    font-size: var(--fs-1);
   }
 
   .option {
@@ -166,8 +193,8 @@
 
   .option select {
     font: inherit;
-    padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border);
+    padding: 5px var(--sp-2);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
     background: var(--bg);
     color: var(--fg);

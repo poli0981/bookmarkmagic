@@ -3,8 +3,7 @@
   import { timestampSuffix } from '../browser/download';
   import { BmAborted } from '../browser/errors';
   import { num, t, tPlural } from '../i18n/index.svelte';
-  import { prepareImport, runImport } from '../import/run-import';
-  import { getSettings } from '../stores/settings.svelte';
+  import { prepareImport, previewPlan, runImport } from '../import/run-import';
   import {
     answerAttestation,
     awaitAttestation,
@@ -17,24 +16,38 @@
     setImportOptions,
     setImportState,
     setPrepared,
+    type WriteSite,
   } from '../stores/import-session.svelte';
   import { navigate } from '../stores/route.svelte';
+  import { getSettings } from '../stores/settings.svelte';
   import Button from './Button.svelte';
   import Callout from './Callout.svelte';
+  import ConfirmDialog from './ConfirmDialog.svelte';
   import DropZone from './DropZone.svelte';
   import ErrorCallout from './ErrorCallout.svelte';
   import ImportOptions from './ImportOptions.svelte';
+  import ImportReport from './ImportReport.svelte';
   import ProgressBar from './ProgressBar.svelte';
   import StatsCard from './StatsCard.svelte';
   import TreePreview from './TreePreview.svelte';
   import WarningList from './WarningList.svelte';
 
   // `prepared` lives in the session store, not here: the Manager unmounts this
-  // component on every route change, and losing it would leave a preview with
-  // no badges and a dead Import button (docs/03 §5).
+  // component on every route change (docs/03 §5).
   const prepared = $derived(getPrepared());
   const session = $derived(getImportState());
   const options = $derived(getImportOptions());
+  /** The counts the Start button and the Replace confirmation promise (uM10). */
+  const forecast = $derived(
+    prepared === undefined ? undefined : previewPlan(prepared, options.mode, options.dedupe),
+  );
+  let confirmingReplace = $state(false);
+
+  const counts = (bookmarks: number, folders: number): string =>
+    t('import.countPair', {
+      bookmarks: tPlural('import.countBookmarks', bookmarks),
+      folders: tPlural('import.countFolders', folders),
+    });
 
   async function onFile(file: File): Promise<void> {
     setImportState({ kind: 'validating', filename: file.name });
@@ -60,17 +73,26 @@
     }
   }
 
+  /** Replace asks first, with exact numbers (docs/09 T4); the other modes start at once. */
+  function onStart(filename: string): void {
+    if (options.mode === 'replace') confirmingReplace = true;
+    else void start(filename);
+  }
+
   async function start(filename: string): Promise<void> {
+    confirmingReplace = false;
     const current = prepared;
     if (current === undefined) return;
     const signal = beginWrite();
     const now = new Date();
     const backupFilename = `bookmarkmagic-backup-${timestampSuffix(now)}.json`;
-    /** Set once the backup is on disk. Nothing may point at the file before. */
-    let backupProven = false;
+    const folder = t('import.folderName', { date: formatFolderDate(now) });
+    const where: WriteSite = { mode: options.mode, folder: options.mode === 'new-folder' ? folder : '' };
+    /** The name the backup was saved under, once it is on disk. Nothing may point at it before. */
+    let savedAs: string | undefined;
 
     // runImport opens the save picker as its first statement, so the transient
-    // activation from this click still holds when the dialog appears.
+    // activation from this click (or the confirmation's) still holds.
     setImportState(
       options.mode === 'replace'
         ? { kind: 'backing-up', filename }
@@ -82,21 +104,17 @@
         prepared: current,
         mode: options.mode,
         dedupe: options.dedupe,
-        newFolderTitle: t('import.folderName', { date: formatFolderDate(now) }),
+        newFolderTitle: folder,
         backupFilename,
         now,
         signal,
         onProgress: (progress) => {
           setImportState({ kind: 'writing', filename, progress });
         },
-        // Backup proven; deletion starts now. No Cancel is offered here — the
-        // button used to stay live through the whole delete, letting a user
-        // cancel and be told "0 items created" after their tree was wiped.
-        //
-        // This callback is also the ONLY signal that the backup exists: it runs
-        // immediately after `proveBackup` returned, and nothing else does.
-        onClearing: () => {
-          backupProven = true;
+        // The ONLY signal that the backup exists. No Cancel is offered while the
+        // tree is being deleted: it used to stay live and report "0 created".
+        onClearing: (name) => {
+          savedAs = name;
           setImportState({ kind: 'clearing', filename });
         },
         confirmUnprovenBackup: () => {
@@ -106,57 +124,54 @@
       });
       setImportState({ kind: 'done', filename, created: outcome.created, plan: outcome.plan });
     } catch (err) {
+      // A backup filename appears only when the backup really exists — never
+      // for a failure before it, which would send a frightened user looking
+      // for a file that was never written.
+      const backup = savedAs === undefined ? {} : { backupFilename: savedAs };
       if (err instanceof BmAborted) {
-        setImportState({
-          kind: 'cancelled',
-          filename,
-          created: err.done,
-          // A cancel AFTER the clear is not "nothing happened": the tree is
-          // gone and only `created` of it has been rebuilt. Saying "N items
-          // created" alone reads as a harmless no-op on an empty browser.
-          ...(backupProven ? { backupFilename } : {}),
-        });
+        setImportState({ kind: 'cancelled', filename, created: err.done, where, ...backup });
         return;
       }
-      setImportState({
-        kind: 'error',
-        filename,
-        ...describeError(err),
-        // `backupProven`, not "mode was replace and this is not a BmBackupError".
-        // `runImport` resolves the roots BEFORE proving the backup, so a failure
-        // there — a policy-managed profile raising NO_WRITABLE_ROOTS, say —
-        // reaches this catch with no file on disk. Telling a frightened user to
-        // restore a backup that was never written is worse than saying nothing.
-        ...(backupProven ? { backupFilename } : {}),
-      });
+      setImportState({ kind: 'error', filename, ...describeError(err), where, ...backup });
     }
   }
 
   /**
-   * ISO date + local time, matching the `import.folderName` key (docs/07 §3).
-   *
-   * Deliberately NOT run through Intl, unlike every count in this file: docs/07
-   * §3 pins the folder name to the localized *word* plus an ISO date
-   * (`Đã nhập 2026-07-03`). Localizing it here would change the names of
-   * bookmark folders this extension creates in the user's browser.
+   * ISO date + local time (docs/07 §3), deliberately not Intl: it names a
+   * folder this extension creates in the user's browser.
    */
   function formatFolderDate(now: Date): string {
     const pad = (n: number): string => String(n).padStart(2, '0');
     return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
   }
-
 </script>
 
 {#if session.kind === 'idle'}
-  <DropZone onfile={(file) => void onFile(file)} />
+  <section class="panel">
+    <h2 class="eyebrow">01 · {t('import.stepSource')}</h2>
+    <DropZone onfile={(file) => void onFile(file)} />
+  </section>
 {:else if session.kind === 'validating'}
-  <p class="muted">{t('import.reading', { name: session.filename })}</p>
+  <section class="panel">
+    <h2 class="eyebrow">01 · {t('import.stepSource')}</h2>
+    <p class="muted mono">{t('import.reading', { name: session.filename })}</p>
+  </section>
 {:else if session.kind === 'parsed'}
   <div class="split">
-    <section aria-label={t('import.preview')}>
-      <TreePreview roots={session.result.roots} status={prepared?.status ?? new WeakMap()} />
+    <section class="panel">
+      <h2 class="eyebrow">
+        02 · {t('import.preview')}
+        <span class="file mono">{session.filename}</span>
+        {#if prepared !== undefined}<span class="format mono">{t(`import.format.${prepared.format}`)}</span>{/if}
+      </h2>
+      <TreePreview
+        roots={session.result.roots}
+        status={prepared?.status ?? new WeakMap()}
+        label={t('import.preview')}
+      />
     </section>
-    <section class="side">
+    <section class="panel side">
+      <h2 class="eyebrow">03 · {t('import.stepOptions')}</h2>
       <StatsCard stats={session.result.stats} duplicates={session.duplicates} />
       <WarningList warnings={session.result.warnings} />
       <ImportOptions
@@ -168,12 +183,28 @@
       <p class="muted">{t('import.dateNotice')}</p>
       <Button
         variant={options.mode === 'replace' ? 'danger' : 'primary'}
-        onclick={() => void start(session.filename)}
+        icon="upload"
+        iconMotion="bob"
+        onclick={() => onStart(session.filename)}
       >
-        {t('import.start', { n: num(session.result.stats.bookmarks) })}
+        {tPlural('import.start', forecast?.stats.bookmarkCount ?? session.result.stats.bookmarks)}
       </Button>
     </section>
   </div>
+  <ConfirmDialog
+    open={confirmingReplace}
+    danger
+    title={t('import.replaceConfirmTitle')}
+    body={t('import.replaceConfirmBody', {
+      current: counts(prepared?.current.bookmarks ?? 0, prepared?.current.folders ?? 0),
+      incoming: counts(forecast?.stats.bookmarkCount ?? 0, forecast?.stats.folderCount ?? 0),
+      name: session.filename,
+    })}
+    confirmLabel={t('import.replaceConfirm')}
+    cancelLabel={t('common.cancel')}
+    onconfirm={() => void start(session.filename)}
+    oncancel={() => (confirmingReplace = false)}
+  />
 {:else if session.kind === 'backing-up'}
   <Callout tone="warn">{t('import.backingUp')}</Callout>
 {:else if session.kind === 'attesting'}
@@ -181,97 +212,84 @@
        thing standing between the user and an unbacked-up deletion. -->
   <Callout tone="danger">{t('import.attest', { name: session.backupFilename })}</Callout>
   <div class="actions">
-    <Button variant="danger" onclick={() => answerAttestation(true)}>
-      {t('import.attestConfirm')}
-    </Button>
+    <Button variant="danger" onclick={() => answerAttestation(true)}>{t('import.attestConfirm')}</Button>
     <Button onclick={() => answerAttestation(false)}>{t('common.cancel')}</Button>
   </div>
 {:else if session.kind === 'clearing'}
   <Callout tone="danger">{t('import.clearing')}</Callout>
 {:else if session.kind === 'writing'}
-  <div class="writing">
-    <ProgressBar
-      done={session.progress.done}
-      total={session.progress.total}
-      label={t('common.import')}
-    />
-    <p class="muted">
+  <section class="panel writing">
+    <h2 class="eyebrow">04 · {t('import.stepWriting')}</h2>
+    <ProgressBar done={session.progress.done} total={session.progress.total} label={t('common.import')} />
+    <p class="muted mono">
       {t('import.progress', { done: num(session.progress.done), total: num(session.progress.total) })}
       {#if session.progress.currentPath !== ''}<span class="path">{session.progress.currentPath}</span>{/if}
     </p>
     <Callout tone="warn">{t('import.keepTabOpen')}</Callout>
-    <Button onclick={cancelWrite}>{t('common.cancel')}</Button>
-  </div>
-{:else if session.kind === 'done'}
-  <Callout tone="success">{t('import.doneSummary', { created: num(session.created) })}</Callout>
-  <p class="muted">
-    {t('import.skipped', {
-      existing: num(session.plan.stats.skippedExisting),
-      inFile: num(session.plan.stats.skippedInFile),
-    })}
-  </p>
-  {#if session.plan.stats.reusedFolders > 0}
-    <p class="muted">
-      {tPlural('import.reused', session.plan.stats.reusedFolders)}
-    </p>
-  {/if}
-  <p class="muted">{t('import.dateNotice')}</p>
-  <div class="actions">
-    <Button variant="primary" onclick={() => navigate('edit')}>{t('import.openEdit')}</Button>
-    <Button
-      onclick={resetImport}>{t('import.another')}</Button
-    >
-  </div>
-{:else if session.kind === 'cancelled'}
-  <Callout tone="warn">{t('import.cancelledSummary', { created: num(session.created) })}</Callout>
-  {#if session.backupFilename !== undefined}
-    <Callout tone="danger">{t('import.cancelledAfterClear')}</Callout>
-    <p class="muted">{t('import.backupHint', { name: session.backupFilename })}</p>
-  {/if}
-  <p class="muted">{t('import.dateNotice')}</p>
-  <Button
-    onclick={resetImport}>{t('import.another')}</Button
-  >
+    <div class="actions"><Button icon="close" onclick={cancelWrite}>{t('common.cancel')}</Button></div>
+  </section>
 {:else if session.kind === 'error'}
   <ErrorCallout messageKey={session.messageKey} detail={session.detail} />
-  {#if session.created !== undefined && session.created > 0}
-    <p class="muted">{t('import.partialCreated', { created: num(session.created) })}</p>
-  {/if}
-  {#if session.removed !== undefined && session.removed > 0}
-    <Callout tone="danger">{t('import.partialCleared', { removed: num(session.removed) })}</Callout>
-  {/if}
-  {#if session.backupFilename !== undefined}
-    <p class="muted">{t('import.backupHint', { name: session.backupFilename })}</p>
-  {/if}
-  <Button
-    onclick={resetImport}>{t('import.another')}</Button
-  >
+  <ImportReport state={session} />
+  <div class="actions"><Button onclick={resetImport}>{t('import.another')}</Button></div>
+{:else}
+  <ImportReport state={session} />
+  <div class="actions">
+    {#if session.kind === 'done'}
+      <Button variant="primary" icon="edit" onclick={() => navigate('edit')}>{t('import.openEdit')}</Button>
+    {/if}
+    <Button onclick={resetImport}>{t('import.another')}</Button>
+  </div>
 {/if}
 
 <style>
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    min-width: 0;
+  }
+
+  h2 {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--sp-2);
+    margin: 0;
+  }
+
+  .file,
+  .format {
+    font-weight: 400;
+    letter-spacing: 0;
+    text-transform: none;
+    padding: 0 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-sunken);
+    max-width: 32ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .format {
+    color: var(--accent);
+    border-color: var(--accent);
+    background: var(--accent-subtle);
+  }
+
   .split {
     display: grid;
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: minmax(0, 1fr) var(--width-side);
     gap: var(--sp-5);
     align-items: start;
   }
 
-  @media (max-width: 780px) {
+  @media (max-width: 820px) {
     .split {
       grid-template-columns: 1fr;
     }
-  }
-
-  .side {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
-  }
-
-  .writing {
-    display: flex;
-    flex-direction: column;
-    gap: var(--sp-3);
   }
 
   .muted {
@@ -289,8 +307,8 @@
 
   .actions {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--sp-2);
     margin-top: var(--sp-3);
   }
-
 </style>

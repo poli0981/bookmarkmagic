@@ -3,6 +3,7 @@
   import { dateTime, t } from '../i18n/index.svelte';
   import { CHANGELOG_URL, DONATE_LINKS, ISSUES_URL, LEGAL_URLS, REPO_URL, STORE_URL } from '../links';
   import { getAcceptance } from '../stores/legal.svelte';
+  import Icon from './icons/Icon.svelte';
 
   const version = getAppVersion();
   const acceptance = $derived(getAcceptance());
@@ -18,40 +19,40 @@
     <img src="/icon/48.png" alt="" width="48" height="48" />
     <div>
       <strong>{t('common.appName')}</strong>
-      {#if version !== ''}<span class="version">{t('about.version', { version })}</span>{/if}
+      {#if version !== ''}<span class="version mono">{t('about.version', { version })}</span>{/if}
     </div>
   </header>
 
   <p class="tagline">{t('about.tagline')}</p>
 
-  <h2>{t('about.links')}</h2>
+  <h2 class="eyebrow">{t('about.links')}</h2>
   <ul class="links">
-    <li><a href={REPO_URL} target="_blank" rel="noopener noreferrer">{t('about.repo')} ↗</a></li>
-    <li><a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">{t('about.issues')} ↗</a></li>
+    <li><a href={REPO_URL} target="_blank" rel="noopener noreferrer">{t('about.repo')}<Icon name="external" size={12} /></a></li>
+    <li><a href={ISSUES_URL} target="_blank" rel="noopener noreferrer">{t('about.issues')}<Icon name="external" size={12} /></a></li>
     <li>
       <a href={CHANGELOG_URL} target="_blank" rel="noopener noreferrer">
-        {t('about.changelog')} ↗
+        {t('about.changelog')}<Icon name="external" size={12} />
       </a>
     </li>
-    <li><a href={STORE_URL} target="_blank" rel="noopener noreferrer">{t('about.store')} ↗</a></li>
+    <li><a href={STORE_URL} target="_blank" rel="noopener noreferrer">{t('about.store')}<Icon name="external" size={12} /></a></li>
   </ul>
 
-  <h2>{t('about.thirdParty')}</h2>
+  <h2 class="eyebrow">{t('about.thirdParty')}</h2>
   <p class="muted">{t('about.thirdPartyNote')}</p>
 
-  <h2>{t('about.donate')}</h2>
+  <h2 class="eyebrow">{t('about.donate')}</h2>
   <p class="muted">{t('about.donateNote')}</p>
   <ul class="links">
     {#each DONATE_LINKS as link (link.url)}
-      <li><a href={link.url} target="_blank" rel="noopener noreferrer">{link.label} ↗</a></li>
+      <li><a href={link.url} target="_blank" rel="noopener noreferrer">{link.label}<Icon name="external" size={12} /></a></li>
     {/each}
   </ul>
 
-  <h2>{t('about.legal')}</h2>
+  <h2 class="eyebrow">{t('about.legal')}</h2>
   <ul class="links">
     {#each LEGAL_URLS as link (link.url)}
       <li>
-        <a href={link.url} target="_blank" rel="noopener noreferrer">{t(link.labelKey)} ↗</a>
+        <a href={link.url} target="_blank" rel="noopener noreferrer">{t(link.labelKey)}<Icon name="external" size={12} /></a>
       </li>
     {/each}
   </ul>
@@ -75,15 +76,20 @@
 
 <style>
   section {
-    max-width: 640px;
+    max-width: 720px;
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-2);
   }
 
   header {
     display: flex;
     align-items: center;
     gap: var(--sp-3);
-    padding-bottom: var(--sp-3);
-    border-bottom: 1px solid var(--border);
+    padding: var(--sp-4);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
   }
 
   header div {
@@ -98,17 +104,16 @@
   .version {
     font-size: var(--fs-0);
     color: var(--fg-muted);
-    font-variant-numeric: tabular-nums;
   }
 
   .tagline {
+    margin: var(--sp-2) 0 0;
     color: var(--fg-muted);
     font-size: var(--fs-1);
   }
 
   h2 {
-    margin: var(--sp-5) 0 var(--sp-2);
-    font-size: var(--fs-2);
+    margin: var(--sp-4) 0 0;
   }
 
   .muted {
@@ -120,10 +125,26 @@
   .links {
     display: flex;
     flex-wrap: wrap;
-    gap: var(--sp-2) var(--sp-4);
-    margin: var(--sp-2) 0 0;
+    gap: var(--sp-2);
+    margin: 0;
     padding: 0;
     list-style: none;
     font-size: var(--fs-1);
+  }
+
+  .links a {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-1);
+    padding: 4px var(--sp-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius-sm);
+    background: var(--bg);
+    text-decoration: none;
+  }
+
+  .links a:hover {
+    border-color: var(--accent);
+    background: var(--accent-subtle);
   }
 </style>

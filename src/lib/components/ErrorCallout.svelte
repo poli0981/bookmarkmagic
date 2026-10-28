@@ -38,7 +38,11 @@
     <p class="note">{note}</p>
   {/if}
   {#if detail !== undefined}
-    <pre>{detail}</pre>
+    <!-- The technical detail, for a bug report: one click selects all of it. -->
+    <div class="detail">
+      <span class="eyebrow">{t('common.detail')}</span>
+      <pre>{detail}</pre>
+    </div>
   {/if}
 </div>
 
@@ -53,14 +57,22 @@
     font-size: var(--fs-1);
   }
 
+  .detail {
+    margin-top: var(--sp-2);
+  }
+
   pre {
-    margin: var(--sp-2) 0 0;
+    margin: var(--sp-1) 0 0;
+    font-family: var(--font-mono);
     font-size: var(--fs-0);
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
+    color: var(--fg);
+    background: var(--bg-sunken);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
-    padding: var(--sp-2);
+    padding: var(--sp-2) var(--sp-3);
     overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
     user-select: all;
   }
 </style>

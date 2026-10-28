@@ -10,36 +10,50 @@
   let { stats, duplicates }: Props = $props();
 </script>
 
+<!-- A readout: mono numerals, small spaced labels. -->
 <dl>
-  <div><dt>{t('import.stats.bookmarks')}</dt><dd>{num(stats.bookmarks)}</dd></div>
-  <div><dt>{t('import.stats.folders')}</dt><dd>{num(stats.folders)}</dd></div>
-  <div><dt>{t('import.stats.depth')}</dt><dd>{num(stats.maxDepth)}</dd></div>
-  <div><dt>{t('import.stats.duplicates')}</dt><dd>{num(duplicates)}</dd></div>
+  <div><dt class="eyebrow">{t('import.stats.bookmarks')}</dt><dd class="mono">{num(stats.bookmarks)}</dd></div>
+  <div><dt class="eyebrow">{t('import.stats.folders')}</dt><dd class="mono">{num(stats.folders)}</dd></div>
+  <div><dt class="eyebrow">{t('import.stats.depth')}</dt><dd class="mono">{num(stats.maxDepth)}</dd></div>
+  <div class:hot={duplicates > 0}>
+    <dt class="eyebrow">{t('import.stats.duplicates')}</dt><dd class="mono">{num(duplicates)}</dd>
+  </div>
 </dl>
 
 <style>
   dl {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: var(--sp-2);
     margin: 0;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--radius);
+    background: var(--bg-sunken);
+    overflow: hidden;
   }
 
   div {
-    background: var(--bg-raised);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
     padding: var(--sp-2) var(--sp-3);
+    border-right: 1px solid var(--border);
+    border-bottom: 1px solid var(--border);
   }
 
-  dt {
-    font-size: var(--fs-0);
-    color: var(--fg-muted);
+  div:nth-child(2n) {
+    border-right: none;
+  }
+
+  div:nth-last-child(-n + 2) {
+    border-bottom: none;
   }
 
   dd {
     margin: 0;
-    font-size: var(--fs-3);
+    font-size: var(--fs-4);
+    font-weight: 600;
+    line-height: 1.25;
     font-variant-numeric: tabular-nums;
+  }
+
+  .hot dd {
+    color: var(--warn);
   }
 </style>

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import Icon from './icons/Icon.svelte';
   import { t } from '../i18n/index.svelte';
   import { LEGAL_URLS } from '../links';
   import { acceptLegal, type LegalStatus } from '../stores/legal.svelte';
@@ -94,7 +95,7 @@
   <ul>
     {#each LEGAL_URLS as link (link.url)}
       <li>
-        <a href={link.url} target="_blank" rel="noopener noreferrer">{t(link.labelKey)} ↗</a>
+        <a href={link.url} target="_blank" rel="noopener noreferrer">{t(link.labelKey)}<Icon name="external" size={12} /></a>
       </li>
     {/each}
   </ul>
@@ -132,9 +133,11 @@
     max-width: 56ch;
     margin: 0 auto;
     padding: var(--sp-5);
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
+    border-top: 3px solid var(--accent);
     border-radius: var(--radius);
     background: var(--bg-raised);
+    box-shadow: var(--shadow-1);
   }
 
   header {
@@ -150,7 +153,12 @@
 
   h2 {
     margin: var(--sp-2) 0 0;
-    font-size: var(--fs-2);
+    font-family: var(--font-mono);
+    font-size: var(--fs-0);
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--fg-muted);
   }
 
   .summary {
@@ -184,11 +192,12 @@
 
   .detail {
     margin: 0;
-    padding: var(--sp-2);
-    border: 1px solid var(--border);
+    padding: var(--sp-2) var(--sp-3);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
-    background: var(--bg);
+    background: var(--bg-sunken);
     color: var(--fg-muted);
+    font-family: var(--font-mono);
     font-size: var(--fs-0);
     white-space: pre-wrap;
     overflow-x: auto;

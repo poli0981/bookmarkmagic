@@ -38,6 +38,9 @@
     aria-label={t('edit.search')}
     bind:value={filter}
   />
+  <!-- The list exists only while the dialog is open: a closed <dialog> still
+       renders its content, and this one can hold every folder in the profile. -->
+  {#if node !== undefined}
   <ul>
     {#each shown as target (target.id)}
       <li>
@@ -51,6 +54,7 @@
       <li class="muted">{t(targets.length === 0 ? 'edit.noMoveTargets' : 'edit.noMatches')}</li>
     {/if}
   </ul>
+  {/if}
 </Modal>
 
 <style>

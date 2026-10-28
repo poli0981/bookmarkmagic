@@ -46,6 +46,8 @@ interface FileSystemWritable {
   close: () => Promise<void>;
 }
 interface FileSystemHandle {
+  /** The name the user saved under — they may have changed the suggested one. */
+  name?: string;
   createWritable: () => Promise<FileSystemWritable>;
 }
 type SaveFilePicker = (options: {

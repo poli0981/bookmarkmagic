@@ -11,6 +11,7 @@
   import TabBar from '@/lib/components/TabBar.svelte';
   import ThemeToggle from '@/lib/components/ThemeToggle.svelte';
   import Toast from '@/lib/components/Toast.svelte';
+  import Icon from '@/lib/components/icons/Icon.svelte';
   import { t } from '@/lib/i18n/index.svelte';
   import { isWriting } from '@/lib/stores/import-session.svelte';
   import { REPO_URL } from '@/lib/links';
@@ -20,8 +21,9 @@
     isGatedRoute,
     isGateRequired,
   } from '@/lib/stores/legal.svelte';
-  import { getRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
+  import { getRoute, isRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
   import { subscribeStorage } from '@/lib/browser/storage';
+  import { MANAGER_CHANNEL, type NavigateMessage } from '@/lib/browser/open-manager';
   import { adoptExternalLegal } from '@/lib/stores/legal.svelte';
   import {
     adoptExternalSettings,
@@ -38,6 +40,19 @@
   const gated = $derived(isGateRequired() && isGatedRoute(getRoute()));
 
   let mainEl: HTMLElement | undefined = $state();
+
+  const ROUTE_KEYS = {
+    import: 'common.import',
+    export: 'common.export',
+    edit: 'common.edit',
+    settings: 'common.settings',
+    about: 'common.about',
+  } as const;
+
+  // Each route names its own tab in the browser's tab strip and history (uL16).
+  $effect(() => {
+    document.title = `${t(ROUTE_KEYS[getRoute()])} · ${t('common.appName')}`;
+  });
 
   onMount(() => {
     // The tab bar and the footer already refuse to navigate mid-write. This
@@ -72,12 +87,26 @@
       if ('legal' in change) adoptExternalLegal(change.legal ?? null);
     });
 
+    // The popup asks an open Manager to switch route (uM12). Refused while an
+    // import is writing, exactly like the tab bar and browser Back.
+    const channel = new BroadcastChannel(MANAGER_CHANNEL);
+    channel.onmessage = (event: MessageEvent<NavigateMessage>) => {
+      if (event.data?.kind !== 'navigate') return;
+      if (isWriting()) {
+        pushToast(t('common.busy'), 'info');
+        return;
+      }
+      const route = String(event.data.route).replace(/^#/, '');
+      if (isRoute(route)) navigate(route);
+    };
+
     globalThis.addEventListener('beforeunload', onBeforeUnload);
     globalThis.document?.addEventListener('visibilitychange', onVisibilityChange);
 
     return () => {
       stopRouting();
       stopStorage();
+      channel.close();
       globalThis.removeEventListener('beforeunload', onBeforeUnload);
       globalThis.document?.removeEventListener('visibilitychange', onVisibilityChange);
     };
@@ -100,8 +129,9 @@
 
 <header>
   <div class="brand">
-    <span class="mark" aria-hidden="true">◆</span>
+    <span class="mark"><Icon name="logo" size={20} motion="pulse" /></span>
     <strong>{t('common.appName')}</strong>
+    <span class="crumb mono" aria-hidden="true">~/{getRoute()}</span>
   </div>
   <TabBar blocked={getBlockedRoutes()} />
   <div class="controls">
@@ -112,16 +142,11 @@
 
 <main bind:this={mainEl} tabindex="-1">
   {#if gated && legal.kind === 'required'}
-    <!-- Fills the content region rather than covering the viewport. docs/06 §3
-         calls it "a full overlay", but docs/14 §2 (echoed in docs/03 §4 and the
-         docs/15 log) requires #settings and #about to stay reachable while it
-         is up — a literal inset:0 scrim would bury the footer links that get
-         you there. Header and footer stay live; the three blocked tabs are
-         disabled via TabBar's `blocked`.
-
-         Side effect worth keeping: the Import/Export/Edit tabs never mount
-         before acceptance, so nothing touches chrome.bookmarks until the user
-         has agreed to the terms. -->
+    <!-- Fills the content region rather than covering the viewport: docs/14 §2
+         requires #settings and #about to stay reachable while it is up, and a
+         literal inset:0 scrim would bury the status-bar links that get you
+         there. The three blocked tabs never mount before acceptance, so
+         nothing touches chrome.bookmarks until the user has agreed. -->
     <LegalGate status={legal} onaccepted={() => mainEl?.focus()} />
   {:else if getRoute() === 'import'}
     <ImportTab />
@@ -136,31 +161,42 @@
   {/if}
 </main>
 
-<footer>
-  <span>
-    <!-- Separators are `{' · '}` expressions, not literal text. Svelte trims
-         trailing whitespace at an {#if} boundary, which rendered the footer as
-         "v0.1.0 ·GPL-3.0". An expression is never trimmed. -->
-    {#if version !== ''}v{version}{' · '}{/if}GPL-3.0{' · '}<a
-      href={REPO_URL}
-      target="_blank"
-      rel="noopener noreferrer">GitHub ↗</a
-    >
+<!-- An IDE-style status bar: what this build is, what it can touch, and the
+     two secondary routes. -->
+<footer class="mono">
+  <span class="cell local" title={t('status.localNote')}>
+    <span class="dot" aria-hidden="true"></span>{t('status.local')}
   </span>
-  <nav>
+  <span class="cell" title={t('status.permissionsNote')}>
+    <Icon name="shield" size={12} />bookmarks, storage
+  </span>
+  {#if version !== ''}<span class="cell">v{version}</span>{/if}
+  <span class="cell">GPL-3.0</span>
+  <a class="cell" href={REPO_URL} target="_blank" rel="noopener noreferrer">
+    <Icon name="code" size={12} />GitHub
+  </a>
+  <nav aria-label={t('status.more')}>
     <!-- Gated like TabBar's tabs: navigating away mid-write unmounts ImportTab
          and strands the attestation resolver, deadlocking the import
-         (docs/03 §5). The footer used to be the one way around that. -->
+         (docs/03 §5). -->
     <button
+      class="cell"
+      aria-current={getRoute() === 'settings' ? 'page' : undefined}
       disabled={isWriting()}
       title={isWriting() ? t('common.busy') : undefined}
-      onclick={() => navigate('settings')}>{t('common.settings')}</button
+      onclick={() => navigate('settings')}
     >
+      <Icon name="gear" size={12} motion="spin" />{t('common.settings')}
+    </button>
     <button
+      class="cell"
+      aria-current={getRoute() === 'about' ? 'page' : undefined}
       disabled={isWriting()}
       title={isWriting() ? t('common.busy') : undefined}
-      onclick={() => navigate('about')}>{t('common.about')}</button
+      onclick={() => navigate('about')}
     >
+      <Icon name="info" size={12} />{t('common.about')}
+    </button>
   </nav>
 </footer>
 
@@ -169,31 +205,43 @@
 <Toast />
 
 <style>
-  header,
-  footer {
+  header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
-    gap: var(--sp-4);
-    max-width: 960px;
-    margin: 0 auto;
-    padding: var(--sp-3) var(--sp-4);
-  }
-
-  header {
+    gap: var(--sp-3) var(--sp-4);
+    padding: var(--sp-2) max(var(--sp-4), calc((100% - var(--width-page)) / 2));
     border-bottom: 1px solid var(--border);
-  }
-
-  footer {
-    border-top: 1px solid var(--border);
-    color: var(--fg-muted);
-    font-size: var(--fs-0);
+    background: color-mix(in srgb, var(--bg) 88%, transparent);
+    backdrop-filter: blur(8px);
   }
 
   .brand {
     display: flex;
     align-items: center;
     gap: var(--sp-2);
+    min-width: 0;
+  }
+
+  .mark {
+    display: inline-flex;
+    padding: 5px;
+    border-radius: var(--radius-sm);
+    background: var(--accent);
+    color: var(--accent-fg);
+  }
+
+  .crumb {
+    color: var(--fg-muted);
+    font-size: var(--fs-0);
+    padding: 1px 6px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-sunken);
   }
 
   .controls {
@@ -202,37 +250,93 @@
     gap: var(--sp-2);
   }
 
-  .mark {
-    color: var(--accent);
+  /* The page is a column: header, content, status bar — the bar sits at the
+     bottom of the window even when the content is short. */
+  :global(#app) {
+    display: flex;
+    flex-direction: column;
+    min-height: 100dvh;
   }
 
   main {
-    max-width: 960px;
+    flex: 1;
+    width: 100%;
+    max-width: var(--width-page);
     margin: 0 auto;
-    padding: var(--sp-5) var(--sp-4);
-    min-height: 60vh;
+    padding: var(--sp-5) var(--sp-4) var(--sp-6);
+  }
+
+  main:focus {
+    outline: none;
+  }
+
+  footer {
+    position: sticky;
+    bottom: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: 0;
+    padding: 0 max(var(--sp-2), calc((100% - var(--width-page)) / 2));
+    border-top: 1px solid var(--border);
+    background: var(--bg-sunken);
+    color: var(--fg-muted);
+    font-size: var(--fs-0);
+  }
+
+  .cell {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px var(--sp-2);
+    border-right: 1px solid var(--border);
+    color: inherit;
+    text-decoration: none;
+    white-space: nowrap;
+  }
+
+  .local {
+    color: var(--success);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
   }
 
   footer nav {
     display: flex;
-    gap: var(--sp-3);
+    margin-left: auto;
+  }
+
+  footer nav .cell:last-child {
+    border-right: none;
   }
 
   footer button {
     font: inherit;
     background: none;
     border: none;
-    color: var(--fg-muted);
+    border-left: 1px solid var(--border);
     cursor: pointer;
-    padding: 0;
   }
 
-  footer button:hover:not(:disabled) {
+  a.cell:hover,
+  footer button:hover:not(:disabled),
+  footer button[aria-current='page'] {
     color: var(--accent);
+    background: var(--bg-raised);
   }
 
   footer button:disabled {
-    opacity: 0.4;
     cursor: not-allowed;
+  }
+
+  @media (max-width: 640px) {
+    .crumb {
+      display: none;
+    }
   }
 </style>

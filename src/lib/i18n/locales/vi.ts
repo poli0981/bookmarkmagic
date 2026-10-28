@@ -1,4 +1,5 @@
 import type { Dict } from './en';
+import { importTab } from './vi-import';
 import { errors, warnings } from './vi-notices';
 
 /** Vietnamese — neutral-friendly register, "bạn"; folder = "thư mục" (docs/07 §4). */
@@ -14,84 +15,31 @@ export default {
     cancel: 'Hủy',
     dismiss: 'Đóng',
     sections: 'Các mục',
+    detail: 'Chi tiết kỹ thuật',
   },
   popup: {
     import: 'Nhập bookmark…',
+    importHint: 'HTML, CSV, bản sao lưu JSON, tệp Bookmarks của Chrome',
     export: 'Xuất bookmark…',
+    exportHint: 'HTML, JSON, CSV hoặc Markdown',
     manage: 'Mở trình quản lý',
-    counts: '{bookmarks} bookmark · {folders} thư mục',
+    manageHint: 'Sửa, sắp xếp, tìm mục trùng',
+    bookmarks: { one: 'bookmark', other: 'bookmark' },
+    folders: { one: 'thư mục', other: 'thư mục' },
   },
-  import: {
-    dropHint: 'Kéo thả tệp bookmark hoặc bấm để chọn · tối đa {size}',
-    dropFormats:
-      'Tệp HTML xuất từ trình duyệt, CSV, bản sao lưu JSON của BookmarkMagic và Firefox, và tệp Bookmarks của chính Chrome (tệp này không có phần mở rộng).',
-    reading: 'Đang đọc {name}…',
-    preview: 'Xem trước',
-    folderName: 'Đã nhập {date}',
-    start: 'Nhập {n} bookmark',
-    backingUp:
-      'Đang lưu bản sao lưu an toàn trước khi thay thế. Hãy xác nhận hộp thoại lưu để tiếp tục.',
-    keepTabOpen: 'Giữ tab này mở cho đến khi nhập xong.',
-    progress: 'Đang nhập… {done} / {total}',
-    doneSummary: 'Hoàn tất — đã tạo {created} mục.',
-    skipped: 'Đã bỏ qua {existing} mục đã có trong trình duyệt và {inFile} mục lặp trong tệp.',
-    reused: {
-      one: 'Đã thêm vào {n} thư mục bạn đã có, thay vì tạo bản sao.',
-      other: 'Đã thêm vào {n} thư mục bạn đã có, thay vì tạo bản sao.',
-    },
-    rootTitle: {
-      toolbar: 'Thanh dấu trang',
-      unfiled: 'Dấu trang khác',
-      mobile: 'Dấu trang di động',
-    },
-    cancelledSummary: 'Đã hủy — {created} mục đã được tạo trước đó và vẫn được giữ lại.',
-    cancelledAfterClear:
-      'Bạn đã hủy sau khi bookmark cũ đã bị xóa, nên những gì còn lại chỉ là phần đã được tạo lại.',
-    dateNotice:
-      'Bookmark được nhập vào sẽ mang ngày hôm nay. Chrome không cho phép tiện ích đặt lại ngày tạo gốc của bookmark — các tệp bạn xuất ra vẫn giữ ngày thật.',
-    partialCreated: '{created} mục đã được tạo trước khi lỗi xảy ra và vẫn được giữ lại.',
-    partialCleared:
-      '{removed} mục ở cấp cao nhất đã bị xóa trước khi lỗi xảy ra. Hãy khôi phục chúng từ tệp sao lưu của bạn.',
-    backupHint:
-      'Tệp sao lưu an toàn đã được lưu với tên {name}. Nhập lại tệp JSON đó để khôi phục.',
-    openEdit: 'Mở thẻ Chỉnh sửa',
-    another: 'Nhập tệp khác',
-    dedupe: 'Bỏ qua mục đã có trong trình duyệt này (tìm thấy {n})',
-    dedupeDisabled: 'Không áp dụng: chế độ Thay thế sẽ xóa toàn bộ bookmark hiện tại trước.',
-    replaceWarning:
-      'Thao tác này xóa TOÀN BỘ bookmark hiện tại. Một bản sao lưu JSON sẽ được lưu trước, và sẽ không xóa gì cho đến khi việc đó thành công.',
-    attest:
-      'Trình duyệt không thể xác nhận bản sao lưu đã được lưu. Hãy kiểm tra thư mục tải xuống để tìm {name}, rồi xác nhận — hiện chưa có gì bị xóa.',
-    attestConfirm: 'Tôi đã có bản sao lưu — xóa và thay thế',
-    clearing: 'Đang xóa bookmark hiện tại. Đừng đóng tab này.',
-    badgeNew: 'mới',
-    badgeDup: 'trùng',
-    expand: 'Mở thư mục',
-    collapse: 'Thu gọn thư mục',
-    stats: {
-      bookmarks: 'Bookmark',
-      folders: 'Thư mục',
-      depth: 'Độ sâu tối đa',
-      duplicates: 'Trùng lặp',
-    },
-    mode: {
-      legend: 'Bạn muốn thêm như thế nào?',
-      newFolder: 'Vào một thư mục mới (khuyên dùng)',
-      merge: 'Gộp vào các thư mục hiện có',
-      replace: 'Thay thế toàn bộ',
-    },
-    warnings: {
-      // Tiếng Việt chỉ có một dạng số, nhưng vẫn phải mang đủ hai khóa
-      // (docs/07 §5) để phép kiểm tra `satisfies Dict` còn ý nghĩa.
-      title: { one: '{n} cảnh báo', other: '{n} cảnh báo' },
-    },
+  status: {
+    local: 'chỉ cục bộ',
+    localNote: 'Không có mạng: tiện ích không thể gửi bất cứ thứ gì đi đâu cả.',
+    permissionsNote: 'Hai quyền duy nhất mà tiện ích này có.',
+    more: 'Thêm',
   },
+  import: importTab,
   export: {
     scope: 'Xuất những gì',
     everything: 'Toàn bộ',
     format: 'Định dạng',
-    start: 'Xuất {n} bookmark',
-    saved: 'Đã lưu {name}',
+    start: { one: 'Xuất {n} bookmark', other: 'Xuất {n} bookmark' },
+    started: 'Đã bắt đầu tải xuống: {name}',
     markdownNote: 'Markdown chỉ để chia sẻ — BookmarkMagic không nhập lại được.',
     csvNote:
       'CSV là dạng phẳng: không giữ thư mục rỗng và không biết thư mục nào là thanh dấu trang.',

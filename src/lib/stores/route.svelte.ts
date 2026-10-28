@@ -11,9 +11,14 @@ export type Route = (typeof ROUTES)[number];
 
 const DEFAULT_ROUTE: Route = 'import';
 
+/** True for a known route name. */
+export function isRoute(name: string): name is Route {
+  return (ROUTES as readonly string[]).includes(name);
+}
+
 function parse(hash: string): Route {
   const name = hash.replace(/^#/, '');
-  return (ROUTES as readonly string[]).includes(name) ? (name as Route) : DEFAULT_ROUTE;
+  return isRoute(name) ? name : DEFAULT_ROUTE;
 }
 
 let current = $state<Route>(DEFAULT_ROUTE);
