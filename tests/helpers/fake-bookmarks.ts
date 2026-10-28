@@ -29,12 +29,12 @@ export class FakeBookmarks {
     this.options = options;
     // The synthetic root and the three Chromium roots.
     this.nodes.set('0', { id: '0', title: '', children: [] });
-    for (const [id, title] of [
-      ['1', 'Bookmarks bar'],
-      ['2', 'Other bookmarks'],
-      ['3', 'Mobile bookmarks'],
+    for (const [id, title, folderType] of [
+      ['1', 'Bookmarks bar', 'bookmarks-bar'],
+      ['2', 'Other bookmarks', 'other'],
+      ['3', 'Mobile bookmarks', 'mobile'],
     ] as const) {
-      const node: LiveNode = { id, parentId: '0', title, children: [] };
+      const node: LiveNode = { id, parentId: '0', title, folderType, children: [] };
       this.nodes.set(id, node);
       this.root.children?.push(node);
     }
@@ -97,9 +97,25 @@ export class FakeBookmarks {
 
   // --- the API surface the adapter uses -------------------------------------
 
+  /**
+   * Like desktop Chrome, an EMPTY Mobile root is left out of the tree (it
+   * still exists, accepts writes, and `get('3')` returns it).
+   */
   getTree = async (): Promise<LiveNode[]> => {
     this.calls.push('getTree');
-    return [structuredClone(this.root)];
+    const root = structuredClone(this.root);
+    root.children = (root.children ?? []).filter(
+      (node) => !(node.folderType === 'mobile' && (node.children ?? []).length === 0),
+    );
+    return [root];
+  };
+
+  get = async (id: string): Promise<LiveNode[]> => {
+    this.calls.push(`get:${id}`);
+    const node = this.nodes.get(id);
+    if (node === undefined) throw new Error(`Can't find bookmark for id.`);
+    const { children: _children, ...bare } = node;
+    return [structuredClone(bare)];
   };
 
   create = async (details: {
@@ -174,6 +190,11 @@ export class FakeBookmarks {
     const shape = (node: LiveNode): unknown =>
       node.url === undefined ? { [node.title]: (node.children ?? []).map(shape) } : node.url;
     return (this.root.children ?? []).map(shape);
+  }
+
+  /** A folder's live children, as `bookmarks.getChildren` returns them. */
+  children(parentId: string): LiveNode[] {
+    return structuredClone(this.nodes.get(parentId)?.children ?? []);
   }
 
   /** Titles under a parent, in stored order. */

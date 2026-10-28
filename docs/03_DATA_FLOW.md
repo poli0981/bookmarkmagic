@@ -102,12 +102,23 @@ we would then delete every bookmark they own. So:
    click handler — reading the tree first burns the activation window on
    exactly the largest profiles. Only the handle is acquired here; writing is
    not activation-gated. Cancel ⇒ `BmBackupError { code: 'BACKUP_CANCELLED' }`.
-2. **Read the live tree ONCE, and serialize from that read.** The same
-   `LiveNode[]` the plan was built from is serialized and then handed to the
-   delete step, so the backup is provably a superset of what is removed.
-   Serializing the *preview-time* snapshot instead loses anything bookmarked
-   between preview and Start — with no copy on disk. Any serialize throw aborts
-   with `BACKUP_SERIALIZE_FAILED`.
+2. **Serialize from a Start-time read — and check it still holds.** The roots
+   Replace backs up and empties are exactly the three destinations
+   (`BookmarkRoots.replaceable`): never an account-storage root it does not
+   write back into, never a managed one. Serializing the *preview-time*
+   snapshot instead would lose anything bookmarked between preview and Start.
+   But the read also precedes the save dialog, and on the fallback path the
+   user's trip to the Downloads folder — time in which sync, another window or
+   another tab can add a bookmark inside an existing folder, which the clear
+   would then delete with no copy anywhere. So once the backup is on disk the
+   tree is **read again**: unchanged → the clear deletes exactly what was
+   backed up; changed → the picker path writes the fresh snapshot to the same
+   file (no new click) and checks again, up to three times, and the fallback
+   path stops with `BACKUP_STALE`. Nothing is deleted on either refusal. Any
+   serialize throw aborts with `BACKUP_SERIALIZE_FAILED`; a file the user
+   picked but that never received a backup is removed again (best effort,
+   `FileSystemHandle.remove`), and the suggested name carries seconds, so a
+   retry never offers to overwrite the previous backup.
    The snapshot carries the root markers — `toolbar: true` on the Bookmarks
    Bar, `root: "other"`/`"mobile"` on the other two — or restoring the backup
    nests them under Other Bookmarks.

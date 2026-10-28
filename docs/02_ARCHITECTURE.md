@@ -219,11 +219,23 @@ one `done` counter for the whole import (`05 §6`). Every node is accounted for:
 `toCreate + reusedFolders + unwrapped root folders` equals the deduped tree
 (asserted over 200 random trees in `merge.test.ts`).
 
-Chrome root mapping (Chromium ids are stable): Bookmarks Bar = `"1"`,
-Other Bookmarks = `"2"`, Mobile = `"3"`. `browser/bookmarks.ts` resolves them
-via `getTree()` rather than hardcoding — segment `parentId`s always come from
-that read (a root or a live folder found in it), never a literal — but tests
-may rely on these ids.
+Chrome root mapping: `browser/bookmarks.ts` `getRoots()` resolves the three
+destinations by `folderType` (`bookmarks-bar`, `other`, `mobile`, Chrome
+134+), among this device's roots only — a signed-in account's own roots
+(`syncing: true`, Chrome 134+) are listed but never written to or emptied.
+Without `folderType` it falls back to the stable Chromium ids (`"1"`/`"2"`/`"3"`)
+and then to position. Desktop Chrome leaves an **empty** Mobile root out of
+`getTree()`, so a missing Mobile is looked up with `bookmarks.get("3")`; only if
+that fails do Mobile-marked folders land under Other. Segment `parentId`s
+always come from that resolution or from live folders found in the same read,
+never a literal — but tests may rely on the ids.
+
+**Depth inside the browser** is capped separately from the parse cap:
+`MAX_WRITE_DEPTH` (90 levels below a root). Chrome stores its bookmarks as JSON
+it reads back with a 200-level nesting limit, two levels per folder, so a tree
+past about 98 folders deep saves and then fails to load on the next start. The
+plan reports `stats.writeDepth`; a plan past the cap is refused with `TOO_DEEP`
+before any backup or deletion, and the preview says so first.
 
 Note the live tree is **not** `BookmarkNode`. `BookmarkNode` is the *file*
 model (no ids — `core/` may not know about `chrome.*`, layer rule 1). Anything

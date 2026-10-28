@@ -150,10 +150,12 @@ function walkDl(dl: Element, depth: number, ctx: WalkContext): BookmarkNode[] {
  * inside it, and returning only the bookmark dropped every entry in it.
  */
 function readEntry(dt: Element, depth: number, ctx: WalkContext): BookmarkNode[] {
-  const h3 = ownChild(dt, 'h3');
-  if (h3 !== null) return [readFolder(dt, h3, depth, ctx)];
-
   const a = ownChild(dt, 'a');
+  const h3 = ownChild(dt, 'h3');
+  // An unescaped `<h3>` INSIDE a bookmark's title is part of the title: read
+  // as a folder, the bookmark became an empty folder and its URL vanished.
+  if (h3 !== null && !(a?.contains(h3) ?? false)) return [readFolder(dt, h3, depth, ctx)];
+
   if (a === null) {
     ctx.warnings.add('UNREADABLE_ENTRIES');
     return [];

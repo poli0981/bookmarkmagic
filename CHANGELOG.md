@@ -97,6 +97,13 @@ itself. **Needs Chrome 136 or later.**
   lines.
 - A link ending in a bare `?` or `#` is recognised as a duplicate of the same
   link without it.
+- "Replace everything" re-checks your bookmarks after the safety backup is
+  saved, and re-saves it if something changed meanwhile (sync, another window),
+  so nothing can be deleted that the backup does not hold. It never empties the
+  bookmarks stored in your Google Account, and restoring a backup puts Mobile
+  bookmarks back in "Mobile bookmarks" even when that folder was empty.
+- Imports that would nest folders deeper than Chrome can reliably store are
+  refused up front instead of being written.
 - Keyboard: "Move to…" is now a real dialog that keyboard focus enters and
   leaves properly, with a filter; the menu key or Shift+F10 opens it from the
   tree, and Ctrl+C copies the focused link. Cancelling a drag no longer leaves

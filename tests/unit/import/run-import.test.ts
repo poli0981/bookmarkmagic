@@ -17,6 +17,7 @@ vi.mock('wxt/browser', () => ({
   browser: {
     bookmarks: {
       getTree: () => current.getTree(),
+      get: (id: string) => current.get(id),
       create: (details: Parameters<FakeBookmarks['create']>[0]) => current.create(details),
       removeTree: (id: string) => current.removeTree(id),
     },
@@ -45,6 +46,7 @@ beforeEach(() => {
 
 afterEach(() => {
   delete (globalThis as PickerHost).showSaveFilePicker;
+  vi.restoreAllMocks();
 });
 
 const fixture = (name: string): string =>
@@ -173,6 +175,79 @@ describe('Replace', () => {
     expect(order.length).toBeGreaterThan(0);
     expect(new Set(order)).toEqual(new Set(['remove-after-backup']));
     expect(backups[0]?.trimEnd()).not.toContain('\n');
+  });
+});
+
+describe('Replace — the tree changing under the backup (v1.1.0 review)', () => {
+  it('re-takes the backup when a bookmark is added while the save dialog is open', async () => {
+    const dev = current.seed('1', { title: 'Dev' });
+    // Another window adds a bookmark AFTER the tree was read for the backup,
+    // while the first copy is being written.
+    let writes = 0;
+    (globalThis as PickerHost).showSaveFilePicker = async () => ({
+      createWritable: async () => {
+        if (++writes === 1)
+          current.seed(dev, { title: 'added meanwhile', url: 'https://late.example/' });
+        return {
+          write: async (data: string) => {
+            backups.push(data);
+          },
+          close: async () => undefined,
+        };
+      },
+    });
+    await importText(fixture('csv-comma.csv'), 'replace');
+    expect(backups).toHaveLength(2);
+    expect(backups[0]).not.toContain('https://late.example/');
+    // The file on disk is the LAST write: it holds the bookmark the clear deleted.
+    expect(backups[1]).toContain('https://late.example/');
+  });
+
+  it('stops before deleting anything on the fallback path, which cannot rewrite', async () => {
+    delete (globalThis as PickerHost).showSaveFilePicker;
+    vi.spyOn(URL, 'createObjectURL').mockReturnValue('blob:x');
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined);
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+    current.seed('2', { title: 'kept', url: 'https://kept.example/' });
+    const prepared = await prepareImport(new File([fixture('csv-comma.csv')], 'f.csv'));
+    const err = await runImport({
+      prepared,
+      mode: 'replace',
+      dedupe: false,
+      newFolderTitle: 'Imported',
+      now: new Date(),
+      signal: new AbortController().signal,
+      onProgress: () => undefined,
+      confirmUnprovenBackup: async () => {
+        // While the user checks their Downloads folder, sync adds a bookmark.
+        current.seed('2', { title: 'synced in', url: 'https://sync.example/' });
+        return true;
+      },
+    }).catch((e: unknown) => e);
+    expect(err).toMatchObject({ name: 'BmBackupError', code: 'BACKUP_STALE' });
+    expect(current.childTitles('2')).toEqual(['kept', 'synced in']);
+    expect(current.countCalls('removeTree')).toBe(0);
+  });
+});
+
+describe('Mobile and depth (v1.1.0 review)', () => {
+  it('restores Mobile into the Mobile root even when Chrome hides it for being empty', async () => {
+    await importText(fixture('chrome-156-Bookmarks'), 'merge');
+    expect(current.childTitles('3')).toEqual(['Phone news']);
+    expect(current.childTitles('2')).not.toContain('Mobile bookmarks');
+  });
+
+  it('refuses a tree Chrome could not store, before any backup or deletion', async () => {
+    let node = '<DT><A HREF="https://leaf.example/">leaf</A>';
+    for (let i = 0; i < 95; i++) node = `<DT><H3>d${i}</H3><DL><p>${node}</DL><p>`;
+    current.seed('2', { title: 'kept', url: 'https://kept.example/' });
+    const err = await importText(
+      `<!DOCTYPE NETSCAPE-Bookmark-file-1><DL><p>${node}</DL>`,
+      'replace',
+    ).catch((e: unknown) => e);
+    expect(err).toMatchObject({ name: 'BmParseError', code: 'TOO_DEEP' });
+    expect(backups).toEqual([]);
+    expect(current.childTitles('2')).toEqual(['kept']);
   });
 });
 

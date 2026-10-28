@@ -15,15 +15,17 @@ import {
   type BookmarkRoots,
   clearRoots,
   getRoots,
+  type LiveNode,
   rootMarkersOf,
   toBookmarkNodes,
 } from '../browser/bookmarks';
 import { record } from '../browser/diagnostics';
 import {
+  discardTarget,
   isPickerAvailable,
   openSaveTarget,
   type SaveTarget,
-  timestampSuffix,
+  backupFilename as suggestBackupName,
   triggerDownload,
   writeToTarget,
 } from '../browser/download';
@@ -34,7 +36,7 @@ import { type WriteProgress, writeTree } from '../browser/write-queue';
 import { textCapsBreach, treeCapsBreach } from '../core/caps';
 import { buildUrlIndex } from '../core/dedupe';
 import { diffAgainstBrowser, type NodeStatus } from '../core/diff';
-import { MAX_FILE_BYTES } from '../core/limits';
+import { MAX_FILE_BYTES, MAX_WRITE_DEPTH } from '../core/limits';
 import {
   BmParseError,
   type BookmarkNode,
@@ -187,8 +189,7 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
   const { mode, now } = options;
 
   // MUST be the first statement — see (1) above. Nothing is awaited before it.
-  const backupFilename =
-    options.backupFilename ?? `bookmarkmagic-backup-${timestampSuffix(now)}.json`;
+  const backupFilename = options.backupFilename ?? suggestBackupName(now);
   const pendingTarget: Promise<SaveTarget> | undefined =
     mode === 'replace' && isPickerAvailable()
       ? openSaveTarget(backupFilename, 'application/json', options.backupDescription ?? 'JSON')
@@ -200,15 +201,32 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
 
   // One writer across all Manager tabs (docs/03 §5). Taken AFTER the picker:
   // waiting for it first would burn the click's transient activation.
-  return withWriteLock(() => writeAll(options, backupFilename, pendingTarget));
+  const backup: BackupState = { written: false };
+  try {
+    return await withWriteLock(() => writeAll(options, backupFilename, pendingTarget, backup));
+  } catch (err) {
+    // Stopped before the backup was written (the lock refused, the plan failed,
+    // the caps refused): a file the user picked must not be left behind empty.
+    if (!backup.written) discardTarget(pendingTarget);
+    throw err;
+  }
 }
+
+interface BackupState {
+  /** True once a backup's bytes are on disk — the picked file is then real. */
+  written: boolean;
+}
+
+/** How many times the backup is re-taken when the tree keeps changing under it. */
+const BACKUP_ATTEMPTS = 3;
 
 async function writeAll(
   options: RunImportOptions,
   backupFilename: string,
   pendingTarget: Promise<SaveTarget> | undefined,
+  backup: BackupState,
 ): Promise<ImportOutcome> {
-  const { prepared, mode, dedupe, newFolderTitle, now, signal, onProgress } = options;
+  const { prepared, mode, dedupe, newFolderTitle, signal, onProgress } = options;
   const roots = await getRoots();
   const plan = buildImportPlan({
     roots: prepared.result.roots,
@@ -221,26 +239,81 @@ async function writeAll(
   });
 
   record({ kind: 'import', phase: `planned:${mode}`, nodes: plan.stats.toCreate });
+  // Chrome stores its bookmarks as JSON it re-reads with a 200-level nesting
+  // limit, two levels per folder: a deeper tree saves, then fails to load.
+  if (plan.stats.writeDepth > MAX_WRITE_DEPTH) {
+    throw new BmParseError(
+      'TOO_DEEP',
+      `the import would nest folders ${plan.stats.writeDepth} deep; Chrome stores at most ${MAX_WRITE_DEPTH}`,
+    );
+  }
 
   if (mode === 'replace') {
-    const snapshot = toBookmarkNodes(roots.writable, rootMarkersOf(roots));
-    const savedAs = await proveBackup(
-      snapshot,
-      now,
-      backupFilename,
-      pendingTarget,
-      options.confirmUnprovenBackup,
-    );
-    record({ kind: 'import', phase: 'backup-proven' });
-    options.onClearing?.(savedAs);
+    const cleared = await backUpThenFreeze(options, backupFilename, pendingTarget, backup, roots);
     if (signal.aborted) throw new BmAborted(0);
-    await clearRoots(roots.writable, signal);
+    await clearRoots(cleared, signal);
     record({ kind: 'import', phase: 'cleared' });
   }
 
   const { created } = await writeTree(plan, { signal, onProgress });
   record({ kind: 'import', phase: 'written', nodes: created });
   return { plan, created };
+}
+
+/**
+ * Take the backup, then make sure it still matches what is about to be
+ * deleted — docs/03 §1 step 6b.
+ *
+ * The tree was read while the save dialog was open, and on the fallback path
+ * while the user went to check their Downloads folder, for as long as that
+ * took. Sync, another window or another tab could add a bookmark inside an
+ * existing folder meanwhile, and the clear would delete it with no copy
+ * anywhere. So the tree is read again AFTER the backup is on disk; if it
+ * changed, the picker path writes the fresh snapshot to the same file (no new
+ * click is needed) and checks again, and the fallback path stops.
+ *
+ * @returns the roots to clear, from the read the backup matched.
+ * @throws {BmBackupError} `BACKUP_STALE` when the tree will not hold still.
+ */
+async function backUpThenFreeze(
+  options: RunImportOptions,
+  filename: string,
+  pendingTarget: Promise<SaveTarget> | undefined,
+  backup: BackupState,
+  first: BookmarkRoots,
+): Promise<LiveNode[]> {
+  const snapshotOf = (roots: BookmarkRoots) =>
+    toBookmarkNodes(roots.replaceable, rootMarkersOf(roots));
+  let roots = first;
+  let content = serializeBackup(snapshotOf(roots), options.now);
+  const { savedAs, target } = await writeBackup(
+    content,
+    filename,
+    pendingTarget,
+    options.confirmUnprovenBackup,
+  );
+  backup.written = true;
+
+  for (let attempt = 1; ; attempt++) {
+    const fresh = await getRoots();
+    const freshContent = serializeBackup(snapshotOf(fresh), options.now);
+    if (freshContent === content) {
+      roots = fresh;
+      break;
+    }
+    if (target === undefined || attempt >= BACKUP_ATTEMPTS) {
+      throw new BmBackupError(
+        'BACKUP_STALE',
+        'bookmarks changed while the backup was being saved; nothing was deleted',
+      );
+    }
+    await writeToTarget(target, freshContent);
+    content = freshContent;
+  }
+
+  record({ kind: 'import', phase: 'backup-proven' });
+  options.onClearing?.(savedAs);
+  return roots.replaceable;
 }
 
 /**
@@ -264,14 +337,29 @@ export async function proveBackup(
     pendingTarget?.catch(() => undefined);
     throw err;
   }
+  return (await writeBackup(content, filename, pendingTarget, confirmUnprovenBackup)).savedAs;
+}
 
+/**
+ * Put backup text on disk, provably — through the picked file, or the anchor
+ * download plus the user's confirmation.
+ *
+ * @returns the name it was saved under, and the file handle when there is one
+ *   (so a changed tree can be written to the same file again).
+ */
+async function writeBackup(
+  content: string,
+  filename: string,
+  pendingTarget: Promise<SaveTarget> | undefined,
+  confirmUnprovenBackup: (() => Promise<boolean>) | undefined,
+): Promise<{ savedAs: string; target?: SaveTarget }> {
   if (pendingTarget !== undefined) {
     // Resolving proves the bytes are on disk; rejection is already a
     // BmBackupError (cancelled or write failure). The dialog lets the user
     // rename the file, so report the name it was actually saved under (uM21).
     const target = await pendingTarget;
     await writeToTarget(target, content);
-    return target.name ?? filename;
+    return { savedAs: target.name ?? filename, target };
   }
 
   // No picker: the anchor download reports nothing at all, so the ONLY thing
@@ -281,7 +369,7 @@ export async function proveBackup(
   if (!confirmed) {
     throw new BmBackupError('BACKUP_CANCELLED', 'the fallback backup was not confirmed');
   }
-  return filename;
+  return { savedAs: filename };
 }
 
 /**

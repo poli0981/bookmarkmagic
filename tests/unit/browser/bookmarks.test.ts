@@ -12,6 +12,7 @@ vi.mock('wxt/browser', () => ({
   browser: {
     bookmarks: {
       getTree: () => current.getTree(),
+      get: (id: string) => current.get(id),
       create: (details: Parameters<FakeBookmarks['create']>[0]) => current.create(details),
       removeTree: (id: string) => current.removeTree(id),
     },
@@ -106,9 +107,39 @@ describe('getRoots', () => {
 
   it('excludes a policy-managed root from the writable set', async () => {
     current.addManagedRoot();
+    current.seed('3', { title: 'phone', url: 'https://phone.example/' });
     const roots = await getRoots();
     expect(roots.writable.map((r) => r.id)).toEqual(['1', '2', '3']);
     expect(roots.writable.some((r) => r.unmodifiable !== undefined)).toBe(false);
+  });
+
+  it('finds an EMPTY Mobile root, which desktop Chrome leaves out of getTree', async () => {
+    const roots = await getRoots();
+    expect(roots.mobileId).toBe('3');
+    expect(roots.replaceable.map((r) => r.id)).toEqual(['1', '2', '3']);
+  });
+
+  it('picks this device’s roots by folderType, never an account-storage copy', async () => {
+    // Chrome 134+ can list a signed-in account's own bar, Other and Mobile
+    // first, with other ids. They are neither destinations nor emptied.
+    const tree = await current.getTree();
+    const account = [
+      {
+        id: '50',
+        title: 'Bookmarks bar',
+        folderType: 'bookmarks-bar',
+        syncing: true,
+        children: [],
+      },
+      { id: '51', title: 'Other bookmarks', folderType: 'other', syncing: true, children: [] },
+    ];
+    current.getTree = async () => [
+      { ...tree[0], id: '0', title: '', children: [...account, ...(tree[0]?.children ?? [])] },
+    ];
+    const roots = await getRoots();
+    expect([roots.toolbarId, roots.otherId]).toEqual(['1', '2']);
+    expect(roots.replaceable.map((r) => r.id)).toEqual(['1', '2', '3']);
+    expect(roots.writable.map((r) => r.id)).toEqual(['50', '51', '1', '2']);
   });
 });
 

@@ -134,6 +134,10 @@ Must accept, with a warning where noted:
   is any descendant whose nearest `<DT>` is that one. v1.0.x imported one
   bookmark from such a file. Fixture: `weird/unclosed-format-tag.html`. A
   `<DT>` that still yields nothing is counted as `UNREADABLE_ENTRIES`.
+- **An unescaped `<h3>` inside a bookmark title** (`<A …>Intro <h3>Heading</h3></A>`)
+  is part of the title: a `<DT>`'s `<H3>` makes it a folder only when it is not
+  inside that entry's own `<A>`. v1.1.0 before the review read it as an empty
+  folder and dropped the address.
 - A root list wrapped in `<div>`/`<center>`/a table cell → found as an
   outermost `<DL>` when body-level collection finds nothing.
 - **Real Chrome output** writes Other's and Mobile's contents loose at the top
@@ -218,6 +222,11 @@ not an anomaly, and must not raise a warning (`05 §4`).
   profile — `generator` `BookmarkMagic 1.0.x`, no `root` keys, three top-level
   folders, the first `toolbar` — so it is recognised and marked on read
   (`[1]` other, `[2]` mobile). Fixture: `weird/bm-legacy-1.0.1-backup.json`.
+  Known limit: a 1.0.x **"Everything" export** (not a backup) from a profile
+  with policy-managed bookmarks and an empty, hidden Mobile root has the same
+  shape with the managed folder third, which is then read as Mobile — its
+  contents land in Mobile instead of a folder. Nothing is lost; the file's
+  contents are all imported.
 - Addresses: blank or unparseable → skipped with `MISSING_URL`/`INVALID_URL`
   (Chrome turns `url: ""` into a *folder*). `place:` is **kept**: this is the
   restore format, and a backup must bring back what the browser held.

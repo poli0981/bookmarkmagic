@@ -84,3 +84,13 @@ describe('createBatcher', () => {
     expect(clock.armed).toBe(false);
   });
 });
+
+describe('applyEvents — stale events after a re-read (v1.1.0 review)', () => {
+  it('drops a "created" for an id the tree already holds', () => {
+    const fresh: EditNode[] = [
+      { id: '1', title: 'Bar', children: [{ id: 'a', title: 'a', url: 'https://a.example/' }] },
+    ];
+    const next = applyEvents(fresh, [created('a'), created('a')]);
+    expect(next[0]?.children?.map((n) => n.id)).toEqual(['a']);
+  });
+});

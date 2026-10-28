@@ -123,3 +123,13 @@ describe('the node cap is checked before the DOM is built', () => {
     expect(spy).not.toHaveBeenCalled();
   });
 });
+
+describe('Netscape — an <h3> inside a bookmark title (v1.1.0 review)', () => {
+  it('stays a bookmark with its whole title, not an empty folder', () => {
+    const { roots, stats } = parseNetscapeHtml(
+      '<!DOCTYPE NETSCAPE-Bookmark-file-1><DL><p><DT><A HREF="https://a.example/">Intro <h3>Heading</h3> tips</A></DL>',
+    );
+    expect(roots).toEqual([{ title: 'Intro Heading tips', url: 'https://a.example/' }]);
+    expect(stats.folders).toBe(0);
+  });
+});

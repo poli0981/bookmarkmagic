@@ -24,6 +24,13 @@ export interface LiveNode {
   dateGroupModified?: number;
   /** Set by Chrome on policy-managed nodes; such nodes reject writes. */
   unmodifiable?: string;
+  /**
+   * Chrome 134+: which permanent folder a root is ('bookmarks-bar', 'other',
+   * 'mobile', 'managed'), and whether it is in the signed-in account's storage
+   * rather than this device's. Both exist from the 136 floor up.
+   */
+  folderType?: string;
+  syncing?: boolean;
   children?: LiveNode[];
 }
 
@@ -40,6 +47,13 @@ export interface BookmarkRoots {
   mobile: LiveNode | undefined;
   /** Writable top-level folders, in tree order, excluding managed ones. */
   writable: LiveNode[];
+  /**
+   * The roots Replace backs up and empties: exactly the destinations above.
+   * Never an account-storage root this import does not write back into —
+   * deleting one would sync the deletion to every device, and the restore
+   * would land its bookmarks in local storage.
+   */
+  replaceable: LiveNode[];
   /** Every top-level folder, managed ones included — what "already in this browser" means. */
   all: LiveNode[];
 }
@@ -58,22 +72,54 @@ export async function getRootChildren(): Promise<LiveNode[]> {
   return (tree[0]?.children ?? []) as LiveNode[];
 }
 
+const FOLDER_IDS = { 'bookmarks-bar': '1', other: '2', mobile: '3' } as const;
+
+/**
+ * Desktop Chrome leaves an EMPTY Mobile root out of `getTree()`, so a restore
+ * into a fresh profile found no Mobile root and nested those bookmarks under
+ * Other. The node still exists, and accepts writes; ask for it by id.
+ */
+async function hiddenMobileRoot(): Promise<LiveNode | undefined> {
+  try {
+    const [node] = (await browser.bookmarks.get(FOLDER_IDS.mobile)) as LiveNode[];
+    const usable =
+      node !== undefined &&
+      node.url === undefined &&
+      node.unmodifiable === undefined &&
+      node.syncing !== true &&
+      (node.folderType === undefined || node.folderType === 'mobile');
+    return usable ? { ...node, children: node.children ?? [] } : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Resolve the destination roots.
  *
- * Ids "1"/"2"/"3" are stable in Chromium but resolving through `getTree()`
- * keeps a future Firefox target working, where roots are named ids. Nodes
- * carrying `unmodifiable` (the enterprise/supervised "Managed bookmarks"
- * folder) are excluded everywhere — writing to or removing them rejects.
+ * By `folderType` first — Chrome 134+ can list a signed-in account's own bar,
+ * Other and Mobile beside this device's, and the old by-id-then-by-position
+ * rule mixed the two sets up. This device's roots are the destinations;
+ * account roots are never written to or emptied. The ids "1"/"2"/"3" and then
+ * position remain as fallbacks for a browser without `folderType`. Nodes
+ * carrying `unmodifiable` (the enterprise "Managed bookmarks" folder) are
+ * excluded everywhere — writing to or removing them rejects.
  */
 export async function getRoots(): Promise<BookmarkRoots> {
   const children = await getRootChildren();
   const writable = children.filter((node) => node.unmodifiable === undefined);
+  const local = writable.filter((node) => node.syncing !== true);
+  const typed = local.some((node) => node.folderType !== undefined);
 
-  const byId = (id: string): LiveNode | undefined => writable.find((node) => node.id === id);
-  const toolbar = byId('1') ?? writable[0];
-  const other = byId('2') ?? writable.find((node) => node !== toolbar);
-  const mobile = byId('3') ?? writable.find((node) => node !== toolbar && node !== other);
+  const pick = (type: keyof typeof FOLDER_IDS): LiveNode | undefined =>
+    local.find((node) => node.folderType === type) ??
+    local.find((node) => node.id === FOLDER_IDS[type]);
+  const toolbar = pick('bookmarks-bar') ?? (typed ? undefined : local[0]);
+  const other = pick('other') ?? (typed ? undefined : local.find((n) => n !== toolbar));
+  const mobile =
+    pick('mobile') ??
+    (typed ? undefined : local.find((n) => n !== toolbar && n !== other)) ??
+    (await hiddenMobileRoot());
 
   if (toolbar === undefined || other === undefined) {
     // Not a BmBrowserError: nothing refused anything. Every root this profile
@@ -90,6 +136,7 @@ export async function getRoots(): Promise<BookmarkRoots> {
     other,
     mobile,
     writable,
+    replaceable: mobile === undefined ? [toolbar, other] : [toolbar, other, mobile],
     all: children,
   };
 }
@@ -156,6 +203,13 @@ export function flattenLive(nodes: readonly LiveNode[], into: LiveNode[] = []): 
     if (node.children !== undefined) flattenLive(node.children, into);
   }
   return into;
+}
+
+/** The current children of one folder — what a bulk command re-plans from. */
+export async function getChildren(id: string): Promise<LiveNode[]> {
+  return (await guard('bookmarks.getChildren', () =>
+    browser.bookmarks.getChildren(id),
+  )) as LiveNode[];
 }
 
 export async function create(details: {

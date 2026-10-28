@@ -49,6 +49,8 @@ interface FileSystemHandle {
   /** The name the user saved under — they may have changed the suggested one. */
   name?: string;
   createWritable: () => Promise<FileSystemWritable>;
+  /** Chrome's `FileSystemHandle.remove()`: deletes a file we picked but never wrote. */
+  remove?: () => Promise<void>;
 }
 type SaveFilePicker = (options: {
   suggestedName?: string;
@@ -117,8 +119,27 @@ function extensionOf(filename: string): string {
   return dot === -1 ? 'json' : filename.slice(dot + 1);
 }
 
-/** `bookmarks-<scope>-YYYYMMDD-HHmm.<ext>` / backup name — docs/04 §5. */
+/** `bookmarks-<scope>-YYYYMMDD-HHmm.<ext>` — docs/04 §5. */
 export function timestampSuffix(now: Date): string {
   const pad = (n: number): string => String(n).padStart(2, '0');
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}-${pad(now.getHours())}${pad(now.getMinutes())}`;
+}
+
+/**
+ * The safety backup's suggested name, to the SECOND. To the minute, a retry
+ * after a failed Replace suggested the same name, and accepting "replace the
+ * existing file?" overwrote the complete backup with the half-deleted tree.
+ */
+export function backupFilename(now: Date): string {
+  const seconds = String(now.getSeconds()).padStart(2, '0');
+  return `bookmarkmagic-backup-${timestampSuffix(now)}${seconds}.json`;
+}
+
+/**
+ * Best-effort removal of a file the user picked in the save dialog but that
+ * never received the backup (the import stopped before writing it). Leaves
+ * nothing behind, and never throws.
+ */
+export function discardTarget(pending: Promise<SaveTarget> | undefined): void {
+  void pending?.then((target) => target.remove?.()).catch(() => undefined);
 }

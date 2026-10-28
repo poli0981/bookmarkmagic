@@ -13,6 +13,7 @@
  */
 import {
   create,
+  getChildren,
   getRootChildren,
   type LiveNode,
   move,
@@ -48,6 +49,7 @@ import { visibleRows } from '../edit/tree-keyboard';
 /** The slice of `browser/bookmarks.ts` the tab writes through — injectable for tests. */
 export interface EditApi {
   getRootChildren: () => Promise<LiveNode[]>;
+  getChildren: (id: string) => Promise<LiveNode[]>;
   create: (details: { parentId: string; title: string }) => Promise<LiveNode>;
   update: (id: string, changes: { title?: string }) => Promise<void>;
   move: (id: string, destination: { parentId?: string; index?: number }) => Promise<void>;
@@ -66,7 +68,15 @@ export interface PendingSort {
   moves: SortMove[];
 }
 
-const BROWSER_API: EditApi = { getRootChildren, create, update, move, remove, removeTree };
+const BROWSER_API: EditApi = {
+  getRootChildren,
+  getChildren,
+  create,
+  update,
+  move,
+  remove,
+  removeTree,
+};
 
 const YIELD_EVERY = 25;
 
@@ -107,7 +117,11 @@ export class EditSession {
   readonly duplicateGroups = $derived(
     this.showDuplicates || this.pendingKeepFirst
       ? findDuplicateGroups(
-          flattenTree(this.roots).filter((node) => node.url !== undefined && this.isEditable(node)),
+          // One entry per id: should the view ever hold a node twice, it must
+          // never be offered as a duplicate of itself.
+          [...new Map(flattenTree(this.roots).map((node) => [node.id, node])).values()].filter(
+            (node) => node.url !== undefined && this.isEditable(node),
+          ),
         )
       : [],
   );
@@ -344,13 +358,22 @@ export class EditSession {
     const pending = this.pendingSort;
     this.pendingSort = undefined;
     if (pending === undefined) return;
-    const { folder, moves } = pending;
+    const { folder } = pending;
     this.actionError = undefined;
     this.busy = true;
     let done = 0;
-    record({ kind: 'edit', action: 'sort', count: moves.length });
+    let total = pending.moves.length;
     try {
       await withWriteLock(async () => {
+        // Re-planned from the folder as it is NOW: the confirmation can stay
+        // open while items move in or out, and the stale plan pulled an item
+        // moved elsewhere back into this folder.
+        const moves = planSort(
+          (await this.api.getChildren(folder.id)).map(toEditNode),
+          this.locale(),
+        );
+        total = moves.length;
+        record({ kind: 'edit', action: 'sort', count: total });
         for (const move of moves) {
           await this.api.move(move.id, { parentId: folder.id, index: move.index });
           this.roots = moveNode(this.roots, move.id, folder.id, move.index);
@@ -361,7 +384,7 @@ export class EditSession {
     } catch (err) {
       this.actionError = {
         ...describeError(err),
-        partial: { done, total: moves.length, kind: 'sort' },
+        partial: { done, total, kind: 'sort' },
       };
       await this.load();
     } finally {

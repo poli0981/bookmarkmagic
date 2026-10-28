@@ -106,6 +106,8 @@ export interface ImportPlan {
     folderCount: number;
     /** Existing folders Merge writes into instead of creating a copy. */
     reusedFolders: number;
+    /** Deepest level a created node will sit at, counted below its browser root. */
+    writeDepth: number;
     /** Dropped because the URL already exists in the browser. */
     skippedExisting: number;
     /** Dropped because the URL repeats within the file. */
