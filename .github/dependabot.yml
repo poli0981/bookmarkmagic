@@ -2,11 +2,16 @@
 # .github/workflows/.
 #
 # Note what this file cannot do: Dependabot *security* updates run from the
-# repo's alerts regardless of any config here. Several currently fail because
-# the advisories are against transitive dev dependencies with no reachable
-# patched version. That is noisy but not shipped — BookmarkMagic has zero
-# runtime dependencies, so `npm audit --omit=dev` reports 0 and nothing in the
-# published extension is affected (docs/09 T5).
+# repo's alerts regardless of any config here, and they ignore `cooldown`.
+# BookmarkMagic has zero runtime dependencies, so `npm audit --omit=dev`
+# reports 0 and an advisory against the dev toolchain never reaches the
+# published extension (docs/09 T5).
+#
+# `.npmrc` sets `min-release-age=7`, the same rule as `cooldown` below, for
+# installs made by hand. A security PR for a version younger than 7 days can
+# therefore fail to resolve until that version ages — the price of not being
+# the first to install a compromised release. `npm ci` is unaffected: it
+# installs whatever the lockfile pins.
 version: 2
 
 updates:
@@ -16,6 +21,10 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    # Supply-chain cooldown (docs/01 §6): only propose releases that have been
+    # public for a week.
+    cooldown:
+      default-days: 7
     commit-message:
       # Conventional Commits — docs/10 §7 applies to bot commits too.
       prefix: chore
@@ -29,11 +38,22 @@ updates:
         update-types:
           - minor
           - patch
+        # WXT is 0.x, so its "minor" is semver's breaking slot, and every WXT
+        # bump needs the BUILT manifest diffed by hand (docs/15 decision log,
+        # 2026-08-03). It gets its own PR so it can never ride along unseen.
+        exclude-patterns:
+          - 'wxt'
+          - '@wxt-dev/*'
     ignore:
-      # Held deliberately: svelte-check and Volar need the TypeScript 6
-      # programmatic API until TS 7.1 (docs/01). A major bump here breaks
-      # `npm run check` rather than improving anything.
+      # The TypeScript pair is held on purpose (docs/01 §2): `@typescript/native`
+      # is the TS 7 `tsc`, `typescript` is the TS 6 API that svelte-check needs.
+      # A major on either is a documented decision, not a weekly bump.
       - dependency-name: typescript
+        update-types: [version-update:semver-major]
+      - dependency-name: '@typescript/native'
+        update-types: [version-update:semver-major]
+      # Tracks the Node major in .nvmrc (docs/01 §2), so it moves with Node.
+      - dependency-name: '@types/node'
         update-types: [version-update:semver-major]
 
   - package-ecosystem: github-actions
@@ -42,6 +62,8 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 3
+    cooldown:
+      default-days: 7
     commit-message:
       prefix: ci
       include: scope

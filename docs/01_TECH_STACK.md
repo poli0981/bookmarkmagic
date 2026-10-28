@@ -20,17 +20,18 @@
 |---|---|---|
 | Node.js | **26.x (Active LTS)** (was 24.x through v1.0.1) | Build runtime. Node 26 entered Active LTS on 2026-10-28 (maintenance from 2027-10-20, end of life 2029-04-30); Node 24 moved to maintenance on 2026-10-20. `.nvmrc`, `engines` and every CI job say 26 — CI reads `.nvmrc` where it can, and passes `'26'` to the ops reusable, which takes a string input. |
 | npm | bundled with Node 26 (v11.20+) | Package manager. Commit `package-lock.json`. `.npmrc` sets `min-release-age=7` (§6). |
-| **WXT** | **^0.21.3** (was ^0.20.27 through v1.0.0) | Extension framework: entrypoints, manifest generation, HMR, `wxt zip`, `wxt submit`. **0.x, so a minor is semver's breaking slot** — and 0.21 was: `wxt/testing` split into `wxt/testing/fake-browser` and `wxt/testing/vitest-plugin`, and `tabs.create` is now typed as returning `void`. Both are dev-only. Never take a WXT bump without diffing the **built** manifest before and after (`12 §2.3`); `tests/unit/manifest.test.ts` reads `wxt.config.ts` and is structurally incapable of noticing. |
+| **WXT** | **^0.21.4** (was ^0.20.27 through v1.0.0) | Extension framework: entrypoints, manifest generation, HMR, `wxt zip`, `wxt submit`. **0.x, so a minor is semver's breaking slot** — and 0.21 was: `wxt/testing` split into `wxt/testing/fake-browser` and `wxt/testing/vitest-plugin`, and `tabs.create` is now typed as returning `void`. Both are dev-only. Never take a WXT bump without diffing the **built** manifest before and after (`12 §2.3`); `tests/unit/manifest.test.ts` reads `wxt.config.ts` and is structurally incapable of noticing. |
 | **TypeScript** | **7.0 for `tsc`, 6.0 for the API** (strict) | Two packages under two names, Microsoft's documented side-by-side setup for toolchains that embed the compiler: `"@typescript/native": "npm:typescript@~7.0.2"` provides the `tsc` binary (the Go-native 7.0 compiler that type-checks every `.ts` file in `npm run check`), and `"typescript": "npm:@typescript/typescript6@~6.0.2"` keeps the TS 6.0 programmatic API under the `typescript` module name (it re-exports the real `typescript@6.0.x` and adds a `tsc6` binary). svelte-check (peer `typescript ^5 || ^6`) and Volar need that API — TS 7 has none until 7.1 — so `.svelte` files are checked by 6.0 and `.ts` files by both. `tsc --version` must say 7.x and `tsc6 --version` 6.x. Drop the alias when svelte-check declares TS 7 support. Both pinned `~` (patch-only). |
-| **Svelte** | **^5.56.4** | UI, runes mode only (`$state`, `$derived`, `$effect`, `$props`). |
-| @wxt-dev/module-svelte | latest at scaffold | WXT ↔ Svelte integration. |
-| **Biome** | **2.5.2 (pinned exact)** | Lint + format (replaces ESLint + Prettier). Install with `npm i -D -E @biomejs/biome` per Biome guidance. |
-| svelte-check | ^4.7.4 | Type/template authority for `.svelte` files. |
+| **Svelte** | **^5.57.2** | UI, runes mode only (`$state`, `$derived`, `$effect`, `$props`). The compiled runtime ships in the bundle (MIT — `legal/THIRD_PARTY_NOTICES.md`). |
+| @sveltejs/vite-plugin-svelte | ^7.3.1 | Compiles `.svelte` and the runes in `.svelte.ts` stores for Vitest (`vitest.config.ts`). Its `deepmerge` dependency carries the one advisory with no fix (`09 §3.1`). |
+| @wxt-dev/module-svelte | ^2.0.5 | WXT ↔ Svelte integration. |
+| **Biome** | **2.6.2 (pinned exact)** | Lint + format (replaces ESLint + Prettier). Install with `npm i -D -E @biomejs/biome` per Biome guidance. 2.6 started formatting Markdown and YAML; both are excluded in `biome.json` so docs and workflows keep their hand layout (`10 §3`). |
+| svelte-check | ^4.7.7 | Type/template authority for `.svelte` files. Runs on the TS 6 API (see TypeScript above). |
 | **@types/node** | **^26** (matches the Node major) | Types for `node:fs`, `node:path`, `node:child_process` and `process`, which the test suite and `scripts/*.mjs` genuinely use. **Declared explicitly since 2026-08-03** — it used to arrive transitively, and WXT 0.21 stopped providing it. Types only: erased at build, so hard rule 2 (zero *runtime* dependencies) is untouched. |
-| jsdom | **^30** (was ^29 through v1.0.0) | Test DOM. Not interchangeable — `02 §3` picks jsdom over happy-dom because the Netscape walk depends on parse5's implied-end-tag behaviour. A major bump runs `tests/unit/dom-environment.test.ts` first; if that canary fails, pin rather than loosen the test. |
-| **Knip** | **^6** (6.29.0 latest as of 2026-07) | Dead code: unused files, exports, dependencies. Requires Node ≥ 20.19. v6 swapped the TypeScript backend for oxc-parser — confirm `compilers.svelte` is still the supported `.svelte` hook before scaffold (`10 §4`). |
-| **Vitest** | latest stable at scaffold | Unit tests for `src/lib/core`. |
-| @vitest/coverage-v8 | match Vitest | Coverage reporting. |
+| jsdom | **^30.1** (was ^29 through v1.0.0) | Test DOM. Not interchangeable — `02 §3` picks jsdom over happy-dom because the Netscape walk depends on parse5's implied-end-tag behaviour. A major bump runs `tests/unit/dom-environment.test.ts` first; if that canary fails, pin rather than loosen the test. |
+| **Knip** | **^6** (6.42.1 as of 2026-10) | Dead code: unused files, exports, dependencies. Requires Node ≥ 20.19. v6 swapped the TypeScript backend for oxc-parser — confirm `compilers.svelte` is still the supported `.svelte` hook before scaffold (`10 §4`). |
+| **Vitest** | **^5.0.5** (was ^4 through v1.0.1) | Unit tests. 5.0 changed `clearMocks` to default `true`, requires `vi.mock` at top level and fails unawaited async assertions; the suite needed no changes. Requires Node ≥ 22.12. |
+| @vitest/coverage-v8 | match Vitest | Coverage reporting (`text` + `lcov` for SonarCloud, `12 §2.5`). |
 
 ## 3. Explicitly rejected
 
@@ -100,4 +101,8 @@ Commit `.nvmrc` containing `26`.
 - `@typescript/native` (TS 7 `tsc`) and `typescript` (the TS 6 API alias) → `~` (patch only; TS minors can break svelte-check). Dependabot ignores majors of both — a 7→8 or 6→7 jump is a doc decision, not a weekly bump.
 - `@biomejs/biome` → exact (`-E`), formatter output must be reproducible.
 - Everything else → `^`, with `package-lock.json` committed as source of truth.
-- Renovate/Dependabot: weekly, grouped, majors require manual review.
+- **Cooldown:** `.npmrc` `min-release-age=7` — installs resolve to the newest
+  release that has been public for 7 days (npm counts days). Dependabot uses the
+  same `cooldown`. Lockfile installs (`npm ci`) are not affected (`09 §3.1`).
+- Renovate/Dependabot: weekly, grouped, majors require manual review; WXT
+  bumps arrive in their own PR (built-manifest diff, `12 §2.3`).

@@ -172,10 +172,9 @@ Derived identifiers (canonical across docs and code):
      the four is already known — `CHROME_EXTENSION_ID` is the item id in §9. The
      other three come from `npx wxt submit init` (`12 §3`). Note there is no
      dry-run: the first time that step executes it makes a real submission.
-7. **Untested:** `npm run dev:firefox` against the `overrides` block in
-   `09 §3.1`. Four of those overrides sit under `web-ext-run` and no gate
-   exercises that script. Firefox is a v1.0 non-goal (§7), so this blocks
-   nothing — but do not assume it works.
+7. **Untested:** `npm run dev:firefox`. No gate exercises it (Firefox is a
+   non-goal, §7). The `overrides` block that used to threaten it is gone
+   (`09 §3.1`), but do not assume it works.
 8. **Unmeasured:** the 2 s parse budget on a real browser (`11 §6`). The
    recorded 2869 ms is a jsdom figure and settles nothing. `scripts/gen-fixture.mjs`
    now produces the file needed to measure it.
