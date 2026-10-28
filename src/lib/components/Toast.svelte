@@ -1,6 +1,7 @@
 <script lang="ts">
   import { t } from '../i18n/index.svelte';
   import { dismissToast, getVisibleToast } from '../stores/toast.svelte';
+  import Icon from './icons/Icon.svelte';
 
   const toast = $derived(getVisibleToast());
 </script>
@@ -24,12 +25,23 @@
 </div>
 
 {#if toast !== undefined}
-  <div class="toast {toast.tone}">
-    <!-- Hidden from assistive tech: the live regions above already carry it,
-         and announcing it twice is worse than not styling it. -->
-    <span aria-hidden="true">{toast.message}</span>
-    <button aria-label={t('common.dismiss')} onclick={() => dismissToast(toast.id)}>✕</button>
-  </div>
+  {#key toast.id}
+    <div class="toast {toast.tone}">
+      <span class="glyph" aria-hidden="true">
+        <Icon
+          name={toast.tone === 'danger' ? 'error' : toast.tone === 'success' ? 'check' : 'info'}
+          motion={toast.tone === 'success' ? 'draw' : 'none'}
+          size={16}
+        />
+      </span>
+      <!-- Hidden from assistive tech: the live regions above already carry it,
+           and announcing it twice is worse than not styling it. -->
+      <span class="message" aria-hidden="true">{toast.message}</span>
+      <button aria-label={t('common.dismiss')} onclick={() => dismissToast(toast.id)}>
+        <Icon name="close" size={14} />
+      </button>
+    </div>
+  {/key}
 {/if}
 
 <style>
@@ -45,35 +57,54 @@
   .toast {
     position: fixed;
     right: var(--sp-4);
-    bottom: var(--sp-4);
-    z-index: 10;
+    bottom: calc(var(--sp-6) + var(--sp-2));
+    z-index: var(--z-toast);
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: var(--sp-3);
-    max-width: 44ch;
-    padding: var(--sp-2) var(--sp-3);
-    border: 1px solid var(--border);
+    max-width: min(48ch, calc(100vw - 2 * var(--sp-4)));
+    padding: var(--sp-3);
+    border: 1px solid var(--border-strong);
     border-left: 3px solid var(--fg-muted);
-    border-radius: var(--radius-sm);
-    background: var(--bg-raised);
+    border-radius: var(--radius);
+    background: var(--bg);
     color: var(--fg);
     font-size: var(--fs-1);
-    box-shadow: 0 4px 16px rgb(0 0 0 / 0.18);
+    box-shadow: var(--shadow-2);
+  }
+
+  .glyph {
+    display: inline-flex;
+    padding-top: 1px;
+    color: var(--fg-muted);
+  }
+
+  .message {
+    flex: 1;
   }
 
   .success {
     border-left-color: var(--success);
   }
 
+  .success .glyph {
+    color: var(--success);
+  }
+
   .danger {
     border-left-color: var(--danger);
   }
 
+  .danger .glyph {
+    color: var(--danger);
+  }
+
   button {
-    font: inherit;
+    display: inline-flex;
     flex-shrink: 0;
-    padding: 0;
+    padding: 2px;
     border: none;
+    border-radius: var(--radius-sm);
     background: none;
     color: var(--fg-muted);
     cursor: pointer;
@@ -81,5 +112,19 @@
 
   button:hover {
     color: var(--fg);
+    background: var(--bg-raised);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    .toast {
+      animation: slide-in var(--dur-3) var(--ease);
+    }
+
+    @keyframes slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(16px);
+      }
+    }
   }
 </style>

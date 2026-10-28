@@ -2,6 +2,7 @@
   import type { ThemePreference } from '../browser/storage';
   import { t } from '../i18n/index.svelte';
   import { THEME_CHOICES } from '../settings/options';
+  import Icon, { type IconName } from './icons/Icon.svelte';
 
   interface Props {
     value: ThemePreference;
@@ -12,17 +13,14 @@
 
   let { value, onchange, compact = false }: Props = $props();
 
-  // docs/06 §3 sketches a single ◐ that cycles. A segmented control instead:
-  // one code path for both placements, and the current choice is visible rather
-  // than inferred — a cycling button conflates "what am I" with "what's next".
-  // The compact header variant shows glyphs only, so they have to be legible at
-  // ~13px. U+263E (☾) was tried and is a thin crescent that reads as a capital
-  // "C" at that size — emoji are unambiguous and match the popup's existing
-  // ⬆/⬇/🗂 vocabulary. The accessible name comes from aria-label either way.
-  const GLYPH: Record<ThemePreference, string> = {
-    system: '◐',
-    light: '☀️',
-    dark: '🌙',
+  // A segmented control rather than docs/06 §3's single cycling glyph: one code
+  // path for both placements, and the current choice is visible rather than
+  // inferred. Self-drawn icons replace 1.0.x's emoji, which rendered differently
+  // on every OS and could not follow the theme's colours.
+  const GLYPH: Record<ThemePreference, IconName> = {
+    system: 'monitor',
+    light: 'sun',
+    dark: 'moon',
   };
 
   let buttons: HTMLButtonElement[] = $state([]);
@@ -76,11 +74,8 @@
       onclick={() => onchange(choice.value)}
       onkeydown={onKeyDown}
     >
-      {#if compact}
-        <span aria-hidden="true">{GLYPH[choice.value]}</span>
-      {:else}
-        {t(choice.labelKey)}
-      {/if}
+      <Icon name={GLYPH[choice.value]} size={14} motion={choice.value === 'light' ? 'spin' : 'none'} />
+      {#if !compact}<span>{t(choice.labelKey)}</span>{/if}
     </button>
   {/each}
 </div>
@@ -92,13 +87,16 @@
      The corner rounding it was for is done per-child instead. */
   .group {
     display: inline-flex;
-    border: 1px solid var(--border);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
   }
 
   button {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--sp-2);
     font: inherit;
-    padding: var(--sp-1) var(--sp-3);
+    padding: 5px var(--sp-3);
     border: none;
     border-right: 1px solid var(--border);
     background: var(--bg);
@@ -133,6 +131,6 @@
   }
 
   .compact button {
-    padding: var(--sp-1) var(--sp-2);
+    padding: 5px 7px;
   }
 </style>

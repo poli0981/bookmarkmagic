@@ -14,7 +14,6 @@ import { getGeneratorVersion } from '../browser/app-info';
 import {
   type BookmarkRoots,
   clearRoots,
-  getRootChildren,
   getRoots,
   rootMarkersOf,
   toBookmarkNodes,
@@ -37,8 +36,10 @@ import { MAX_FILE_BYTES } from '../core/limits';
 import {
   BmParseError,
   type BookmarkNode,
+  computeStats,
   type FileFormat,
   type ImportPlan,
+  type MergeMode,
   type ParseResult,
 } from '../core/model';
 import type { RootTitles } from '../core/parse/shared';
@@ -56,6 +57,10 @@ export interface PreparedImport {
   status: WeakMap<BookmarkNode, NodeStatus>;
   /** Preview-time snapshot, for the badges. The write dedupes against a fresh read. */
   browserIndex: Set<string>;
+  /** The live roots at preview time — what the Start button's preview plan is built against. */
+  destinations: PlanDestinations;
+  /** Everything inside the writable roots: what Replace would delete (docs/09 T4). */
+  current: { bookmarks: number; folders: number };
 }
 
 export interface PrepareOptions {
@@ -83,10 +88,42 @@ export async function prepareImport(
   const text = await file.text();
   const { format, result } = parseBookmarkFile(text, options);
 
-  const browserIndex = buildUrlIndex(await getRootChildren());
+  // One read: getRoots walks the whole tree, so the index and the counts come
+  // from the same snapshot instead of a second getTree().
+  const roots = await getRoots();
+  const browserIndex = buildUrlIndex(roots.all);
   const { existsCount, status } = diffAgainstBrowser(result.roots, browserIndex);
+  const inside = computeStats(roots.writable.flatMap((root) => root.children ?? []));
 
-  return { format, result, duplicates: existsCount, status, browserIndex };
+  return {
+    format,
+    result,
+    duplicates: existsCount,
+    status,
+    browserIndex,
+    destinations: destinationsOf(roots),
+    current: { bookmarks: inside.bookmarks, folders: inside.folders },
+  };
+}
+
+/**
+ * The plan as it would be at Start, from the preview snapshot — for the counts
+ * the Start button and the Replace confirmation promise. The write re-plans
+ * against a fresh read, so this is a forecast, not the plan.
+ */
+export function previewPlan(
+  prepared: PreparedImport,
+  mode: MergeMode,
+  dedupe: boolean,
+): ImportPlan {
+  return buildImportPlan({
+    roots: prepared.result.roots,
+    mode,
+    dedupe,
+    browserIndex: prepared.browserIndex,
+    destinations: prepared.destinations,
+    newFolderTitle: '',
+  });
 }
 
 export interface RunImportOptions {
@@ -100,8 +137,8 @@ export interface RunImportOptions {
   now: Date;
   signal: AbortSignal;
   onProgress: (progress: WriteProgress) => void;
-  /** Backup proven; deletion is about to start. */
-  onClearing?: () => void;
+  /** Backup proven, under this name (the one the user picked); deletion is about to start. */
+  onClearing?: (backupName: string) => void;
   /**
    * Called ONLY on the anchor-download fallback, which gives no success
    * signal. Must resolve true — after the user has actually checked their
@@ -164,8 +201,14 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
 
   if (mode === 'replace') {
     const snapshot = toBookmarkNodes(roots.writable, rootMarkersOf(roots));
-    await proveBackup(snapshot, now, backupFilename, pendingTarget, options.confirmUnprovenBackup);
-    options.onClearing?.();
+    const savedAs = await proveBackup(
+      snapshot,
+      now,
+      backupFilename,
+      pendingTarget,
+      options.confirmUnprovenBackup,
+    );
+    options.onClearing?.(savedAs);
     if (signal.aborted) throw new BmAborted(0);
     await clearRoots(roots.writable, signal);
   }
@@ -186,7 +229,7 @@ export async function proveBackup(
   filename: string,
   pendingTarget: Promise<SaveTarget> | undefined,
   confirmUnprovenBackup: (() => Promise<boolean>) | undefined,
-): Promise<void> {
+): Promise<string> {
   let content: string;
   try {
     content = serializeBackup(snapshot, now);
@@ -198,9 +241,11 @@ export async function proveBackup(
 
   if (pendingTarget !== undefined) {
     // Resolving proves the bytes are on disk; rejection is already a
-    // BmBackupError (cancelled or write failure).
-    await writeToTarget(await pendingTarget, content);
-    return;
+    // BmBackupError (cancelled or write failure). The dialog lets the user
+    // rename the file, so report the name it was actually saved under (uM21).
+    const target = await pendingTarget;
+    await writeToTarget(target, content);
+    return target.name ?? filename;
   }
 
   // No picker: the anchor download reports nothing at all, so the ONLY thing
@@ -210,6 +255,7 @@ export async function proveBackup(
   if (!confirmed) {
     throw new BmBackupError('BACKUP_CANCELLED', 'the fallback backup was not confirmed');
   }
+  return filename;
 }
 
 /**

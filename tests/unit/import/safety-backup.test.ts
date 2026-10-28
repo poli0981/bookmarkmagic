@@ -38,9 +38,11 @@ describe('proveBackup — picker path', () => {
       }),
     };
 
-    await proveBackup(TREE, NOW, FILENAME, Promise.resolve(target), undefined);
+    const savedAs = await proveBackup(TREE, NOW, FILENAME, Promise.resolve(target), undefined);
 
     expect(close).toHaveBeenCalledOnce();
+    // No name on the handle (an older picker): fall back to the suggested one.
+    expect(savedAs).toBe(FILENAME);
     const doc = JSON.parse(written[0] ?? '');
     expect(doc.format).toBe('bookmarkmagic');
     // The toolbar marker must survive, or restoring the backup empties the bar.
@@ -109,9 +111,10 @@ describe('proveBackup — anchor fallback', () => {
 
   it('resolves once the user confirms they have the file', async () => {
     const click = stubAnchor();
-    await expect(
-      proveBackup(TREE, NOW, FILENAME, undefined, async () => true),
-    ).resolves.toBeUndefined();
+    // The anchor path cannot learn another name, so it reports the one it asked for.
+    await expect(proveBackup(TREE, NOW, FILENAME, undefined, async () => true)).resolves.toBe(
+      FILENAME,
+    );
     expect(click).toHaveBeenCalledOnce();
   });
 
@@ -183,5 +186,17 @@ describe('proveBackup — refuses a backup the import could not read back', () =
     await expect(
       proveBackup([chain(MAX_DEPTH + 1)], NOW, FILENAME, late, undefined),
     ).rejects.toMatchObject({ code: 'BACKUP_EXCEEDS_LIMITS' });
+  });
+});
+
+describe('proveBackup — reports the name the user actually saved under (uM21)', () => {
+  it('uses the file handle’s name when the user renamed it in the dialog', async () => {
+    const target: SaveTarget = {
+      name: 'my-renamed-backup.json',
+      createWritable: async () => ({ write: async () => undefined, close: async () => undefined }),
+    };
+    await expect(
+      proveBackup(TREE, NOW, FILENAME, Promise.resolve(target), undefined),
+    ).resolves.toBe('my-renamed-backup.json');
   });
 });

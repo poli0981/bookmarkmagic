@@ -80,7 +80,10 @@
     if (node === undefined) return undefined;
     return node.url === undefined ? node : findNode(session.roots, node.parentId ?? '');
   });
-  const targets = $derived(moveTargets(session.roots, session.movingNode));
+  // Only while the dialog is open: it walks every folder in the tree.
+  const targets = $derived(
+    session.movingNode === undefined ? [] : moveTargets(session.roots, session.movingNode),
+  );
   const descendantCount = $derived(countDescendants(session.pendingDelete));
 
   const partialNote = $derived.by(() => {

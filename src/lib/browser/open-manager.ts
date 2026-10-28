@@ -21,17 +21,32 @@ interface ManagerContext {
 }
 
 /**
+ * The channel an open Manager listens on for "go to this route". Same-origin
+ * and in-browser only: no permission, no network.
+ */
+export const MANAGER_CHANNEL = 'bookmarkmagic-manager';
+
+export interface NavigateMessage {
+  kind: 'navigate';
+  route: ManagerRoute;
+}
+
+/**
  * Focus an existing Manager tab or open a new one at `route`.
  *
- * Note the asymmetry: a NEW tab lands on the requested route, but an existing
- * tab is only focused — its hash is left alone rather than forced, so an
- * in-progress import is never navigated away from (docs/03 §5).
+ * An existing tab is asked — not forced — to switch route over a
+ * BroadcastChannel; it refuses while an import is writing (docs/03 §5). 1.0.x
+ * only focused it, so the popup's "Export" landed wherever the tab had been.
  */
 export async function openManager(route: ManagerRoute = '#import'): Promise<void> {
   const managerUrl = browser.runtime.getURL(MANAGER_PAGE);
   const existing = await findManagerContext(managerUrl);
 
   if (existing?.tabId !== undefined) {
+    // Posted before focusing: the popup closes as soon as the tab takes focus.
+    const channel = new BroadcastChannel(MANAGER_CHANNEL);
+    channel.postMessage({ kind: 'navigate', route } satisfies NavigateMessage);
+    channel.close();
     await browser.tabs.update(existing.tabId, { active: true });
     if (existing.windowId !== undefined) {
       await browser.windows.update(existing.windowId, { focused: true });
@@ -43,7 +58,7 @@ export async function openManager(route: ManagerRoute = '#import'): Promise<void
 }
 
 async function findManagerContext(managerUrl: string): Promise<ManagerContext | undefined> {
-  // getContexts is Chrome 116+; our floor is 120. Guard anyway so a future
+  // getContexts is Chrome 116+; our floor is 136. Guard anyway so a future
   // Firefox target degrades to "always open a new tab" rather than throwing.
   const getContexts = (
     browser.runtime as {

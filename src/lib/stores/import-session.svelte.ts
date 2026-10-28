@@ -13,6 +13,13 @@ import type { WriteProgress } from '../browser/write-queue';
 import type { ImportPlan, ParseResult } from '../core/model';
 import type { PreparedImport } from '../import/run-import';
 
+/** Where the write went, for the "your items are in…" line after a cancel or failure (uM11). */
+export interface WriteSite {
+  mode: ImportMode;
+  /** The new-folder wrapper's title; empty for Merge and Replace. */
+  folder: string;
+}
+
 export interface ImportOptionsState {
   mode: ImportMode;
   dedupe: boolean;
@@ -36,7 +43,13 @@ export type ImportState =
    * clear, i.e. the tree really was deleted and only `created` of it rebuilt.
    * Without it the report reads as a harmless no-op on an empty browser.
    */
-  | { kind: 'cancelled'; filename: string; created: number; backupFilename?: string }
+  | {
+      kind: 'cancelled';
+      filename: string;
+      created: number;
+      backupFilename?: string;
+      where?: WriteSite;
+    }
   /**
    * `messageKey` is a dotted i18n path, NOT a resolved string.
    *
@@ -69,6 +82,7 @@ export type ImportState =
        * half-deleted tree was the one thing not on screen.
        */
       backupFilename?: string;
+      where?: WriteSite;
     };
 
 let state = $state<ImportState>({ kind: 'idle' });

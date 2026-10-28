@@ -25,18 +25,23 @@
     align-items: center;
     justify-content: space-between;
     gap: var(--sp-4);
-    padding: var(--sp-3) 0;
+    padding: var(--sp-3) var(--sp-4);
     border-bottom: 1px solid var(--border);
+  }
+
+  .row:last-child {
+    border-bottom: none;
   }
 
   .text {
     display: flex;
     flex-direction: column;
-    gap: var(--sp-1);
+    gap: 2px;
   }
 
   .label {
-    font-size: var(--fs-2);
+    font-size: var(--fs-1);
+    font-weight: 600;
   }
 
   .description {

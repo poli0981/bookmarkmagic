@@ -104,3 +104,24 @@ describe('toast queue', () => {
     expect(getVisibleToast()?.tone).toBe('info');
   });
 });
+
+describe('toast — failures stay until dismissed (v1.1.0)', () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    clearToasts();
+  });
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it('never auto-dismisses a danger toast, and moves on once it is dismissed', () => {
+    pushToast('It failed', 'danger');
+    pushToast('Later news');
+    vi.advanceTimersByTime(60_000);
+    expect(getVisibleToast()?.message).toBe('It failed');
+    dismissToast(getVisibleToast()?.id ?? '');
+    expect(getVisibleToast()?.message).toBe('Later news');
+    vi.advanceTimersByTime(4000);
+    expect(getVisibleToast()).toBeUndefined();
+  });
+});

@@ -2,6 +2,7 @@
   import { t } from '../i18n/index.svelte';
   import type { Locale } from '../i18n/resolve-locale';
   import { LOCALE_CHOICES, parseChoice } from '../settings/options';
+  import Icon from './icons/Icon.svelte';
 
   interface Props {
     /**
@@ -25,6 +26,7 @@
 </script>
 
 <label class:compact>
+  {#if compact}<Icon name="globe" size={14} />{/if}
   <span class="label">{t('settings.language')}</span>
   <select
     aria-label={compact ? t('settings.language') : undefined}
@@ -55,10 +57,15 @@
     white-space: nowrap;
   }
 
+  .compact {
+    color: var(--fg-muted);
+  }
+
   select {
     font: inherit;
-    padding: var(--sp-1) var(--sp-2);
-    border: 1px solid var(--border);
+    font-size: var(--fs-1);
+    padding: 5px var(--sp-2);
+    border: 1px solid var(--border-strong);
     border-radius: var(--radius-sm);
     background: var(--bg);
     color: var(--fg);
