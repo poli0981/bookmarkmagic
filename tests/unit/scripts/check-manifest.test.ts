@@ -13,8 +13,8 @@ import { afterEach, describe, expect, it } from 'vitest';
 const SCRIPT = join(process.cwd(), 'scripts', 'check-manifest.mjs');
 const CSP =
   "script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' data: blob:; " +
-  "font-src 'self'; media-src 'none'; frame-src 'none'; worker-src 'self'; " +
-  "form-action 'none'; base-uri 'none'";
+  "style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'none'; frame-src 'none'; " +
+  "worker-src 'self'; form-action 'none'; base-uri 'none'";
 
 const MANIFEST = {
   manifest_version: 3,
@@ -132,6 +132,12 @@ describe('check-manifest.mjs', () => {
     const { status, output } = check(build(MANIFEST, { [file]: code }));
     expect(status).toBe(1);
     expect(output).toContain(`network API "${api}`);
+  });
+
+  it('refuses to read a directory outside the repository and the temp directory', () => {
+    const { status, output } = check(process.platform === 'win32' ? 'C:Windows' : '/etc');
+    expect(status).toBe(1);
+    expect(output).toContain('refusing to read outside');
   });
 
   it('fails clearly when there is no build at all', () => {

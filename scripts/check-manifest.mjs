@@ -20,11 +20,11 @@
  *   default: <repo>/.output/chrome-mv3 (resolved from this file, not the cwd)
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { join, relative, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
+import { join, relative, resolve, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const REPO = fileURLToPath(new URL('..', import.meta.url));
-const OUT_DIR = resolve(process.argv[2] ?? join(REPO, '.output', 'chrome-mv3'));
+const REPO = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
 /** Exactly this, in any order. Adding one is a minor-version event (docs/09 §4). */
 const ALLOWED_PERMISSIONS = ['bookmarks', 'storage'];
@@ -34,12 +34,12 @@ const CHROME_FLOOR = '136';
 
 /**
  * The production extension-page CSP (docs/08 §3), character for character.
- * It may only ever get stricter. Never add 'unsafe-*' or a remote source.
+ * It may only ever get stricter. Never add 'unsafe-eval' or a remote source.
  */
 const EXPECTED_CSP =
   "script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' data: blob:; " +
-  "font-src 'self'; media-src 'none'; frame-src 'none'; worker-src 'self'; " +
-  "form-action 'none'; base-uri 'none'";
+  "style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'none'; frame-src 'none'; " +
+  "worker-src 'self'; form-action 'none'; base-uri 'none'";
 
 /**
  * The exact top-level key set the build is expected to emit.
@@ -102,6 +102,20 @@ const NETWORK_IN_BUNDLE =
 /** @param {string} a @param {string} b */
 const byName = (a, b) => a.localeCompare(b, 'en');
 
+/**
+ * The directory to check. An argument is accepted only inside this repository
+ * or the OS temp directory (where its own tests build fake extensions): the
+ * script reads every file below it, so it must never be pointed elsewhere.
+ *
+ * @param {string | undefined} arg
+ * @returns {string | undefined}
+ */
+function outDirFrom(arg) {
+  const dir = resolve(arg ?? join(REPO, '.output', 'chrome-mv3'));
+  const bases = [REPO, resolve(tmpdir())];
+  return bases.some((base) => dir === base || dir.startsWith(base + sep)) ? dir : undefined;
+}
+
 /** @param {string} dir @returns {string[]} */
 function listFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -110,9 +124,12 @@ function listFiles(dir) {
   });
 }
 
-/** @returns {Record<string, unknown> | undefined} */
-function readManifest() {
-  const path = join(OUT_DIR, 'manifest.json');
+/**
+ * @param {string} outDir
+ * @returns {Record<string, unknown> | undefined}
+ */
+function readManifest(outDir) {
+  const path = join(outDir, 'manifest.json');
   try {
     return JSON.parse(readFileSync(path, 'utf8'));
   } catch (cause) {
@@ -174,34 +191,35 @@ function referencedFiles(manifest) {
   );
 }
 
-/** @param {Record<string, unknown>} manifest @param {string[]} problems */
-function checkInventory(manifest, problems) {
+/** @param {string} outDir @param {Record<string, unknown>} manifest @param {string[]} problems */
+function checkInventory(outDir, manifest, problems) {
   for (const file of [...REQUIRED_FILES, ...referencedFiles(manifest)]) {
-    const path = join(OUT_DIR, file.replace(/^\//, ''));
+    const path = join(outDir, file.replace(/^\//, ''));
     if (!existsSync(path)) problems.push(`missing file in the build: ${file}`);
   }
 }
 
-/** @param {string[]} problems */
-function checkBundle(problems) {
-  for (const file of listFiles(OUT_DIR).filter((f) => f.endsWith('.js'))) {
+/** @param {string} outDir @param {string[]} problems */
+function checkBundle(outDir, problems) {
+  for (const file of listFiles(outDir).filter((f) => f.endsWith('.js'))) {
     const match = readFileSync(file, 'utf8').match(NETWORK_IN_BUNDLE);
     if (match) {
-      const rel = relative(OUT_DIR, file).replace(/\\/g, '/');
+      const rel = relative(outDir, file).replace(/\\/g, '/');
       problems.push(`network API "${match[0]}" in the shipped bundle: ${rel} (docs/08 §3)`);
     }
   }
 }
 
-const manifest = readManifest();
-if (manifest === undefined) {
-  process.exitCode = 1;
-} else {
+/** @param {string} outDir @returns {number} the exit code */
+function run(outDir) {
+  const manifest = readManifest(outDir);
+  if (manifest === undefined) return 1;
+
   /** @type {string[]} */
   const problems = [];
   checkManifest(manifest, problems);
-  checkInventory(manifest, problems);
-  checkBundle(problems);
+  checkInventory(outDir, manifest, problems);
+  checkBundle(outDir, problems);
 
   if (problems.length > 0) {
     for (const problem of problems) {
@@ -209,11 +227,21 @@ if (manifest === undefined) {
       console.error(`  ${problem}`);
     }
     console.error('\nSee CLAUDE.md hard rule 1 and docs/09 §4 before changing this.');
-    // exitCode, not exit(): exit() can cut off piped stderr before CI reads it.
-    process.exitCode = 1;
-  } else {
-    console.warn(
-      `check-manifest: clean — MV3, permissions ${JSON.stringify(manifest.permissions)}, Chrome ≥${CHROME_FLOOR}, CSP pinned, inventory complete, no network API in the bundle.`,
-    );
+    return 1;
   }
+  // Constants only: the manifest has just passed every check, so its values ARE
+  // these — and nothing read from a file is echoed into the log.
+  console.warn(
+    `check-manifest: clean — MV3, permissions exactly ${ALLOWED_PERMISSIONS.join(' + ')}, Chrome ≥${CHROME_FLOOR}, CSP pinned, inventory complete, no network API in the bundle.`,
+  );
+  return 0;
+}
+
+const outDir = outDirFrom(process.argv[2]);
+if (outDir === undefined) {
+  console.error('check-manifest: refusing to read outside this repository or the temp directory.');
+  process.exitCode = 1;
+} else {
+  // exitCode, not exit(): exit() can cut off piped stderr before CI reads it.
+  process.exitCode = run(outDir);
 }

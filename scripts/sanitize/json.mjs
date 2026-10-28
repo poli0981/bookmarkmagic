@@ -66,8 +66,13 @@ export function stringValues(text) {
     const top = stack.at(-1);
     return (top?.kind === 'object' ? top.current : top?.key) ?? null;
   };
-  for (let i = 0; i < text.length; i++) {
+  let i = 0;
+  while (i < text.length) {
     const ch = text[i];
+    if (ch === '"') {
+      i = readString(text, i, stack, out, keyFor);
+      continue;
+    }
     if (ch === '{' || ch === '[') {
       stack.push({
         kind: ch === '{' ? 'object' : 'array',
@@ -83,21 +88,34 @@ export function stringValues(text) {
     } else if (ch === ':') {
       const top = stack.at(-1);
       if (top !== undefined) top.expectKey = false;
-    } else if (ch === '"') {
-      let j = i + 1;
-      while (j < text.length && text[j] !== '"') j += text[j] === '\\' ? 2 : 1;
-      const raw = text.slice(i + 1, j);
-      const top = stack.at(-1);
-      if (top?.kind === 'object' && top.expectKey) {
-        top.current = JSON.parse(`"${raw}"`);
-      } else {
-        const holder = top?.kind === 'object' ? top : stack.at(-2);
-        out.push({ start: i + 1, end: j, raw, key: keyFor(), parentKey: holder?.key ?? null });
-      }
-      i = j;
     }
+    i++;
   }
   return out;
+}
+
+/**
+ * One string token starting at the quote at `start`: a key updates its object
+ * frame, a value is recorded. Returns the index just past the closing quote.
+ *
+ * @param {string} text
+ * @param {number} start
+ * @param {Frame[]} stack
+ * @param {StringToken[]} out
+ * @param {() => string | null} keyFor
+ */
+function readString(text, start, stack, out, keyFor) {
+  let end = start + 1;
+  while (end < text.length && text[end] !== '"') end += text[end] === '\\' ? 2 : 1;
+  const raw = text.slice(start + 1, end);
+  const top = stack.at(-1);
+  if (top?.kind === 'object' && top.expectKey) {
+    top.current = JSON.parse(`"${raw}"`);
+  } else {
+    const holder = top?.kind === 'object' ? top : stack.at(-2);
+    out.push({ start: start + 1, end, raw, key: keyFor(), parentKey: holder?.key ?? null });
+  }
+  return end + 1;
 }
 
 /**

@@ -50,14 +50,15 @@ the product and its zero-network claim. The production manifest now declares:
 
 ```
 script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' data: blob:;
-font-src 'self'; media-src 'none'; frame-src 'none'; worker-src 'self';
-form-action 'none'; base-uri 'none'
+style-src 'self' 'unsafe-inline'; font-src 'self'; media-src 'none'; frame-src 'none';
+worker-src 'self'; form-action 'none'; base-uri 'none'
 ```
 
 `connect-src 'none'` makes Chrome refuse every fetch, XHR, WebSocket,
 EventSource and beacon from an extension page; the rest closes remote images,
-fonts, media, frames and form posts. There is **no `default-src`**, on purpose:
-it would also govern `style-src` and break Svelte's styles. User-initiated
+stylesheets, fonts, media, frames and form posts. `style-src` keeps
+`'unsafe-inline'` because Svelte sets `style` attributes; there is **no
+`default-src`**, on purpose, because it would govern every unlisted directive. User-initiated
 navigation — an About link, or "Open" on a bookmark via `tabs.create` — is not
 governed by a page CSP and is not a request the extension makes (`09 §1`).
 
