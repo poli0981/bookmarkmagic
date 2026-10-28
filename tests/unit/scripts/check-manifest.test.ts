@@ -1,13 +1,16 @@
+// @vitest-environment node
 import { spawnSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
+import { checkExtension } from '../../../scripts/check-manifest.mjs';
 
 /**
  * scripts/check-manifest.mjs gates the BUILT extension (docs/08 §2–§3). It ran
- * in CI and on every tag with no test of its own; these build a fake
- * `.output/chrome-mv3` tree per case and run the real script against it.
+ * in CI and on every tag with no test of its own. These build a fake
+ * `.output/chrome-mv3` tree per case and call the script's `checkExtension`
+ * on it — the CLI itself takes no path argument (SonarCloud S8707).
  */
 
 const SCRIPT = join(process.cwd(), 'scripts', 'check-manifest.mjs');
@@ -58,9 +61,10 @@ function build(manifest: unknown, overrides: Record<string, string | null> = {})
   return dir;
 }
 
-function check(dir: string): { status: number | null; output: string } {
-  const result = spawnSync(process.execPath, [SCRIPT, dir], { encoding: 'utf8' });
-  return { status: result.status, output: `${result.stdout}${result.stderr}` };
+function check(dir: string): { status: number; output: string } {
+  const { problems, readError } = checkExtension(dir);
+  const failed = readError !== undefined || problems.length > 0;
+  return { status: failed ? 1 : 0, output: [readError ?? '', ...problems].join('\n') };
 }
 
 afterEach(() => {
@@ -71,7 +75,6 @@ describe('check-manifest.mjs', () => {
   it('passes a correct build', () => {
     const { status, output } = check(build(MANIFEST));
     expect(status, output).toBe(0);
-    expect(output).toContain('check-manifest: clean');
   });
 
   it.each([
@@ -134,17 +137,21 @@ describe('check-manifest.mjs', () => {
     expect(output).toContain(`network API "${api}`);
   });
 
-  it('refuses to read a directory outside the repository and the temp directory', () => {
-    const { status, output } = check(process.platform === 'win32' ? 'C:Windows' : '/etc');
-    expect(status).toBe(1);
-    expect(output).toContain('refusing to read outside');
-  });
-
   it('fails clearly when there is no build at all', () => {
     const empty = mkdtempSync(join(tmpdir(), 'check-manifest-empty-'));
     dirs.push(empty);
     const { status, output } = check(empty);
     expect(status).toBe(1);
-    expect(output).toContain('run `npm run build` first');
+    expect(output).toContain('cannot read manifest.json');
+  });
+
+  it('runs as a CLI with no arguments, against the repository build', () => {
+    // Whatever state .output/ is in, the CLI must exit cleanly or explain why —
+    // never crash, and never read a path it was handed.
+    const result = spawnSync(process.execPath, [SCRIPT, '/etc'], { encoding: 'utf8' });
+    const output = `${result.stdout}${result.stderr}`;
+    expect([0, 1]).toContain(result.status);
+    expect(output).toMatch(/check-manifest: (clean|cannot read|.*permissions)/);
+    expect(output).not.toContain('/etc');
   });
 });
