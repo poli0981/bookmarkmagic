@@ -28,11 +28,11 @@
 import { readFileSync, statSync, writeFileSync } from 'node:fs';
 import { basename, extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { sanitizeCsv } from './sanitize/csv.mjs';
+import { csvValues, sanitizeCsv } from './sanitize/csv.mjs';
 import { detectKind } from './sanitize/detect.mjs';
-import { sanitizeHtml } from './sanitize/html.mjs';
-import { sanitizeJson } from './sanitize/json.mjs';
-import { findLeakedHosts, findLeakedWords } from './sanitize/leaks.mjs';
+import { attributeValues, sanitizeHtml } from './sanitize/html.mjs';
+import { STRUCTURAL, sanitizeJson, stringValues } from './sanitize/json.mjs';
+import { findLeakedHosts, findLeakedValueWords, findLeakedWords } from './sanitize/leaks.mjs';
 import { makeTitleMapper, makeUrlMapper } from './sanitize/mappers.mjs';
 
 export { detectKind } from './sanitize/detect.mjs';
@@ -61,10 +61,27 @@ export function sanitize(text) {
   else out = sanitizeJson(text, mapUrl, mapTitle);
 
   const leaked = [
-    ...findLeakedHosts(out),
-    ...(kind === 'html' ? findLeakedWords(out).map((word) => `text "${word}"`) : []),
+    ...findLeakedHosts(out).map(() => 'host'),
+    ...(kind === 'html' ? findLeakedWords(out).map(() => 'text') : []),
+    ...findLeakedValueWords(valuesOf(kind, out)).map(() => 'value'),
   ];
   return { text: leaked.length > 0 ? null : out, kind, leaked };
+}
+
+/**
+ * The values of a sanitized file that a person could have written — every one
+ * of them must be a placeholder by now.
+ *
+ * @param {import('./sanitize/detect.mjs').Kind} kind
+ * @param {string} out
+ * @returns {string[]}
+ */
+function valuesOf(kind, out) {
+  if (kind === 'html') return attributeValues(out);
+  if (kind === 'csv') return csvValues(out);
+  return stringValues(out)
+    .filter((t) => !STRUCTURAL.has(t.key ?? '') && !(t.parentKey === 'annos' && t.key === 'name'))
+    .map((t) => /** @type {string} */ (JSON.parse(`"${t.raw}"`)));
 }
 
 /** @param {string} input */
@@ -80,14 +97,26 @@ function refuseUnknown(input) {
   return 1;
 }
 
-/** @param {string} input @param {string[]} leaked */
+/**
+ * Counts and categories only — never the strings. The old message printed what
+ * had leaked ("text \"Nguyen\", text \"payroll\"") and then asked for it in a
+ * public issue, which published exactly what the refusal had just withheld.
+ *
+ * @param {string} input @param {string[]} leaked categories, one per finding
+ */
 function refuseLeak(input, leaked) {
+  /** @type {Record<string, number>} */
+  const counts = {};
+  for (const category of leaked) counts[category] = (counts[category] ?? 0) + 1;
+  const summary = Object.entries(counts)
+    .map(([category, n]) => `${n} ${category}${n === 1 ? '' : 's'}`)
+    .join(', ');
   console.error(
-    `${basename(input)}: NOTHING WAS WRITTEN — the result still contained ${leaked.length} item(s) ` +
-      `that look personal, so this file is not safe to attach.\n  Found: ${leaked.slice(0, 5).join(', ')}` +
-      `${leaked.length > 5 ? `, and ${leaked.length - 5} more` : ''}\n` +
-      '  This is a bug in the sanitizer, not in your file. Please report it (without the file)\n' +
-      '  at https://github.com/poli0981/bookmarkmagic/issues — the list above is enough.',
+    `${basename(input)}: NOTHING WAS WRITTEN — the result still contained ${summary} that look ` +
+      'personal, so this file is not safe to attach.\n' +
+      '  This is a bug in the sanitizer, not in your file. Please report it at\n' +
+      '  https://github.com/poli0981/bookmarkmagic/issues with only the counts above and the\n' +
+      '  browser that wrote the file. Do not attach the file, and do not paste any of its contents.',
   );
   return 1;
 }

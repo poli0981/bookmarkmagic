@@ -16,7 +16,7 @@ import { replaceSpans } from './spans.mjs';
  * @param {string} delimiter
  * @returns {Field[]}
  */
-function readFields(text, delimiter) {
+export function readFields(text, delimiter) {
   /** @type {Field[]} */
   const fields = [];
   let row = 0;
@@ -87,32 +87,66 @@ function mapFolderPath(path, mapTitle) {
     .join('/');
 }
 
+/** @param {string} text */
+export function csvDelimiter(text) {
+  return (text.split('\n', 1)[0] ?? '').includes(';') ? ';' : ',';
+}
+
 /**
+ * Default-deny: every field is rewritten except a date (digits only). The
+ * old rules rewrote only the folder, title and url columns — and a title with
+ * an unquoted comma, the very row that makes the extension report
+ * CSV_ROW_MISMATCH, shifts every later field one column right, so the url
+ * landed in `add_date` and was copied out verbatim. A row of the wrong width is
+ * judged by value shape instead of by column.
+ *
  * @param {string} text
  * @param {Mapper} mapUrl
  * @param {Mapper} mapTitle
  */
 export function sanitizeCsv(text, mapUrl, mapTitle) {
-  const delimiter = (text.split('\n', 1)[0] ?? '').includes(';') ? ';' : ',';
-  const fields = readFields(text, delimiter);
+  const fields = readFields(text, csvDelimiter(text));
 
   // Column names per docs/04 §3 — `folder_path`, not `folder`.
   const header = fields.filter((f) => f.row === 0).map((f) => text.slice(f.start, f.end).trim());
   /** @param {string} name */
-  const at = (name) => header.findIndex((h) => h.toLowerCase().replace(/^﻿/, '') === name);
-  const [folderCol, titleCol, urlCol] = [at('folder_path'), at('title'), at('url')];
+  const at = (name) => header.findIndex((h) => h.toLowerCase().replace(/^\uFEFF/, '') === name);
+  const [folderCol, titleCol, urlCol, dateCol] = [
+    at('folder_path'),
+    at('title'),
+    at('url'),
+    at('add_date'),
+  ];
+  /** @type {Map<number, number>} */
+  const width = new Map();
+  for (const f of fields) width.set(f.row, (width.get(f.row) ?? 0) + 1);
 
   /** @type {Span[]} */
   const spans = [];
   for (const f of fields) {
     if (f.row === 0 || f.start === f.end) continue;
     const value = text.slice(f.start, f.end).replace(/""/g, '"');
+    const aligned = width.get(f.row) === header.length;
+    // A number says nothing about anyone, and dates are what parsers branch on.
+    if (/^\s*\d*\s*$/.test(value) && (f.col === dateCol || !aligned)) continue;
     let mapped;
-    if (f.col === urlCol) mapped = mapUrl(value);
-    else if (f.col === titleCol) mapped = mapTitle(value);
-    else if (f.col === folderCol) mapped = mapFolderPath(value, mapTitle);
-    else continue;
+    if (f.col === folderCol) mapped = mapFolderPath(value, mapTitle);
+    else if (aligned && f.col === urlCol) mapped = mapUrl(value);
+    else if (aligned && f.col === titleCol) mapped = mapTitle(value);
+    else mapped = /^[a-z][a-z0-9+.-]*:/i.test(value) ? mapUrl(value) : mapTitle(value);
     spans.push({ start: f.start, end: f.end, value: mapped.replace(/"/g, '""') });
   }
   return replaceSpans(text, spans);
+}
+
+/**
+ * Every field below the header, unescaped — what the leak check reads.
+ *
+ * @param {string} text
+ * @returns {string[]}
+ */
+export function csvValues(text) {
+  return readFields(text, csvDelimiter(text))
+    .filter((f) => f.row > 0)
+    .map((f) => text.slice(f.start, f.end).replace(/""/g, '"'));
 }

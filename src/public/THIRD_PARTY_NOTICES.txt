@@ -2,16 +2,17 @@ BookmarkMagic — third-party notices
 ===================================
 
 BookmarkMagic is free software under GPL-3.0-or-later.
-No runtime dependencies are installed. Two MIT-licensed components are
+No runtime dependencies are installed. These MIT-licensed packages are
 compiled into this package:
 
-  * Svelte 5 runtime         https://github.com/sveltejs/svelte
-  * @wxt-dev/browser shim    https://github.com/wxt-dev/wxt
+  * svelte 5 (runtime)              https://github.com/sveltejs/svelte
+  * clsx 2 (used by Svelte)         https://github.com/lukeed/clsx
+  * wxt + @wxt-dev/browser (shim)   https://github.com/wxt-dev/wxt
 
 Source and licence: https://github.com/poli0981/bookmarkmagic
 
 
-Svelte — MIT
+svelte — MIT
 ------------
 
 Copyright (c) 2016-2025 Svelte Contributors
@@ -35,8 +36,32 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
 
-@wxt-dev/browser — MIT
-----------------------
+clsx — MIT
+----------
+
+Copyright (c) Luke Edwards (lukeed.com)
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+
+wxt and @wxt-dev/browser — MIT
+------------------------------
 
 Copyright (c) Aaron Klinker
 

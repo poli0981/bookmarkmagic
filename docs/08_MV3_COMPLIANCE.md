@@ -31,6 +31,23 @@ export default defineConfig({
 `host_permissions`, `activeTab`, `scripting`, `alarms`. The design
 deliberately avoids each (see `01_TECH_STACK.md §3`, `02_ARCHITECTURE.md §6`).
 
+**What v1.1.0 adds needs no permission, and none of it is a network path.**
+Each uses only web-platform APIs that any extension page has, scoped to this
+extension's own origin inside the browser, and all long available below the
+Chrome 136 floor (§7):
+
+| Feature | API | Why no permission |
+|---|---|---|
+| The popup routes an open Manager (`browser/open-manager.ts`, `03 §5`) | `BroadcastChannel` | Messages go only to other documents of the same origin — the extension's own pages |
+| One bookmark writer across Manager tabs (`browser/write-lock.ts`, `03 §5`) | Web Locks (`navigator.locks`) | A lock name shared by the extension's own pages; nothing leaves the browser |
+| Copy diagnostics (`browser/diagnostics.ts`, `09 §7`) | Module memory + `navigator.clipboard.writeText` | Kept in the page's memory, never in `storage`; copied only on the user's click, like Copy link |
+
+Finding the open Manager still uses `runtime.getContexts()`, `tabs.update` and
+`windows.update`, none of which needs `tabs`, because nothing reads a tab's URL
+or title (`02 §6`). Nothing here touches what §5 certifies: the extension
+transmits none of it, and the diagnostics log leaves the device only if the
+user pastes it somewhere.
+
 ## 3. Code integrity rules
 
 - **No remotely hosted code.** All JS/CSS ships in the package. No CDN
@@ -145,8 +162,8 @@ any of them changes (`09 §4`).
 - No background service worker is registered at all (§02). If one ever
   becomes necessary, it must be an ES module (`type: 'module'`) and
   event-driven only.
-- Extension pages (popup/manager) may use `DOMParser`, `Blob`, `<a download>`
-  freely — these need no permissions.
+- Extension pages (popup/manager) may use `DOMParser`, `Blob`, `<a download>`,
+  `BroadcastChannel` and Web Locks freely — these need no permissions (§2).
 - **The floor is Chrome 136** (`minimum_chrome_version: "136"`, since v1.1.0;
   120 before). It is set by the language, not by an extension API: 136 is the
   first Chrome with every ES2025 built-in, and tsconfig's `lib` is ES2025
@@ -178,4 +195,5 @@ any of them changes (`09 §4`).
       when browser language switched).
 - [ ] Version bumped (semver) in `package.json` (WXT propagates to manifest).
 - [ ] Privacy tab answers unchanged, or updated + re-certified.
-- [ ] Store listing screenshots regenerated if the UI changed.
+- [ ] Store listing screenshots regenerated if the UI changed
+      (`scripts/screenshots.mjs --shoot` — `13 §2`).

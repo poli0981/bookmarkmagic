@@ -24,7 +24,7 @@ import { replaceSpans } from './spans.mjs';
  * format markers, type tags, root identifiers, numeric ids and every timestamp
  * (Chrome stores dates as decimal strings). Nothing a person typed lives here.
  */
-const STRUCTURAL = new Set([
+export const STRUCTURAL = new Set([
   'format',
   'generator',
   'exportedAt',

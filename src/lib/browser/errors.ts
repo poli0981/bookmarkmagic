@@ -52,7 +52,10 @@ export class BmBrowserError extends Error {
   }
 }
 
-export type BmEnvCode = 'NO_WRITABLE_ROOTS' | 'WRITE_LOCKED';
+/** A runtime list, so `dictionaries.test.ts` can require a message for each. */
+export const BM_ENV_ERROR_CODES = ['NO_WRITABLE_ROOTS', 'WRITE_LOCKED'] as const;
+
+export type BmEnvCode = (typeof BM_ENV_ERROR_CODES)[number];
 
 /**
  * Thrown when the environment cannot support the operation at all.

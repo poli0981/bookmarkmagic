@@ -168,7 +168,7 @@ export default {
     store: 'Trang trên Chrome Web Store',
     thirdParty: 'Mã của bên thứ ba',
     thirdPartyNote:
-      'Không cài thêm thư viện nào khi chạy. Hai phần mã theo giấy phép MIT được biên dịch vào tiện ích: bộ chạy của Svelte và lớp tương thích trình duyệt một dòng của WXT — xem THIRD_PARTY_NOTICES.txt trong gói.',
+      'Không cài thêm thư viện nào khi chạy. Vài phần mã nhỏ theo giấy phép MIT được biên dịch vào tiện ích: bộ chạy của Svelte cùng hàm trợ giúp clsx của nó, và lớp tương thích trình duyệt một dòng của WXT — xem THIRD_PARTY_NOTICES.txt trong gói.',
     donate: 'Ủng hộ dự án',
     donateNote: 'Hoàn toàn tự nguyện — BookmarkMagic vẫn là phần mềm tự do.',
     legal: 'Pháp lý',

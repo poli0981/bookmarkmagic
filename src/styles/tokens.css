@@ -61,9 +61,10 @@
   --width-page: 1040px;
   --width-side: 360px;
 
-  /* Motion. Durations are only ever used inside
-     `@media (prefers-reduced-motion: no-preference)` — tests/unit/styles/
-     motion.test.ts fails on an animation outside that guard. */
+  /* Motion. Anything that MOVES — an animation, a transform transition — runs
+     only inside `@media (prefers-reduced-motion: no-preference)`;
+     tests/unit/styles/motion.test.ts fails on one outside it. Colour and
+     opacity fades are not motion and may use these durations anywhere. */
   --dur-1: 120ms;
   --dur-2: 200ms;
   --dur-3: 320ms;

@@ -17,7 +17,9 @@ import { deflateSync } from 'node:zlib';
 /** @typedef {readonly [number, number, number, number]} Rgba */
 
 /** @type {Rgba} */
-const ACCENT = [0x6d, 0x4a, 0xff, 255]; // --accent, docs/06 §1
+// The 1.0 brand violet. Deliberately NOT re-derived from --accent (now #6447f0,
+// docs/06 §1): the toolbar and store icon stay the one users already know.
+const ACCENT = [0x6d, 0x4a, 0xff, 255];
 /** @type {Rgba} */
 const WHITE = [255, 255, 255, 255];
 /** @type {Rgba} */

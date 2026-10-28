@@ -32,9 +32,12 @@
         │                v1.1.0 the plan comes first.)
 [8] Write                browser/write-queue.ts:
         │                  sequential DFS create (parent → children, in order)
-        │                  progress events every 50 ops → progress bar + path label
+        │                  progress on the first create, then every 50 ops
+        │                    → progress bar + path label
         │                  Cancel button → AbortController → partial state reported
-[9] Report               success card: created / skipped / warnings
+[9] Report               bookmarks and folders created · skipped (existing / in
+                         file) · folders reused · where it went — also after a
+                         cancel or failure (06 §3.1)
                          actions: [Open Edit tab] [Import another file]
 ```
 
@@ -146,19 +149,39 @@ fine at our size cap (strings of a few MB).
 
 ## 3. EDIT flows (Manager → #edit)
 
+State and commands live in `stores/edit-session.svelte.ts` (`EditSession`, one
+per tab mount, with the bookmarks API injected so every command is tested
+against the in-memory fake); `EditTab.svelte` is markup and wiring. Rename,
+move and delete are applied to the local tree optimistically; bulk commands
+update it after each call the browser accepts; the live events below confirm
+both. A command the browser refuses **re-reads the tree** instead of restoring
+a snapshot — a snapshot would resurrect rows an earlier step of a bulk command
+legitimately deleted — and the re-read keeps whatever is still open and
+focused.
+
 | Action | Path |
 |---|---|
 | Search | input (debounced 150 ms) → core filter on title+URL → tree shows matches with ancestors expanded |
-| Rename | inline edit / F2 → `bookmarks.update(id, { title })` |
-| Move | drag & drop or context-menu "Move to…" (folder picker) → `bookmarks.move(id, { parentId, index })` |
-| Delete | context menu / Del key → confirm dialog (folder shows descendant count) → `removeTree` / `remove` |
-| New folder | toolbar button / context menu → `bookmarks.create({ parentId, title })` → inline-edit title |
-| Open bookmark | click URL → `tabs.create({ url })` (`javascript:` URLs are display-only, never opened) |
-| Duplicate finder | scan tree → groups by normalized URL → panel lists groups → per-item delete, "keep first in each group" bulk action (confirm) |
+| Rename | F2 or the row button → inline input; Enter or blur commits, Esc cancels (a blur after Esc does not commit) → trimmed; blank or unchanged → nothing; else `bookmarks.update(id, { title })` |
+| Move | drag & drop onto a row — before, after or into (`planDrop`, `05 §10`) → `bookmarks.move(id, { parentId, index })`, or `{ parentId }` alone into a folder; "Move to…" (row button, menu key / Shift+F10) → modal folder list with a filter → `bookmarks.move(id, { parentId })`, appended |
+| Delete | Del or the row button → confirm dialog (folder shows descendant count) → `removeTree` / `remove`; focus moves to the next row, else the previous |
+| New folder | toolbar button → `bookmarks.create({ parentId, title })` in the focused folder, beside a focused bookmark, else in the first writable root → parent opened, a search that would hide it cleared → inline rename |
+| Sort A→Z | toolbar (the focused folder, or the focused bookmark's folder) or a folder row's button → `planSort` (`05 §10`) → confirm stating how many items move → one awaited `bookmarks.move(id, { parentId, index })` per planned move, yielding every 25, under the write lock (§5). Refused part-way → "moved d of t" and a re-read: there is no undo |
+| Open bookmark | Enter, double-click, or the row's Open button → `tabs.create({ url })` for `http:`/`https:` only (`09` T3); anything else is refused with a toast |
+| Copy link | the row button, or Ctrl/⌘+C on the focused row → `navigator.clipboard.writeText` (`09` T8) |
+| Duplicate finder | toolbar toggles the panel → groups by normalized URL, computed **only while the panel or its confirmation is showing**, policy-managed copies left out (the browser refuses to delete them) → per-copy delete, or "keep first in each group" (confirm with the exact count) under the write lock; stopped part-way → "deleted d of t" and a re-read |
 
-**Live sync:** `#edit` subscribes to `bookmarks.onCreated/onRemoved/onChanged/
-onMoved` and patches the in-memory tree, so external changes (or our own
-import) appear without reload. Listeners attach on tab enter, detach on leave.
+**Live sync** (`edit/live-sync.ts`, `05 §11`). `#edit` subscribes on enter and
+unsubscribes on leave: `bookmarks.onCreated/onRemoved/onChanged/onMoved`, plus
+`onChildrenReordered` and Chrome's own importer's `onImportBegan/onImportEnded`.
+Events are queued and applied together **once per animation frame**, in arrival
+order. An import running in another tab sends one `onCreated` per node — 1.0.x
+patched the tree, and rescanned it for duplicates, on every one — so past 500
+queued events the queue is dropped and the tree is **re-read once** instead. A
+wholesale reorder (Chrome's own "Sort by name") and the end of a Chrome import
+re-read too; `onCreated` is ignored while Chrome's importer runs. Each listener
+is isolated (`subscribe` in `browser/bookmarks.ts`), so an exception in one can
+no longer silently stop the tree following the browser.
 
 ## 4. Settings & legal flows
 
@@ -197,7 +220,32 @@ unmounts the tab on every route change, so component-local state would be lost
 while the session still said `parsed`, leaving a preview with no badges and a
 dead Import button.
 
-`attesting` and `clearing` occur in Replace mode only. While any of
-`backing-up`/`attesting`/`clearing`/`writing` is active the other tabs are
-disabled, so an in-app route change cannot orphan the queue — `beforeunload`
-only covers closing or reloading the tab, not internal navigation.
+`attesting` and `clearing` occur in Replace mode only. Replace's Start opens
+the confirmation with exact counts first (`06 §3.1`); that dialog is
+component state, not a session state, and `backing-up` begins on confirm.
+Since v1.1.0 `cancelled` and `error` carry `where` (`WriteSite`: the mode, and
+the new-folder wrapper's title) so the report can say where the items already
+created are, and a `backupFilename` only once the backup really exists — the
+name the user saved it under, reported by `onClearing`. A failure before that
+point never names a file that was not written.
+
+While any of `backing-up`/`attesting`/`clearing`/`writing` is active
+(`isWriting()`) the other tabs are disabled, so an in-app route change cannot
+orphan the queue — `beforeunload` only covers closing or reloading the tab, not
+internal navigation. The same check refuses browser Back and, since v1.1.0, a
+route the popup sends over the `BroadcastChannel` (`06 §2`); both get the busy
+toast instead.
+
+**One writer across Manager tabs** (`browser/write-lock.ts`, since v1.1.0). Two
+tabs replacing at once would each back up, then delete what the other was
+writing; a sort racing an import reorders a folder mid-write. So the import's
+whole write phase (the Start-time read and plan, backup, clear, write), Sort
+A→Z and "keep first in each group" each run inside a Web Lock,
+`navigator.locks.request('bookmarkmagic-write', { ifAvailable: true }, …)`. A
+second tab that tries one of them while the lock is held is refused **at once**
+with `BmEnvError('WRITE_LOCKED')` — before anything is read or touched — rather
+than queued behind a write the user cannot see. The import requests the lock
+only after opening the save picker: waiting for it first would spend the
+click's transient activation (§1 step 6b). Single edits (rename, move,
+delete one item, new folder) take no lock. Where the API is missing — the test
+environment — the operation simply runs.

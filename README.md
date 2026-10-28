@@ -58,8 +58,9 @@ This is the whole point of the project, so it is worth being precise.
   asked for.
 - **Zero runtime dependencies.** Nothing is installed at runtime; the only
   third-party code in the package is what the build compiles in — the Svelte
-  runtime and WXT's one-line browser shim, both MIT
-  ([`legal/THIRD_PARTY_NOTICES.md`](legal/THIRD_PARTY_NOTICES.md)).
+  runtime with its `clsx` helper and WXT's one-line browser shim, all MIT
+  ([`legal/THIRD_PARTY_NOTICES.md`](legal/THIRD_PARTY_NOTICES.md)). The build
+  fails if anything else would ship.
 - A short diagnostics log (error codes and counts, never titles or addresses)
   lives in memory while a tab is open, so you can copy it into a bug report.
   It never leaves your computer unless you paste it somewhere.
