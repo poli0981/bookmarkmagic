@@ -72,7 +72,9 @@ const RULES = [
   ['network', 'WebTransport', /\bWebTransport\b/g],
   ['network', 'EventSource', /\bEventSource\b/g],
   ['network', 'sendBeacon', /\bsendBeacon\b/g],
-  ['network', 'RTCPeerConnection', /\bRTCPeerConnection\b/g],
+  // Prefixed aliases too: no word boundary separates `webkit` from `RTC`, and
+  // Chrome still ships `webkitRTCPeerConnection` as the same constructor.
+  ['network', 'RTCPeerConnection', /\b(?:webkit|moz)?RTCPeerConnection\b/g],
   ['network', 'importScripts', /\bimportScripts\b/g],
   // `globalThis['fe' + 'tch']` — computed access on a global is how every
   // identifier rule above is evaded, so it is banned as a shape, optional
@@ -124,8 +126,10 @@ const RULES = [
   ['raw HTML', 'createContextualFragment', /\bcreateContextualFragment\b/g],
   ['raw HTML', 'srcdoc', /\bsrcdoc\b/gi],
   ['raw HTML', 'document.write', /\bdocument\s*\.\s*write(?:ln)?\b/g],
-  // Evasion. Every rule above matches a NAME; these are the ways of using a
-  // member without writing its name. `Reflect.get(globalThis, 'fe' + 'tch')`
+  // Evasion. Every rule above matches a NAME; these catch the common ways of
+  // using a member without writing it. Not all of them — `el[['inner',
+  // 'HTML'].join('')]` still gets past any pattern — which is why the CSP and
+  // the built-bundle scan stand behind this gate. `Reflect.get(globalThis, 'fe' + 'tch')`
   // and `Reflect.set(el, 'outer' + 'HTML', h)` reach anything, and nothing
   // here needs Reflect at all.
   ['evasion', 'Reflect', /\bReflect\b/g],

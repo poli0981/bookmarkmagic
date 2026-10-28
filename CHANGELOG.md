@@ -125,7 +125,8 @@ itself. **Needs Chrome 136 or later.**
   screen-reader users now land on each step of an import, and hear how it
   ended.
 - Dialogs name their close button "Dismiss", and screen readers read the
-  confirmation's details with its title.
+  confirmation's details with its title. After a delete, keyboard focus goes
+  back to the tree or the duplicate panel instead of the top of the page.
 - At narrow widths the edit toolbar wraps instead of pushing the page sideways,
   and titles keep their room before the domain beside them.
 - Wording: an untitled item is named by its address in dialogs, plurals read

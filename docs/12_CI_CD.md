@@ -190,11 +190,15 @@ Added 2026-10-28, replacing SonarCloud's Automatic Analysis so the project gets
   job's secrets are loaded into its runner for the whole job, and any step can
   read them from the runner process whatever its own `env:` says (the shape of
   the March 2025 tj-actions compromise). `coverage` does the common install and
-  `npm run coverage` with **no secret**, and uploads `coverage/lcov.info` as a
-  one-day artifact; `scan` installs nothing — full-history checkout
+  `npm run coverage` with **no secret**, and uploads `coverage/lcov.info` and
+  the generated `.wxt/` (which `tsconfig.json` extends, and which defines the
+  `@/` alias) as a one-day artifact; `scan` installs nothing — full-history checkout
   (`fetch-depth: 0`, for new-code detection), the artifact, then the scan with
   `-Dsonar.projectVersion=<package.json version>`, so "new code" means "since
   the last release".
+- The price of that isolation: the scan job has no `node_modules`, so Sonar's
+  type-aware rules resolve our own modules (through `.wxt/`) but not the
+  dependencies' types.
 - The scan action is **pinned to a commit** (`v8.3.0`): it is the step that
   holds `SONAR_TOKEN`. Dependabot and fork PRs get no repository secrets, so the
   scan is skipped with a notice instead of failing.

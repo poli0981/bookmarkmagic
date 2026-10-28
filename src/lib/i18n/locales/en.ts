@@ -108,6 +108,7 @@ const dict = {
       other: 'Delete "{title}" and the {n} items inside it? This cannot be undone.',
     },
     duplicates: 'Duplicates',
+    duplicateSummary: '{links} · {copies}',
     duplicateLinks: { one: '{n} duplicated link', other: '{n} duplicated links' },
     extraCopies: { one: '{n} extra copy', other: '{n} extra copies' },
     noDuplicates: 'No duplicate links found.',

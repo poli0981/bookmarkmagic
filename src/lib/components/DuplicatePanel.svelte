@@ -1,12 +1,14 @@
 <script lang="ts">
   import type { DuplicateGroup } from '../core/dedupe';
-  import { folderPaths } from '../edit/edit-node';
+  import { displayTitle, folderPaths } from '../edit/edit-node';
   import type { EditNode } from '../edit/patch-tree';
   import { t, tPlural } from '../i18n/index.svelte';
   import Button from './Button.svelte';
   import Icon from './icons/Icon.svelte';
 
   interface Props {
+    /** The panel's root, for the tab to move focus into after a delete. */
+    element?: HTMLElement | undefined;
     groups: readonly DuplicateGroup<EditNode>[];
     roots: readonly EditNode[];
     busy: boolean;
@@ -15,21 +17,41 @@
     onkeepFirst: () => void;
   }
 
-  let { groups, roots, busy, onclose, ondelete, onkeepFirst }: Props = $props();
+  let {
+    element = $bindable(),
+    groups,
+    roots,
+    busy,
+    onclose,
+    ondelete,
+    onkeepFirst,
+  }: Props = $props();
 
   const extra = $derived(groups.reduce((n, group) => n + group.nodes.length - 1, 0));
   // Two copies of one link differ only by where they live, so say where (uM22).
   const paths = $derived(folderPaths(roots));
 </script>
 
-<aside aria-label={t('edit.duplicates')}>
+<aside bind:this={element} aria-label={t('edit.duplicates')}>
   <header>
     <span class="eyebrow">{t('edit.duplicates')}</span>
-    <Button variant="ghost" size="sm" icon="close" label={t('common.dismiss')} onclick={onclose} />
+    <Button
+      variant="ghost"
+      size="sm"
+      icon="close"
+      label={t('common.dismiss')}
+      data-panel-close
+      onclick={onclose}
+    />
   </header>
 
+  <!-- One sentence with two counts: a wrapper key, never two fragments
+       glued with a separator in markup (docs/07 §2). -->
   <p class="summary" aria-live="polite">
-    {tPlural('edit.duplicateLinks', groups.length)} · {tPlural('edit.extraCopies', extra)}
+    {t('edit.duplicateSummary', {
+      links: tPlural('edit.duplicateLinks', groups.length),
+      copies: tPlural('edit.extraCopies', extra),
+    })}
   </p>
 
   {#if groups.length === 0}
@@ -47,7 +69,7 @@
             {#each group.nodes as node, i (node.id)}
               <li>
                 <span class="where">
-                  <span class="title">{node.title === '' ? t('edit.untitled') : node.title}</span>
+                  <span class="title">{displayTitle(node, t('edit.untitled'))}</span>
                   <span class="path mono">
                     <Icon name="folder" size={12} />{paths.get(node.id) ?? ''}
                   </span>
@@ -60,8 +82,12 @@
                     variant="ghost"
                     icon="trash"
                     iconMotion="tilt"
-                    label={t('edit.deleteCopy', { title: node.title, path: paths.get(node.id) ?? '' })}
+                    label={t('edit.deleteCopy', {
+                      title: displayTitle(node, t('edit.untitled')),
+                      path: paths.get(node.id) ?? '',
+                    })}
                     disabled={busy}
+                    data-copy-delete
                     onclick={() => ondelete(node)}
                   />
                 {/if}

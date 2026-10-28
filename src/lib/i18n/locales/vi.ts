@@ -97,6 +97,7 @@ export default {
       other: 'Xóa "{title}" và {n} mục bên trong? Không thể hoàn tác.',
     },
     duplicates: 'Mục trùng',
+    duplicateSummary: '{links} · {copies}',
     duplicateLinks: { one: '{n} liên kết bị trùng', other: '{n} liên kết bị trùng' },
     extraCopies: { one: '{n} bản dư', other: '{n} bản dư' },
     noDuplicates: 'Không tìm thấy liên kết trùng.',

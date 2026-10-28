@@ -273,11 +273,14 @@ submission (`08 §8`).
 2. Found → `browser.tabs.update(tabId, { active: true })` +
    `browser.windows.update(windowId, { focused: true })` (no `tabs`
    permission needed for these calls).
-   Before focusing, it posts `{ kind: 'navigate', route }` on the
+   Before focusing, it posts `{ kind: 'navigate', route, tabId }` on the
    `bookmarkmagic-manager` `BroadcastChannel` (same-origin, in-browser, no
-   permission). The Manager validates the route and switches to it — unless an
-   import is writing, when it refuses with the same "busy" toast the tab bar
-   uses (`03 §5`). 1.0.x only focused the tab, so "Export…" in the popup landed
+   permission). Each Manager compares `tabId` with its own, from
+   `tabs.getCurrent()` (no permission), so only the tab being focused acts;
+   with two Managers open, 1.1.0's first cut switched both. The Manager
+   validates the message and the route and switches to it — unless an import is
+   writing, when it refuses with the same "busy" toast the tab bar uses
+   (`03 §5`). 1.0.x only focused the tab, so "Export…" in the popup landed
    wherever the Manager had been left.
 3. Not found → `browser.tabs.create({ url: browser.runtime.getURL('/manager.html') + hash })`.
 

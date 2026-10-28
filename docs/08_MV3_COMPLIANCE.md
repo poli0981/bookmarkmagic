@@ -43,8 +43,9 @@ Chrome 136 floor (§7):
 | Copy diagnostics (`browser/diagnostics.ts`, `09 §7`) | Module memory + `navigator.clipboard.writeText` | Kept in the page's memory, never in `storage`; copied only on the user's click, like Copy link |
 
 Finding the open Manager still uses `runtime.getContexts()`, `tabs.update` and
-`windows.update`, none of which needs `tabs`, because nothing reads a tab's URL
-or title (`02 §6`). Nothing here touches what §5 certifies: the extension
+`windows.update`, and a Manager learns its own tab id from `tabs.getCurrent()` —
+none of which needs `tabs`, because nothing reads a tab's URL or title
+(`02 §6`). Nothing here touches what §5 certifies: the extension
 transmits none of it, and the diagnostics log leaves the device only if the
 user pastes it somewhere.
 
@@ -78,7 +79,8 @@ closes everything left unlisted (web app manifests, prefetches). Every directive
 the pages use is listed explicitly, so `default-src` changes nothing for them.
 `style-src` keeps `'unsafe-inline'` because Svelte sets `style` attributes.
 **WebRTC is not governed by any CSP directive Chrome enforces**, so it is held
-by the other two layers: both scan for `RTCPeerConnection`. User-initiated
+by the other two layers: both scan for `RTCPeerConnection`, prefixed aliases
+(`webkitRTCPeerConnection`, which Chrome still ships) included. User-initiated
 navigation — an About link, or "Open" on a bookmark via `tabs.create` — is not
 governed by a page CSP and is not a request the extension makes (`09 §1`).
 
