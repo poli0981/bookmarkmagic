@@ -43,13 +43,15 @@
 >
   <span class="glyph" aria-hidden="true">⬆</span>
   <span class="hint">{t('import.dropHint', { size: `${megabytes} MB` })}</span>
+  <span class="formats">{t('import.dropFormats')}</span>
 </button>
 
+<!-- No `accept`: the content decides the format (docs/04 intro), and Chrome's
+     profile file is called just `Bookmarks` — an extension filter hid it. -->
 <input
   bind:this={input}
   type="file"
-  accept=".html,.htm,.json,.csv"
-  onchange={(e) => take((e.currentTarget as HTMLInputElement).files)}
+  onchange={(e) => take(e.currentTarget.files)}
   hidden
 />
 
@@ -83,5 +85,11 @@
   .hint {
     text-align: center;
     max-width: 40ch;
+  }
+
+  .formats {
+    text-align: center;
+    max-width: 60ch;
+    font-size: var(--fs-1);
   }
 </style>

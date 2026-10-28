@@ -148,8 +148,12 @@ export interface BookmarkNode {
   addDate?: number;        // epoch SECONDS (normalized, see timestamps.ts)
   lastModified?: number;   // epoch SECONDS
   toolbar?: boolean;       // Netscape PERSONAL_TOOLBAR_FOLDER
+  root?: 'other' | 'mobile'; // folder IS that browser root (since v1.1.0; toolbar wins)
   children?: BookmarkNode[];
 }
+
+export type FileFormat =      // what a file was read as — sniffed, never the extension
+  'netscape-html' | 'bm-json' | 'csv' | 'chrome-json' | 'firefox-json';
 
 export interface ParseResult {
   roots: BookmarkNode[];        // top-level nodes from the file
@@ -160,43 +164,50 @@ export interface ParseResult {
 export type MergeMode = 'new-folder' | 'merge' | 'replace';
 
 export interface PlanSegment {
-  rootId: string;               // chrome folder id to write this subtree under
-  nodes: BookmarkNode[];
+  parentId: string;             // live folder to write under: a root, or (Merge) a folder that exists
+  nodes: BookmarkNode[];        // created in order and appended; each node's children nest inside it
+  trail?: string[];             // titles from the root down to parentId, for the progress line
 }
 
 export interface ImportPlan {
   mode: MergeMode;
-  dedupe: boolean;
+  dedupe: boolean;              // the EFFECTIVE value: always false for Replace
   segments: PlanSegment[];      // final, post-dedupe trees + their destinations
   stats: {
     toCreate: number;           // total nodes across ALL segments (folders + bookmarks)
     bookmarkCount: number;      // bookmarks only — the "Import n bookmarks" button label
+    folderCount: number;        // folders to create, the new-folder wrapper included
+    reusedFolders: number;      // existing folders Merge writes into instead of copying
     skippedExisting: number;    // dropped because the URL is already in the browser
     skippedInFile: number;      // dropped because the URL repeats within the file
   };
 }
 ```
 
-**Why segments and not a single root.** `03 §1` maps `toolbar: true` nodes to
-Bookmarks Bar and everything else to Other Bookmarks, and Replace deletes the
-children of both roots before writing. A single destination cannot express
-that, and would leave the toolbar permanently empty after a Replace.
+**Why segments and not a single root.** Top-level nodes go to three different
+roots (bar, Other, Mobile), Replace deletes the children of all of them before
+writing, and Merge writes into folders that already exist at any depth. A
+single destination cannot express any of that.
 
 Segment construction per mode — spelled out so it is not left to interpretation:
 
 | Mode | Segments |
 |---|---|
-| `new-folder` | Exactly one. `rootId` = Other Bookmarks; `nodes` = the single `Imported <date>` wrapper folder containing the whole parsed tree. `toolbar` is informational only (`03 §1`). |
-| `merge` / `replace` | At most two. Subtrees rooted at a `toolbar: true` node → `{ rootId: <Bookmarks Bar> }`; everything else → `{ rootId: <Other Bookmarks> }`. A segment with no nodes is omitted, not emitted empty. |
+| `new-folder` | Exactly one. `parentId` = Other Bookmarks; `nodes` = the single `Imported <date>` wrapper folder containing the whole parsed tree, root folders included. Markers are informational only (`03 §1`). |
+| `merge` | Top-level nodes are routed first (`core/route.ts`, `03 §1` step 7): a `toolbar` folder's children → the bar; a `root: "other"` folder's children → Other, in its place in the order; a `root: "mobile"` folder's children → Mobile (an ordinary folder under Other when the profile has no Mobile root); everything else → Other. Each root's list is then matched against that root's live children (`core/merge.ts`, `05 §5`): a folder with the exact title of a writable live child folder is **reused** — not created — and its children are matched one level down; everything else becomes a node in the segment of the live folder it lands in. One segment per live folder that receives anything, in first-use order. |
+| `replace` | As `merge`, but planned against **emptied** roots, so nothing matches and every node is created. |
 
-`stats.toCreate` is the total across all segments — progress and the final
-report keep one denominator and one `done` counter for the whole import
-(`05 §6`).
+A root nothing is bound for gets no segment. `stats.toCreate` is the total
+across all segments — progress and the final report keep one denominator and
+one `done` counter for the whole import (`05 §6`). Every node is accounted for:
+`toCreate + reusedFolders + unwrapped root folders` equals the deduped tree
+(asserted over 200 random trees in `merge.test.ts`).
 
 Chrome root mapping (Chromium ids are stable): Bookmarks Bar = `"1"`,
 Other Bookmarks = `"2"`, Mobile = `"3"`. `browser/bookmarks.ts` resolves them
-via `getTree()` rather than hardcoding — segment `rootId`s always come from
-that resolution, never a literal — but tests may rely on these ids.
+via `getTree()` rather than hardcoding — segment `parentId`s always come from
+that read (a root or a live folder found in it), never a literal — but tests
+may rely on these ids.
 
 Note the live tree is **not** `BookmarkNode`. `BookmarkNode` is the *file*
 model (no ids — `core/` may not know about `chrome.*`, layer rule 1). Anything
@@ -241,7 +252,7 @@ Popup may pass an intent (`#import` / `#export` / `#edit`) via the hash.
   | Code | Raised when |
   |---|---|
   | `NOT_NETSCAPE` | No `NETSCAPE-Bookmark-file-1` doctype **and** no `<DL>` found |
-  | `NOT_BM_JSON` | Leading `{` parses, but `format !== "bookmarkmagic"` |
+  | `NOT_BM_JSON` | The file is valid JSON but none of the three dialects BookmarkMagic reads (BM JSON, Chrome `Bookmarks`, Firefox backup — `04` intro). Before v1.1.0: "not `format: "bookmarkmagic"`". |
   | `MALFORMED_JSON` | `JSON.parse` throws |
   | `INVALID_NODE` | Structural check fails (missing/non-string `title`, non-string `url`, `children` on a bookmark) |
   | `BAD_CSV_HEADER` | Header row missing or columns not in the fixed order |
@@ -261,7 +272,11 @@ Popup may pass an intent (`#import` / `#export` / `#edit`) via the hash.
   bookmarks), `EXTRA_ROOTS_SKIPPED` (vendor roots in a browser JSON file) and
   `UNREADABLE_ENTRIES` (a `<DT>` with no readable `<A>` or `<H3>`).
 - `browser/` adds `BmBackupError { code }` for the forced safety backup
-  (`03 §1` step 6b) and `BmAborted { done }` for a cancelled write.
+  (`03 §1` step 6b) — `BACKUP_SERIALIZE_FAILED`, `BACKUP_EXCEEDS_LIMITS` (since
+  v1.1.0: the backup would be refused by the import's own caps, so it is no
+  backup), `BACKUP_CANCELLED`, `BACKUP_WRITE_FAILED`; the runtime list
+  `BM_BACKUP_ERROR_CODES` is held to a message per locale like the parse codes —
+  and `BmAborted { done }` for a cancelled write.
 - `browser/` maps `chrome.runtime.lastError` / promise rejections into typed
   results; never lets raw errors reach components.
 - UI shows human-readable, localized messages + a copyable technical detail

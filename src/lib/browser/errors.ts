@@ -16,10 +16,15 @@ export class BmAborted extends Error {
   }
 }
 
-export type BmBackupErrorCode =
-  | 'BACKUP_SERIALIZE_FAILED'
-  | 'BACKUP_CANCELLED'
-  | 'BACKUP_WRITE_FAILED';
+/** A runtime list, so `dictionaries.test.ts` can require a message for each. */
+export const BM_BACKUP_ERROR_CODES = [
+  'BACKUP_SERIALIZE_FAILED',
+  'BACKUP_EXCEEDS_LIMITS',
+  'BACKUP_CANCELLED',
+  'BACKUP_WRITE_FAILED',
+] as const;
+
+export type BmBackupErrorCode = (typeof BM_BACKUP_ERROR_CODES)[number];
 
 /**
  * Thrown when the forced safety backup could not be produced or proven

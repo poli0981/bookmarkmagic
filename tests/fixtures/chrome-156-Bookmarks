@@ -1,0 +1,123 @@
+{
+   "checksum": "7d4c1e0f9b8a69584736251403f2e1d0",
+   "roots": {
+      "bookmark_bar": {
+         "children": [ {
+            "date_added": "13344473601000000",
+            "date_last_used": "0",
+            "guid": "6a2f0e58-0a7c-4d55-9a0e-5b3c1f6a8d01",
+            "id": "5",
+            "name": "Chromium",
+            "show_icon": false,
+            "source": "unknown",
+            "type": "url",
+            "url": "https://www.chromium.org/"
+         }, {
+            "children": [ {
+               "date_added": "13344473603999999",
+               "date_last_used": "0",
+               "guid": "3e8d6c2b-9a14-4f07-b5d3-71a2c9e4f023",
+               "id": "7",
+               "name": "Extensions docs",
+               "show_icon": false,
+               "source": "unknown",
+               "type": "url",
+               "url": "https://developer.chrome.com/docs/extensions/"
+            } ],
+            "date_added": "13344473602000000",
+            "date_last_used": "0",
+            "date_modified": "13395973601000000",
+            "guid": "c1b9e7a4-55d2-4a8f-8e61-2f7d9b3a0c12",
+            "id": "6",
+            "name": "Dev",
+            "type": "folder"
+         }, {
+            "date_added": "13344473604000000",
+            "date_last_used": "0",
+            "guid": "9f4a2d71-6b3e-4c88-a1f5-0d2e7c5b9a34",
+            "id": "8",
+            "name": "Tom & Jerry <3 \"quoted\"",
+            "show_icon": false,
+            "source": "unknown",
+            "type": "url",
+            "url": "https://cartoons.example/tom?x=1&y=2"
+         }, {
+            "children": [  ],
+            "date_added": "13344473605000000",
+            "date_last_used": "0",
+            "date_modified": "0",
+            "guid": "b7e3c9a1-2d4f-4e6b-8c0a-5f1d3b7e9c45",
+            "id": "9",
+            "name": "Empty folder",
+            "type": "folder"
+         } ],
+         "date_added": "13344473600123456",
+         "date_last_used": "0",
+         "date_modified": "13395973600000000",
+         "guid": "0bc5d13f-2cba-5d74-951f-3f233fe6c908",
+         "id": "1",
+         "name": "Bookmarks bar",
+         "type": "folder"
+      },
+      "other": {
+         "children": [ {
+            "date_added": "0",
+            "date_last_used": "0",
+            "guid": "d2c8a6e4-1b3f-4d5a-9e7c-8b0f2a4c6e56",
+            "id": "10",
+            "name": "Example & friends",
+            "show_icon": false,
+            "source": "unknown",
+            "type": "url",
+            "url": "https://example.com/?q=a&b=1#frag"
+         }, {
+            "children": [ {
+               "date_added": "13344473608000000",
+               "date_last_used": "0",
+               "guid": "f8b4d2c6-3e1a-4c7f-b9d5-0a2e4c6f8b78",
+               "id": "12",
+               "name": "W3C 技術レポート",
+               "show_icon": false,
+               "source": "unknown",
+               "type": "url",
+               "url": "https://www.w3.org/TR/"
+            } ],
+            "date_added": "13344473607000000",
+            "date_last_used": "0",
+            "date_modified": "13395973603000000",
+            "guid": "e5a1c3b7-4f2d-4b6e-a8c0-9d3f5b7a1c67",
+            "id": "11",
+            "name": "Reading",
+            "type": "folder"
+         } ],
+         "date_added": "13344473600000000",
+         "date_last_used": "0",
+         "date_modified": "13395973602000000",
+         "guid": "82b081ec-3dd3-529c-8475-ab6c344590dd",
+         "id": "2",
+         "name": "Other bookmarks",
+         "type": "folder"
+      },
+      "synced": {
+         "children": [ {
+            "date_added": "13344473610000000",
+            "date_last_used": "0",
+            "guid": "a3c5e7f9-1b2d-4e6a-8c0e-2f4a6c8e0a89",
+            "id": "13",
+            "name": "Phone news",
+            "show_icon": false,
+            "source": "unknown",
+            "type": "url",
+            "url": "https://news.example.org/m"
+         } ],
+         "date_added": "13344473600000000",
+         "date_last_used": "0",
+         "date_modified": "13395973604000000",
+         "guid": "4cf2e351-0e85-532b-bb37-df045d8f8d0f",
+         "id": "3",
+         "name": "Mobile bookmarks",
+         "type": "folder"
+      }
+   },
+   "version": 1
+}

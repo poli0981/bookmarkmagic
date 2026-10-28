@@ -3,12 +3,12 @@
 ## 1. IMPORT pipeline
 
 ```
-[1] Select file          drag & drop or file picker (.html .htm .json .csv)
-        │
-[2] Pre-validate         extension allowlist · size ≤ MAX_FILE_BYTES (25 MB)
+[1] Select file          drag & drop or file picker — any file; no extension
+        │                filter (Chrome's `Bookmarks` file has none)
+[2] Pre-validate         size ≤ MAX_FILE_BYTES (25 MB)
         │                fail → localized error, stop
-[3] Detect format        detect-format.ts (content sniffing, not extension-trust)
-        │
+[3] Detect format        parse-file.ts → detect-format.ts: content sniffing,
+        │                JSON parsed once and routed by shape (04 intro)
 [4] Parse                per-format parser → ParseResult
         │                node count ≤ MAX_NODES (100 000) · collect warnings
         │                fail → error + line/detail, stop
@@ -18,15 +18,18 @@
         │                  warnings list (e.g. "favicons will not be imported")
 [6] Configure            MergeMode:
         │                  ● New folder  "Imported 2026-07-03 14:05"  (DEFAULT)
-        │                  ○ Merge       (folders matched by path+title)
+        │                  ○ Merge       (existing folders reused, level by level)
         │                  ○ Replace all (DANGER: forces step 6b)
         │                Dedupe toggle: skip URLs already in browser
         │
-[6b] Safety backup       Replace only. Three sub-steps, see "Safety backup"
+[7] Build ImportPlan     from ONE Start-time read of the live tree:
+        │                dedupe.ts → route.ts → merge.ts → plan.ts. Built
+        │                BEFORE the backup, so a failure here deletes nothing.
+[6b] Safety backup       Replace only. Five sub-steps, see "Safety backup"
         │                below. Non-skippable, and deletion never starts until
         │                the backup is proven or the user explicitly overrides.
-[7] Build ImportPlan     core/diff.ts + dedupe.ts → final node list + counts
-        │
+        │                (Numbering kept from 1.0.x for cross-references; since
+        │                v1.1.0 the plan comes first.)
 [8] Write                browser/write-queue.ts:
         │                  sequential DFS create (parent → children, in order)
         │                  progress events every 50 ops → progress bar + path label
@@ -40,25 +43,49 @@
 - Steps 1–7 touch nothing in the browser. The first write happens at step 8.
 - Replace = delete children of Bookmarks Bar + Other Bookmarks (+ Mobile if
   present), then write. Roots themselves are never deleted (API forbids it).
-- Merge mode folder matching: same *path of titles* from the root ⇒ reuse
-  folder; otherwise create. Bookmarks are never "updated" — only created or
-  skipped (dedupe).
-- Toolbar mapping: nodes with `toolbar: true` target Bookmarks Bar; everything
-  else targets Other Bookmarks. This is why `ImportPlan` carries **segments**
-  rather than one destination (`02 §4`). In **new-folder** mode the whole tree
-  goes under `Other Bookmarks/Imported <date>/…` preserving structure (toolbar
-  flag recorded in the preview as informational).
+- **Root routing** (`core/route.ts`), top-level nodes only — deeper, markers
+  are data. A folder that *is* a browser root is **unwrapped**: its children go
+  into that root and the folder itself is never written.
+  - `toolbar: true` folder → its children into the Bookmarks Bar (a flagged
+    bookmark, malformed but possible, goes there as itself);
+  - `root: "other"` folder → its children into Other Bookmarks, in its place in
+    the order;
+  - `root: "mobile"` folder → its children into Mobile Bookmarks; a profile
+    with no Mobile root keeps it as an ordinary folder under Other;
+  - everything else → Other Bookmarks.
+
+  The markers come from our own exports and backups (`04 §1.1`, §2), from
+  Firefox's HTML export (`UNFILED_BOOKMARKS_FOLDER`), and from the two browser
+  JSON files (`04 §2a/§2b`). Without them — 1.0.x — every restore nested a
+  folder named "Other bookmarks" inside Other Bookmarks, one level deeper each
+  time, and Mobile never came back. In **new-folder** mode nothing is routed:
+  the whole tree, root folders included, goes under
+  `Other Bookmarks/Imported <date>/…` (markers recorded in the preview as
+  informational).
+- **Merge reuses folders** (`core/merge.ts`, `05 §5`). Below each destination
+  root, a file folder with the exact, case-sensitive title of a writable child
+  folder of the live folder its parent matched is reused — never created,
+  moved or renamed — and new items are **appended** to it. The first of two
+  same-named live folders wins; policy-managed folders never match. Bookmarks
+  are never "updated" — only created or skipped (dedupe). 1.0.x planned Merge
+  exactly like Replace and re-created every folder, so "merge" produced a
+  second "Dev" beside the first.
   **CSV can never target the Bookmarks Bar** — the format has no `toolbar`
   column, so a parsed CSV node always has `toolbar === undefined` and its first
   path segment is an ordinary folder title. Re-importing our own CSV export in
   merge/replace mode therefore produces `Other Bookmarks/Bookmarks bar/…`, not
   the real toolbar. Documented limitation, surfaced in the Export tab (`04 §3`).
-- **Dedupe is inert in Replace mode.** The browser tree is deleted before the
-  write, so nothing can already exist: build the plan against an *empty*
-  browser index and force the browser-side skip off, or a user re-importing
-  their own backup would have every bookmark skipped and lose everything. The
-  UI disables and unchecks the dedupe checkbox when Replace is selected
-  (`06 §3.1`). In-file duplicate collapsing still applies when the toggle is on.
+- **Dedupe is off in Replace mode — both halves of it.** The browser tree is
+  deleted before the write, so nothing can already exist, and a Replace
+  restores a file *exactly*: two copies of a link in the backup are two
+  bookmarks after the restore. `buildImportPlan` computes the effective value
+  (`dedupe && mode !== 'replace'`) and stores it in `plan.dedupe`; the stored
+  preference is untouched. In 1.0.x the box showed unchecked while in-file
+  repeats were still collapsed. The UI disables and unchecks the dedupe
+  checkbox when Replace is selected (`06 §3.1`).
+- Merge dedupes against the **Start-time** read of the tree, not the preview's
+  snapshot, so a link bookmarked between preview and Start is not added twice.
+  The preview snapshot drives only the badges.
 - Import runs **only in the Manager tab**, never in the popup (popup teardown
   on blur would kill the write queue).
 
@@ -73,20 +100,28 @@ we would then delete every bookmark they own. So:
    exactly the largest profiles. Only the handle is acquired here; writing is
    not activation-gated. Cancel ⇒ `BmBackupError { code: 'BACKUP_CANCELLED' }`.
 2. **Read the live tree ONCE, and serialize from that read.** The same
-   `LiveNode[]` that gets serialized is the one handed to the delete step, so
-   the backup is provably a superset of what is removed. Serializing the
-   *preview-time* snapshot instead loses anything bookmarked between preview
-   and Start — with no copy on disk. Any serialize throw aborts with
-   `BACKUP_SERIALIZE_FAILED` and never reaches step 7.
-   The snapshot must carry `toolbar: true` on the Bookmarks Bar, or restoring
-   the backup nests the whole toolbar under Other Bookmarks.
-3. **Attest.** Picker path: writer `close()` resolving proves the backup —
+   `LiveNode[]` the plan was built from is serialized and then handed to the
+   delete step, so the backup is provably a superset of what is removed.
+   Serializing the *preview-time* snapshot instead loses anything bookmarked
+   between preview and Start — with no copy on disk. Any serialize throw aborts
+   with `BACKUP_SERIALIZE_FAILED`.
+   The snapshot carries the root markers — `toolbar: true` on the Bookmarks
+   Bar, `root: "other"`/`"mobile"` on the other two — or restoring the backup
+   nests them under Other Bookmarks.
+3. **Refuse a backup the import could not read back** (since v1.1.0). The
+   backup is compact BM JSON (no indentation, about half the bytes), and before
+   a single byte is written it is checked against the import's own caps — node
+   count, depth, then the serialized size (`core/caps.ts`). A breach raises
+   `BACKUP_EXCEEDS_LIMITS` and nothing is written, downloaded, confirmed or
+   deleted. 1.0.x wrote such a backup, deleted the tree, and the parser then
+   refused the backup on restore.
+4. **Attest.** Picker path: writer `close()` resolving proves the backup —
    proceed. Fallback `<a download>` path: **no signal exists**, so the import
    enters an `attesting` state and shows a blocking confirm ("Check your
    downloads folder for `bookmarkmagic-backup-….json`, then confirm") —
    anything other than an explicit confirmation is treated as
    `BACKUP_CANCELLED` and nothing is deleted.
-4. **Delete.** Only now. The UI enters a `clearing` state that offers **no
+5. **Delete.** Only now. The UI enters a `clearing` state that offers **no
    Cancel button**: the deletion loop is abortable, but presenting a cancel
    affordance mid-delete let a user cancel and then be told "0 items created"
    after their tree was already gone. Cancel becomes available again once the

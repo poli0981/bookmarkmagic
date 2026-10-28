@@ -73,13 +73,17 @@ export class FakeBookmarks {
     const parent = this.nodes.get(details.parentId);
     if (parent === undefined) throw new Error(`no such parent: ${details.parentId}`);
     if (parent.unmodifiable !== undefined) throw new Error("Can't modify managed bookmarks");
+    // Chrome's own rules: an empty url makes a FOLDER, and anything its URL
+    // parser refuses is rejected — mid-write, which is why readers skip them.
+    const url = details.url === '' ? undefined : details.url;
+    if (url !== undefined && !URL.canParse(url)) throw new Error('Invalid URL.');
 
     const node: LiveNode = {
       id: String(this.nextId++),
       parentId: details.parentId,
       title: details.title,
-      ...(details.url !== undefined && { url: details.url }),
-      ...(details.url === undefined && { children: [] }),
+      ...(url !== undefined && { url }),
+      ...(url === undefined && { children: [] }),
     };
     this.nodes.set(node.id, node);
 
@@ -129,6 +133,13 @@ export class FakeBookmarks {
   };
 
   // --- assertions helpers ---------------------------------------------------
+
+  /** The writable roots as a title/url outline, ids dropped — for whole-tree comparisons. */
+  outline(): unknown[] {
+    const shape = (node: LiveNode): unknown =>
+      node.url === undefined ? { [node.title]: (node.children ?? []).map(shape) } : node.url;
+    return (this.root.children ?? []).map(shape);
+  }
 
   /** Titles under a parent, in stored order. */
   childTitles(parentId: string): string[] {

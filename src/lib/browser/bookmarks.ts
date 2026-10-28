@@ -34,8 +34,14 @@ export interface BookmarkRoots {
   otherId: string;
   /** Mobile Bookmarks, when the profile has one. */
   mobileId: string | undefined;
+  /** The same three roots as nodes, children included — Merge matches inside them. */
+  toolbar: LiveNode;
+  other: LiveNode;
+  mobile: LiveNode | undefined;
   /** Writable top-level folders, in tree order, excluding managed ones. */
   writable: LiveNode[];
+  /** Every top-level folder, managed ones included — what "already in this browser" means. */
+  all: LiveNode[];
 }
 
 async function guard<T>(operation: string, run: () => Promise<T>): Promise<T> {
@@ -80,7 +86,11 @@ export async function getRoots(): Promise<BookmarkRoots> {
     toolbarId: toolbar.id,
     otherId: other.id,
     mobileId: mobile?.id,
+    toolbar,
+    other,
+    mobile,
     writable,
+    all: children,
   };
 }
 
@@ -93,6 +103,28 @@ export interface ToNodesOptions {
    * `03 §1` routes purely on that flag.
    */
   toolbarId?: string;
+  /**
+   * Ids of Other and Mobile Bookmarks, marked `root: 'other'`/`'mobile'` for
+   * the same reason: without them a restore nested both one level too deep.
+   */
+  otherId?: string;
+  mobileId?: string;
+}
+
+/** The marker ids for a whole-tree conversion — what an export or backup passes. */
+export function rootMarkersOf(roots: BookmarkRoots): ToNodesOptions {
+  return {
+    toolbarId: roots.toolbarId,
+    otherId: roots.otherId,
+    ...(roots.mobileId !== undefined && { mobileId: roots.mobileId }),
+  };
+}
+
+function markerOf(id: string, options: ToNodesOptions): Pick<BookmarkNode, 'toolbar' | 'root'> {
+  if (id === options.toolbarId) return { toolbar: true };
+  if (id === options.otherId) return { root: 'other' };
+  if (id === options.mobileId) return { root: 'mobile' };
+  return {};
 }
 
 /** Convert the live tree into the pure file model (ms → s, ids dropped). */
@@ -108,10 +140,10 @@ export function toBookmarkNodes(
     const lastModified = isFolderNode ? millisToSeconds(node.dateGroupModified) : undefined;
     return {
       title: node.title,
-      ...(!isFolderNode && { url: node.url as string }),
+      ...(node.url !== undefined && { url: node.url }),
       ...(addDate !== undefined && { addDate }),
       ...(lastModified !== undefined && { lastModified }),
-      ...(options.toolbarId !== undefined && node.id === options.toolbarId && { toolbar: true }),
+      ...(isFolderNode && markerOf(node.id, options)),
       ...(isFolderNode && { children: toBookmarkNodes(node.children ?? [], options) }),
     };
   });

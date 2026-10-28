@@ -2,7 +2,8 @@
  * Sequential tree writer — docs/05 §6.
  *
  * Purpose: create an `ImportPlan`'s nodes in order, with live progress and a
- *   working cancel button.
+ *   working cancel button. A segment's parent is a root or, in Merge, a folder
+ *   the user already has; either way it exists before the first create.
  * Inputs: a plan, an AbortSignal, a progress callback.
  * Guarantees: parents before children, siblings in order, one `done` counter
  *   across all segments, and an abort that stops before the next create.
@@ -114,7 +115,7 @@ export async function writeTree(
   };
 
   for (const segment of plan.segments) {
-    await dfs(segment.nodes, segment.rootId, []);
+    await dfs(segment.nodes, segment.parentId, segment.trail ?? []);
   }
 
   // Guarantee a final event even when the total was not a multiple of 50 and

@@ -16,13 +16,14 @@ import {
   type RootMarker,
 } from '../model';
 import { normalizeEpochSeconds } from '../timestamps';
-import { NodeBudget, WarningBag } from './shared';
+import { isRecord, NodeBudget, parseJsonText, WarningBag } from './shared';
 
 export const BM_JSON_FORMAT = 'bookmarkmagic';
 export const BM_JSON_VERSION = 1;
 
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === 'object' && value !== null && !Array.isArray(value);
+/** The shape test the JSON dispatch routes by (docs/04 §2). */
+export function looksLikeBmJson(doc: unknown): doc is Record<string, unknown> {
+  return isRecord(doc) && doc.format === BM_JSON_FORMAT;
 }
 
 interface ReadContext {
@@ -132,7 +133,7 @@ function markLegacyBackup(doc: Record<string, unknown>, roots: BookmarkNode[]): 
  * @throws {BmParseError} `NOT_BM_JSON`, `INVALID_NODE`, `TOO_MANY_NODES` or `TOO_DEEP`.
  */
 export function readBmJson(doc: unknown): ParseResult {
-  if (!isRecord(doc) || doc.format !== BM_JSON_FORMAT) {
+  if (!looksLikeBmJson(doc)) {
     throw new BmParseError('NOT_BM_JSON', `expected "format": "${BM_JSON_FORMAT}"`);
   }
   if (!Array.isArray(doc.roots)) throw new BmParseError('INVALID_NODE', 'roots must be an array');
@@ -161,11 +162,5 @@ export function readBmJson(doc: unknown): ParseResult {
  * @throws {BmParseError} `MALFORMED_JSON`, plus everything `readBmJson` throws.
  */
 export function parseBmJson(text: string): ParseResult {
-  let doc: unknown;
-  try {
-    doc = JSON.parse(text);
-  } catch (err) {
-    throw new BmParseError('MALFORMED_JSON', err instanceof Error ? err.message : 'invalid JSON');
-  }
-  return readBmJson(doc);
+  return readBmJson(parseJsonText(text));
 }

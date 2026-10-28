@@ -1,5 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { openSaveTarget, type SaveTarget } from '@/lib/browser/download';
+import { BmBackupError } from '@/lib/browser/errors';
+import { MAX_DEPTH, MAX_NODES } from '@/lib/core/limits';
 import type { BookmarkNode } from '@/lib/core/model';
 import { proveBackup } from '@/lib/import/run-import';
 
@@ -39,10 +41,15 @@ describe('proveBackup — picker path', () => {
     await proveBackup(TREE, NOW, FILENAME, Promise.resolve(target), undefined);
 
     expect(close).toHaveBeenCalledOnce();
-    expect(written[0]).toContain('"format": "bookmarkmagic"');
-    expect(written[0]).toContain('https://a.example/');
+    const doc = JSON.parse(written[0] ?? '');
+    expect(doc.format).toBe('bookmarkmagic');
     // The toolbar marker must survive, or restoring the backup empties the bar.
-    expect(written[0]).toContain('"toolbar": true');
+    expect(doc.roots[0]).toMatchObject({
+      toolbar: true,
+      children: [{ url: 'https://a.example/' }],
+    });
+    // Compact: a backup only counts if it fits under the import's size cap.
+    expect(written[0]?.trimEnd()).not.toContain('\n');
   });
 
   it('propagates a cancelled picker as BACKUP_CANCELLED and writes nothing', async () => {
@@ -122,5 +129,59 @@ describe('proveBackup — anchor fallback', () => {
     });
 
     expect(order).toEqual(['download', 'confirm']);
+  });
+});
+
+describe('proveBackup — refuses a backup the import could not read back', () => {
+  // 1.0.x wrote these, then deleted the tree; the parser refuses them on restore.
+  const bar = (children: BookmarkNode[]): BookmarkNode[] => [
+    { title: 'Bar', toolbar: true, children },
+  ];
+  const chain = (depth: number): BookmarkNode => {
+    let node: BookmarkNode = { title: 'leaf', children: [] };
+    for (let i = 1; i < depth; i++) node = { title: `d${i}`, children: [node] };
+    return node;
+  };
+  const CASES: [string, BookmarkNode[]][] = [
+    [
+      'more nodes than the import accepts',
+      bar(
+        Array.from({ length: MAX_NODES }, (_, i) => ({ title: `${i}`, url: 'https://e.example/' })),
+      ),
+    ],
+    ['deeper than the import accepts', [chain(MAX_DEPTH + 1)]],
+    [
+      'larger than the import accepts',
+      bar(
+        Array.from({ length: 270 }, (_, i) => ({
+          title: `${i}`,
+          url: `https://e.example/${'a'.repeat(100_000)}`,
+        })),
+      ),
+    ],
+  ];
+
+  it.each(CASES)('%s: nothing is written, downloaded or confirmed', async (_name, tree) => {
+    const createWritable = vi.fn();
+    const click = vi.spyOn(HTMLAnchorElement.prototype, 'click');
+    const confirm = vi.fn(async () => true);
+
+    await expect(
+      proveBackup(tree, NOW, FILENAME, Promise.resolve({ createWritable }), confirm),
+    ).rejects.toMatchObject({ code: 'BACKUP_EXCEEDS_LIMITS' });
+    await expect(proveBackup(tree, NOW, FILENAME, undefined, confirm)).rejects.toMatchObject({
+      code: 'BACKUP_EXCEEDS_LIMITS',
+    });
+
+    expect(createWritable).not.toHaveBeenCalled();
+    expect(click).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+  });
+
+  it('settles the still-open picker quietly instead of leaving its rejection unhandled', async () => {
+    const late = Promise.reject(new BmBackupError('BACKUP_CANCELLED'));
+    await expect(
+      proveBackup([chain(MAX_DEPTH + 1)], NOW, FILENAME, late, undefined),
+    ).rejects.toMatchObject({ code: 'BACKUP_EXCEEDS_LIMITS' });
   });
 });

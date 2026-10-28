@@ -22,7 +22,9 @@ export default {
     counts: '{bookmarks} bookmark · {folders} thư mục',
   },
   import: {
-    dropHint: 'Kéo thả tệp bookmark hoặc bấm để chọn — .html, .json, .csv · tối đa {size}',
+    dropHint: 'Kéo thả tệp bookmark hoặc bấm để chọn · tối đa {size}',
+    dropFormats:
+      'Tệp HTML xuất từ trình duyệt, CSV, bản sao lưu JSON của BookmarkMagic và Firefox, và tệp Bookmarks của chính Chrome (tệp này không có phần mở rộng).',
     reading: 'Đang đọc {name}…',
     preview: 'Xem trước',
     folderName: 'Đã nhập {date}',
@@ -33,6 +35,15 @@ export default {
     progress: 'Đang nhập… {done} / {total}',
     doneSummary: 'Hoàn tất — đã tạo {created} mục.',
     skipped: 'Đã bỏ qua {existing} mục đã có trong trình duyệt và {inFile} mục lặp trong tệp.',
+    reused: {
+      one: 'Đã thêm vào {n} thư mục bạn đã có, thay vì tạo bản sao.',
+      other: 'Đã thêm vào {n} thư mục bạn đã có, thay vì tạo bản sao.',
+    },
+    rootTitle: {
+      toolbar: 'Thanh dấu trang',
+      unfiled: 'Dấu trang khác',
+      mobile: 'Dấu trang di động',
+    },
     cancelledSummary: 'Đã hủy — {created} mục đã được tạo trước đó và vẫn được giữ lại.',
     cancelledAfterClear:
       'Bạn đã hủy sau khi bookmark cũ đã bị xóa, nên những gì còn lại chỉ là phần đã được tạo lại.',

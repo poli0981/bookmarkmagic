@@ -164,8 +164,12 @@ Two deliberate choices:
 
 The µs bucket is **defensive**, not a known-live case: every browser that
 writes Netscape HTML emits seconds, including Firefox. Microsecond values come
-only from non-browser exporters and from Firefox `.json` backups, which are out
-of scope until v1.1 (`04 §2`).
+from non-browser exporters — and from the two browser JSON files, which have
+their own converters precisely so that they never go through magnitude
+guessing: Chrome's `Bookmarks` file counts microseconds since **1601**
+(`chromeTimeToSeconds`, by string slicing — the values exceed 2^53), and
+Firefox's backup counts PRTime microseconds since 1970 (`microsToSeconds`). A
+1971 PRTime date is about 3e13 and would read as milliseconds here (`04 §2a/§2b`).
 
 Round to integer seconds. HTML/JSON/CSV export always writes seconds — which is
 what browsers put in *files*. Do not confuse this with `chrome.bookmarks`,
@@ -185,8 +189,35 @@ diffAgainstBrowser(parsed.roots, browserIndex):
   return { newCount, existsCount, perNodeStatus: WeakMap }   // WeakMap feeds preview badges
 ```
 
-Merge-mode folder matching: key = join of ancestor titles `['Bookmarks bar','Dev']`
-(exact, case-sensitive) → existing folder id map built once from browser tree.
+**Merge-mode folder matching** — `core/merge.ts` `planIntoFolder` (since
+v1.1.0; 1.0.x documented this and never called it). Per destination root,
+after routing (`03 §1`):
+
+```
+visit(fileNodes, liveParent, trail):
+  byTitle = first writable child FOLDER of liveParent per exact title   // lazily, once
+  for node of fileNodes:
+    if node is a folder and byTitle has node.title:
+      reused++; visit(node.children, thatLiveFolder, trail + title)     // never created
+    else:
+      segment(liveParent.id).nodes.push(node)                           // created, subtree inside
+```
+
+- Matching is **level by level**: a file folder is compared only with the
+  children of the live folder its parent matched — so a "Dev" below a folder
+  that does not exist yet is never matched against some other "Dev".
+- Exact and case-sensitive; bookmarks never match folders; policy-managed
+  (`unmodifiable`) folders never match and are never descended into; the first
+  of two same-named live siblings wins.
+- Two same-named folders in the *file* that both match one live folder both
+  write into it; when neither matches, both are created. Replace plans through
+  the same function against emptied roots, so it creates everything and keeps
+  the file's structure exactly.
+- Recursion follows the file tree, which the parsers cap at 200 levels; the
+  live tree is only ever read one matched folder at a time.
+- Properties asserted over 200 random file/live pairs (`merge.test.ts`): every
+  `parentId` is a writable live folder; created + reused = every file node; no
+  created folder has the title of a writable folder already in its parent.
 
 ## 6. Sequential write queue — `browser/write-queue.ts`
 
@@ -197,14 +228,14 @@ creating in order).
 ```
 writeTree(plan, { signal, onProgress }):
   total = plan.stats.toCreate; done = 0        // one counter for the WHOLE import
-  async dfs(nodes, parentId):
+  async dfs(nodes, parentId, trail):
     for node of nodes:
       if signal.aborted → throw BmAborted(done)
       created = await bookmarks.create({ parentId, title, url? })
       done++; if done % 50 == 0 or done == total → onProgress({done,total,currentPath})
-      if node.children → await dfs(node.children, created.id)
-  for (const seg of plan.segments)             // 1 segment (new-folder) or ≤2 (merge/replace)
-    await dfs(seg.nodes, seg.rootId)
+      if node.children → await dfs(node.children, created.id, trail + node.title)
+  for (const seg of plan.segments)             // 1 (new-folder), or one per live folder written to
+    await dfs(seg.nodes, seg.parentId, seg.trail ?? [])
 ```
 
 `done` and `total` are declared outside the loop, so progress, abort and the

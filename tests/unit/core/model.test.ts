@@ -84,6 +84,8 @@ describe('ImportPlan can express every mode (docs/02 §4)', () => {
         (n, s) => n + [...walkTree(s.nodes)].filter(({ node }) => !isFolder(node)).length,
         0,
       ),
+      folderCount: 0,
+      reusedFolders: 0,
       skippedExisting: 0,
       skippedInFile: 0,
     },
@@ -91,7 +93,7 @@ describe('ImportPlan can express every mode (docs/02 §4)', () => {
 
   it('new-folder is a single segment under one root', () => {
     const p = plan('new-folder', [
-      { rootId: '2', nodes: [{ title: 'Imported 2026-07-25', children: toolbarNodes }] },
+      { parentId: '2', nodes: [{ title: 'Imported 2026-07-25', children: toolbarNodes }] },
     ]);
     expect(p.segments).toHaveLength(1);
     expect(p.stats.toCreate).toBe(2); // wrapper folder + 1 bookmark
@@ -101,16 +103,12 @@ describe('ImportPlan can express every mode (docs/02 §4)', () => {
   it('merge and replace can target two roots at once', () => {
     for (const mode of ['merge', 'replace'] as const) {
       const p = plan(mode, [
-        { rootId: '1', nodes: toolbarNodes },
-        { rootId: '2', nodes: otherNodes },
+        { parentId: '1', nodes: toolbarNodes },
+        { parentId: '2', nodes: otherNodes },
       ]);
-      expect(p.segments.map((s) => s.rootId)).toEqual(['1', '2']);
+      expect(p.segments.map((s) => s.parentId)).toEqual(['1', '2']);
       // One denominator for the whole import, not per segment.
       expect(p.stats.toCreate).toBe(2);
     }
-  });
-
-  it('dedupe is off for replace — the browser tree is deleted first', () => {
-    expect(plan('replace', []).dedupe).toBe(false);
   });
 });

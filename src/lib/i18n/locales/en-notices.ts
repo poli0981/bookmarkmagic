@@ -62,18 +62,22 @@ export const warnings = {
 
 export const errors = {
   NOT_NETSCAPE: 'This does not look like a bookmark HTML file.',
-  NOT_BM_JSON: 'This JSON file was not written by BookmarkMagic.',
+  NOT_BM_JSON:
+    'This JSON file is not a bookmark file BookmarkMagic can read. It reads its own backups, Firefox JSON backups and Chrome’s Bookmarks file.',
   MALFORMED_JSON: 'This file is not valid JSON.',
   INVALID_NODE: 'This file has an entry BookmarkMagic cannot read.',
   BAD_CSV_HEADER: 'The CSV header row is missing or its columns are in the wrong order.',
   CSV_ROW_MISMATCH: 'A CSV row has the wrong number of columns.',
   CSV_UNCLOSED_QUOTE:
     'A quoted CSV field is never closed, so the rest of the file cannot be read reliably.',
-  UNKNOWN_FORMAT: 'Unrecognised file — expected bookmark HTML, JSON or CSV.',
+  UNKNOWN_FORMAT:
+    'Unrecognised file — expected a bookmark HTML export, CSV, a BookmarkMagic or Firefox JSON backup, or Chrome’s Bookmarks file.',
   FILE_TOO_LARGE: 'This file is too large to import.',
   TOO_MANY_NODES: 'This file contains too many bookmarks to import safely.',
   TOO_DEEP: 'This file nests folders far too deeply.',
   BACKUP_SERIALIZE_FAILED: 'The safety backup could not be prepared, so nothing was changed.',
+  BACKUP_EXCEEDS_LIMITS:
+    'Your current bookmarks are more than BookmarkMagic could read back from a backup, so Replace stopped before deleting anything. Merge, or import into a new folder, instead.',
   BACKUP_CANCELLED: 'You cancelled the safety backup, so nothing was deleted.',
   BACKUP_WRITE_FAILED: 'The safety backup could not be saved, so nothing was deleted.',
   BROWSER: 'The browser refused a bookmark operation.',

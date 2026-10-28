@@ -1,18 +1,41 @@
 # 04 — File Formats
 
-Four formats. HTML is the interoperability workhorse; JSON is our lossless
-round-trip format; CSV is for spreadsheets; Markdown is share/export-only.
+Six formats. HTML is the interoperability workhorse; BM JSON is our lossless
+round-trip format; CSV is for spreadsheets; Markdown is share/export-only; and
+since v1.1.0 two browser files are read directly — Chrome's profile `Bookmarks`
+file and Firefox's JSON backup.
 
 | Format | Import | Export | Lossless | Purpose |
 |---|---|---|---|---|
 | Netscape HTML | ✔ | ✔ | structure+dates | Universal browser exchange (Chrome, Edge, Brave, Firefox, Safari, Vivaldi, Opera all read/write it) |
 | BM JSON v1 | ✔ | ✔ | ✔ | Backups, round-trip, safety backup before Replace |
+| Chrome `Bookmarks` (§2a) | ✔ | ✖ | structure+dates | The profile file itself — the copy left when the browser no longer starts; keeps Other and Mobile |
+| Firefox JSON backup (§2b) | ✔ | ✖ | structure+dates | `bookmarks-YYYY-MM-DD.json` from Library → Backup…; keeps Mobile, which Firefox's HTML export drops |
 | CSV (RFC 4180) | ✔ | ✔ | flattened | Spreadsheet review/editing |
 | Markdown | ✖ | ✔ | — | Human-readable sharing (blog posts, Discord, README) |
 
-`detect-format.ts` sniffs content (never trusts the file extension):
-`<!DOCTYPE NETSCAPE-Bookmark-file-1` (case-insensitive, first 512 bytes) →
-HTML; leading `{` + parses with `format:"bookmarkmagic"` → JSON; else try CSV header.
+**Sniffing** (`detect-format.ts`, called only through `parse-file.ts`'s
+`parseBookmarkFile`) reads content and never the extension — Chrome's file has
+none — after stripping a BOM:
+
+1. Text whose first non-blank character is `{` or `[` is JSON. It is parsed
+   **exactly once** and routed by shape: `format: "bookmarkmagic"` → BM JSON;
+   an object `roots` holding `bookmark_bar`, `other` or `synced` → Chrome;
+   `type: "text/x-moz-place-container"` (or `root: "placesRoot"`) with a
+   `children` array → Firefox. Valid JSON matching none → `NOT_BM_JSON`
+   (meaning, since v1.1.0, "JSON, but no bookmark file we know"); invalid JSON →
+   `MALFORMED_JSON`. JSON is tested first so a title quoting the doctype can
+   never make a JSON file look like HTML.
+2. `<!DOCTYPE NETSCAPE-Bookmark-file-1` (case-insensitive) as the first thing
+   in the file after whitespace and comments → HTML. Anchored since v1.1.0: the
+   old probe accepted the marker anywhere in the first 512 bytes, including
+   inside a CSV title.
+3. The §3 header row → CSV.
+4. Any `<DL` → HTML (the parser decides whether it is usable); else
+   `UNKNOWN_FORMAT`.
+
+The file picker has no `accept` filter for the same reason: a filter on
+`.html,.json,.csv` hid Chrome's `Bookmarks` file.
 
 ---
 
@@ -113,6 +136,12 @@ Must accept, with a warning where noted:
   `<DT>` that still yields nothing is counted as `UNREADABLE_ENTRIES`.
 - A root list wrapped in `<div>`/`<center>`/a table cell → found as an
   outermost `<DL>` when body-level collection finds nothing.
+- **Real Chrome output** writes Other's and Mobile's contents loose at the top
+  level, after the bar, with no folder line (`bookmark_html_writer.cc`; fixture
+  `chrome-156-export.html`, built to that writer byte for byte, CRLF included).
+  The older `chrome-131-export.html` wraps them in an `Other bookmarks` folder
+  that Chrome itself never writes; it is kept as a third-party shape, not as a
+  record of Chrome.
 - `<HR>` separator elements (Firefox) → skipped, no warning. These are
   *elements*, so "unknown attributes ignored" does not cover them.
 - Empty folders → preserved.
@@ -202,6 +231,102 @@ not an anomaly, and must not raise a warning (`05 §4`).
   `url` if present must be string; `children` only on folders.
 - Chrome's profile `Bookmarks` file and Firefox `.json` backups are separate
   dialects with their own sections (§2a, §2b).
+
+## 2a. Chrome profile `Bookmarks` file (import only, since v1.1.0)
+
+The JSON file Chromium keeps in the profile folder — `User Data/Default/Bookmarks`
+on Windows, `~/Library/Application Support/Google/Chrome/Default/Bookmarks` on
+macOS, `~/.config/google-chrome/Default/Bookmarks` on Linux — with **no
+extension**. Edge, Brave, Vivaldi and Opera keep the same file. Written by
+`BookmarkCodec`, pretty-printed by `base::JSONWriter` (3-space indent, keys
+sorted):
+
+```json
+{
+   "checksum": "…",
+   "roots": {
+      "bookmark_bar": { "children": [ … ], "date_added": "13344473600000000",
+                        "date_modified": "…", "guid": "…", "id": "1",
+                        "name": "Bookmarks bar", "type": "folder" },
+      "other":  { …, "name": "Other bookmarks", "type": "folder" },
+      "synced": { …, "name": "Mobile bookmarks", "type": "folder" }
+   },
+   "version": 1
+}
+```
+
+- Nodes are `{ "type": "url", "name", "url", "date_added" }` or
+  `{ "type": "folder", "name", "children", "date_added", "date_modified" }`.
+  `id`, `guid`, `meta_info`, `date_last_used`, `show_icon`, `source`,
+  `sync_metadata` and `checksum` are ignored. **The checksum is never
+  verified**, so a hand-repaired file still imports.
+- **Dates** are decimal strings of microseconds since 1601-01-01 UTC. They are
+  past 2^53, so the conversion cuts the last six digits as a *string* before any
+  arithmetic, then subtracts 11 644 473 600 — truncating to the second, exactly
+  as Chrome's HTML writer (`ToTimeT`) does. `"0"` means unset. Run through
+  §1.3's magnitude detection instead, such a value lands in the microsecond
+  bucket and comes out near the year 2395 (`timestamps.ts`
+  `chromeTimeToSeconds`).
+- **Roots.** The bar is always emitted, as a `toolbar` folder, with the file's
+  own `name`; Other and Mobile are emitted as `root`-marked folders only when
+  they hold something. A blank root name falls back to the caller's localized
+  title. Any other root key — Opera's `custom_root` (Speed Dial, Trash,
+  Unsorted), vendor additions — is skipped and its bookmarks counted as
+  `EXTRA_ROOTS_SKIPPED`; old profiles also keep a `sync_transaction_version`
+  *string* in `roots`, which is not a root and is ignored silently.
+- Addresses follow §1.2: blank → `MISSING_URL`, unparseable → `INVALID_URL`,
+  `place:` → `PLACE_QUERIES_SKIPPED`. A node of any other `type`, or not an
+  object at all → `UNREADABLE_ENTRIES`. Empty names are kept (`EMPTY_TITLE`).
+- **Parity rule** (the spec, tested against a Chromium-faithful pair,
+  `chrome-156-Bookmarks` + `chrome-156-export.html`): the tree read from the
+  profile file equals the tree read from Chrome's own HTML export of it, once
+  Other's and Mobile's contents are written loose at the top level, with no
+  folder line — which is what `bookmark_html_writer.cc` does. The JSON keeps
+  what the HTML loses: which items were in Other and which in Mobile.
+
+## 2b. Firefox JSON backup (import only, since v1.1.0)
+
+`bookmarks-YYYY-MM-DD.json`, written by Library → Import and Backup → Backup…
+(the automatic `.jsonlz4` backups are compressed and are a separate, later
+item — `15`). One line of `JSON.stringify` output:
+
+```json
+{"guid":"root________","title":"","type":"text/x-moz-place-container","root":"placesRoot","children":[
+  {"title":"menu","root":"bookmarksMenuFolder","type":"text/x-moz-place-container","children":[…]},
+  {"title":"toolbar","root":"toolbarFolder", …},
+  {"title":"tags","root":"tagsFolder", …},
+  {"title":"unfiled","root":"unfiledBookmarksFolder", …},
+  {"title":"mobile","root":"mobileFolder", …}]}
+```
+
+- Nodes: `type` `text/x-moz-place` (bookmark: `title`, `uri`), `…-container`
+  (folder: `title`, `children`), `…-separator` (skipped silently, as `<HR>` is).
+  A node with no `type` falls back to `typeCode` 1/2/3. Dates are **PRTime** —
+  integer microseconds since the Unix epoch — converted explicitly and
+  truncated, as Firefox's own HTML export does (`microsToSeconds`).
+- **Roots**, emitted in the order Firefox's HTML export writes them, whatever
+  the file order: the menu's contents loose at the top level; then the toolbar
+  as a `toolbar` folder and Other Bookmarks (`unfiled`) as a `root: "other"`
+  folder, each only when its raw `children` list is non-empty (a toolbar holding
+  only a separator still yields an empty folder, matching the exporter); then
+  Mobile as a `root: "mobile"` folder — which Firefox's HTML export leaves out
+  altogether. The **tags** root is dropped silently: it is a view over bookmarks
+  the other roots already hold, and importing it would add every tagged
+  bookmark twice. Any other root → `EXTRA_ROOTS_SKIPPED`.
+- **Root titles.** Firefox stores only the internal keys `toolbar`, `unfiled`,
+  `mobile`, and localizes them at display time. The caller passes localized
+  titles (`import.rootTitle.*`, `07`); with none, the file's own key is used,
+  never an English string from `core/`.
+- `iconUri` (older files: `iconuri`) → `FAVICONS_IGNORED`; a
+  `bookmarkProperties/description` anno → `DESCRIPTIONS_DROPPED` (counted
+  where the HTML export would have written a `<DD>`); `tags`, `keyword`,
+  `charset`, `postData`, `guid`, `id` and `index` are ignored silently, like
+  their HTML attributes. Addresses follow §1.2, `place:` included.
+- A container that is not the places root (a hand-made or third-party file) is
+  read as a plain list: its children become the top-level entries.
+- **Parity rule**, tested on `firefox-bookmarks-2026-07-25.json` against
+  `firefox-html-export.html`: equal trees and warnings once the Mobile folder
+  is removed.
 
 ## 3. CSV
 

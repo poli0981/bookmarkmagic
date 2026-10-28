@@ -54,17 +54,21 @@ export const warnings = {
 
 export const errors = {
   NOT_NETSCAPE: 'ブックマークの HTML ファイルではないようです。',
-  NOT_BM_JSON: 'この JSON ファイルは BookmarkMagic が作成したものではありません。',
+  NOT_BM_JSON:
+    'この JSON ファイルは BookmarkMagic が読み込めるブックマークファイルではありません。読み込めるのは BookmarkMagic のバックアップ、Firefox の JSON バックアップ、Chrome の Bookmarks ファイルです。',
   MALFORMED_JSON: 'このファイルは有効な JSON ではありません。',
   INVALID_NODE: 'BookmarkMagic が読み取れない項目が含まれています。',
   BAD_CSV_HEADER: 'CSV のヘッダー行がないか、列の順序が正しくありません。',
   CSV_ROW_MISMATCH: 'CSV の行の列数が正しくありません。',
   CSV_UNCLOSED_QUOTE: 'CSV の引用符が閉じられていないため、ファイルの残りを正しく読み取れません。',
-  UNKNOWN_FORMAT: 'ファイルを認識できません。ブックマークの HTML、JSON、CSV が必要です。',
+  UNKNOWN_FORMAT:
+    'ファイルを認識できません。ブックマークの HTML エクスポート、CSV、BookmarkMagic または Firefox の JSON バックアップ、Chrome の Bookmarks ファイルを選んでください。',
   FILE_TOO_LARGE: 'このファイルは大きすぎてインポートできません。',
   TOO_MANY_NODES: 'このファイルには安全にインポートできる数を超えるブックマークがあります。',
   TOO_DEEP: 'このファイルはフォルダの入れ子が深すぎます。',
   BACKUP_SERIALIZE_FAILED: 'バックアップを準備できなかったため、何も変更していません。',
+  BACKUP_EXCEEDS_LIMITS:
+    '現在のブックマークは BookmarkMagic がバックアップから読み戻せる量を超えているため、何も削除せずに置き換えを中止しました。統合するか、新しいフォルダにインポートしてください。',
   BACKUP_CANCELLED: 'バックアップがキャンセルされたため、何も削除していません。',
   BACKUP_WRITE_FAILED: 'バックアップを保存できなかったため、何も削除していません。',
   BROWSER: 'ブラウザがブックマークの操作を拒否しました。',

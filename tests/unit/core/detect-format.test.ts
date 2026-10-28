@@ -1,61 +1,60 @@
 import { describe, expect, it } from 'vitest';
-import { detectFormat, stripBom } from '@/lib/core/detect-format';
-import { BmParseError } from '@/lib/core/model';
+import { jsonFormatOf, sniffFormat } from '@/lib/core/detect-format';
+import { expectBmError } from '../../helpers/errors';
 
 const HTML = '<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p></DL><p>';
-const JSON_DOC = '{"format":"bookmarkmagic","version":1,"roots":[]}';
 const CSV = 'folder_path,title,url,add_date\r\n,"A",https://a.example/,\r\n';
 
-describe('detectFormat — sniffs content, never the extension', () => {
-  it('identifies each format', () => {
-    expect(detectFormat(HTML)).toBe('netscape-html');
-    expect(detectFormat(JSON_DOC)).toBe('bm-json');
-    expect(detectFormat(CSV)).toBe('csv');
+describe('sniffFormat — content, never the extension', () => {
+  it('identifies each kind of text', () => {
+    expect(sniffFormat(HTML)).toBe('netscape-html');
+    expect(sniffFormat(CSV)).toBe('csv');
+    expect(sniffFormat('{"format":"bookmarkmagic"}')).toBe('json');
+    expect(sniffFormat('  \n[1, 2]')).toBe('json');
   });
 
-  it('is case-insensitive about the doctype', () => {
-    expect(detectFormat('<!doctype netscape-bookmark-file-1>\n<dl><p></dl>')).toBe('netscape-html');
-  });
-
-  it('ignores a wrong extension — the caller never passes one', () => {
-    // A .json file that is really HTML, and a .html file that is really CSV.
-    expect(detectFormat(HTML)).toBe('netscape-html');
-    expect(detectFormat(CSV)).toBe('csv');
-  });
-
-  it('tolerates a leading BOM on every format', () => {
-    expect(detectFormat(`﻿${HTML}`)).toBe('netscape-html');
-    expect(detectFormat(`﻿${JSON_DOC}`)).toBe('bm-json');
-    expect(detectFormat(`﻿${CSV}`)).toBe('csv');
-  });
-
-  it('rejects JSON that is not ours', () => {
-    // Chrome's internal Bookmarks file is explicitly out of scope for v1.
-    expect(() => detectFormat('{"checksum":"x","roots":{"bookmark_bar":{}}}')).toThrow(
-      BmParseError,
+  it('is case-insensitive about the doctype, and looks past leading comments', () => {
+    expect(sniffFormat('<!doctype netscape-bookmark-file-1>\n<dl><p></dl>')).toBe('netscape-html');
+    expect(sniffFormat('<!-- written by hand -->\n<!DOCTYPE NETSCAPE-Bookmark-file-1>')).toBe(
+      'netscape-html',
     );
   });
 
+  it('only trusts the doctype at the start — a CSV title quoting it is still CSV', () => {
+    const csv = `${CSV},"<!DOCTYPE NETSCAPE-Bookmark-file-1>",https://b.example/,\r\n`;
+    expect(sniffFormat(csv)).toBe('csv');
+  });
+
+  it('never reads a JSON title that quotes the doctype as HTML', () => {
+    expect(sniffFormat('{"title":"<!DOCTYPE NETSCAPE-Bookmark-file-1>"}')).toBe('json');
+  });
+
   it('accepts a <DL> document with no doctype and lets the parser judge it', () => {
-    expect(detectFormat('<html><body><DL><p><DT><A HREF="x">t</A></DL></body></html>')).toBe(
+    expect(sniffFormat('<html><body><DL><p><DT><A HREF="x">t</A></DL></body></html>')).toBe(
       'netscape-html',
     );
   });
 
   it('throws UNKNOWN_FORMAT on anything else', () => {
-    try {
-      detectFormat('just some text\nwith lines\n');
-      expect.unreachable('should have thrown');
-    } catch (err) {
-      expect((err as BmParseError).code).toBe('UNKNOWN_FORMAT');
-    }
+    expectBmError(() => sniffFormat('just some text\nwith lines\n'), 'UNKNOWN_FORMAT');
+    expectBmError(
+      () => sniffFormat('<!-- never closed <!DOCTYPE NETSCAPE-Bookmark-file-1>'),
+      'UNKNOWN_FORMAT',
+    );
   });
 });
 
-describe('stripBom', () => {
-  it('removes only a leading U+FEFF', () => {
-    expect(stripBom('﻿abc')).toBe('abc');
-    expect(stripBom('abc')).toBe('abc');
-    expect(stripBom('a﻿b')).toBe('a﻿b');
+describe('jsonFormatOf — routes a parsed document by shape', () => {
+  it('recognises each dialect', () => {
+    expect(jsonFormatOf({ format: 'bookmarkmagic', roots: [] })).toBe('bm-json');
+    expect(jsonFormatOf({ checksum: 'x', roots: { bookmark_bar: {} } })).toBe('chrome-json');
+    expect(jsonFormatOf({ type: 'text/x-moz-place-container', children: [] })).toBe('firefox-json');
+    expect(jsonFormatOf({ root: 'placesRoot', children: [] })).toBe('firefox-json');
+  });
+
+  it('answers undefined for anything else, arrays and primitives included', () => {
+    for (const doc of [null, 1, 'x', [], {}, { roots: [] }, { roots: { custom_root: {} } }]) {
+      expect(jsonFormatOf(doc)).toBeUndefined();
+    }
   });
 });

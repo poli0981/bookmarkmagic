@@ -10,9 +10,20 @@ import type { BookmarkNode } from '@/lib/core/model';
  */
 export type RoundTripFormat = 'bm-json' | 'netscape-html' | 'csv';
 
-/** Deterministic PRNG — no Math.random, so failures reproduce from the seed. */
+/**
+ * Deterministic PRNG — no Math.random, so failures reproduce from the seed.
+ *
+ * The seed is scrambled first (the murmur3 finalizer). Seeded straight with a
+ * small integer, xorshift32 returns near-zero values for its first draws, so
+ * `generateTree` drew a child count of 0 for every seed from 1 to 200: the
+ * seeded round-trip suite compared 200 EMPTY trees and passed vacuously from
+ * Phase 1 until v1.1.0.
+ */
 export function makeRng(seed: number): () => number {
-  let state = seed >>> 0 || 1;
+  let state = seed >>> 0;
+  state = Math.imul(state ^ (state >>> 16), 0x85ebca6b) >>> 0;
+  state = Math.imul(state ^ (state >>> 13), 0xc2b2ae35) >>> 0;
+  state = (state ^ (state >>> 16)) >>> 0 || 1;
   return () => {
     state ^= state << 13;
     state >>>= 0;

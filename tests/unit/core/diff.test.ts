@@ -1,54 +1,31 @@
 import { describe, expect, it } from 'vitest';
-import { buildFolderPathIndex } from '@/lib/core/diff';
+import { buildUrlIndex } from '@/lib/core/dedupe';
+import { diffAgainstBrowser } from '@/lib/core/diff';
 import type { BookmarkNode } from '@/lib/core/model';
 
-const TREE: BookmarkNode[] = [
-  {
-    title: 'Bookmarks bar',
-    children: [
-      { title: 'Dev', children: [{ title: 'Deep', children: [] }] },
-      { title: 'Link', url: 'https://a.example/' },
-    ],
-  },
-  { title: 'Other', children: [] },
-];
+/** The preview badges — docs/05 §5. */
+const BROWSER = buildUrlIndex([
+  { title: 'Bar', children: [{ title: 'have', url: 'https://have.example/' }] },
+]);
 
-describe('buildFolderPathIndex — merge-mode folder matching (docs/05 §5)', () => {
-  const index = buildFolderPathIndex(TREE);
+describe('diffAgainstBrowser', () => {
+  const have: BookmarkNode = { title: 'mine', url: 'https://HAVE.example' };
+  const fresh: BookmarkNode = { title: 'new', url: 'https://new.example/' };
+  const again: BookmarkNode = { title: 'again', url: 'https://have.example/' };
+  const folder: BookmarkNode = { title: 'F', children: [have, fresh] };
+  const result = diffAgainstBrowser([folder, again], BROWSER);
 
-  it('keys folders by their full ancestor-title path', () => {
-    expect([...index.keys()].sort()).toEqual(
-      [
-        JSON.stringify(['Bookmarks bar']),
-        JSON.stringify(['Bookmarks bar', 'Dev']),
-        JSON.stringify(['Bookmarks bar', 'Dev', 'Deep']),
-        JSON.stringify(['Other']),
-      ].sort(),
-    );
+  it('badges every bookmark, comparing normalized URLs, path-insensitively', () => {
+    expect(result.status.get(have)).toBe('exists');
+    expect(result.status.get(fresh)).toBe('new');
+    expect(result.status.get(again)).toBe('exists');
   });
 
-  it('indexes folders only, never bookmarks', () => {
-    expect(index.has(JSON.stringify(['Bookmarks bar', 'Link']))).toBe(false);
+  it('counts per node, so a URL the file repeats counts each time', () => {
+    expect(result).toMatchObject({ existsCount: 2, newCount: 1 });
   });
 
-  it('matches are exact and case-sensitive', () => {
-    expect(index.has(JSON.stringify(['bookmarks bar']))).toBe(false);
-  });
-
-  it('keeps the first of two identically-named siblings', () => {
-    const first: BookmarkNode = { title: 'Dup', children: [{ title: 'a', url: 'https://a/' }] };
-    const second: BookmarkNode = { title: 'Dup', children: [] };
-    const dupIndex = buildFolderPathIndex([first, second]);
-    expect(dupIndex.get(JSON.stringify(['Dup']))).toBe(first);
-  });
-
-  it('distinguishes same-named folders at different paths', () => {
-    const tree: BookmarkNode[] = [
-      { title: 'A', children: [{ title: 'Shared', children: [] }] },
-      { title: 'B', children: [{ title: 'Shared', children: [] }] },
-    ];
-    const paths = buildFolderPathIndex(tree);
-    expect(paths.has(JSON.stringify(['A', 'Shared']))).toBe(true);
-    expect(paths.has(JSON.stringify(['B', 'Shared']))).toBe(true);
+  it('never badges a folder', () => {
+    expect(result.status.has(folder)).toBe(false);
   });
 });

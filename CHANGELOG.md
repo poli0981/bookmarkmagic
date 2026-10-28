@@ -11,7 +11,53 @@ breaking format or schema changes (a BM JSON version bump).
 
 ## [Unreleased]
 
-Nothing yet.
+### Added
+
+- Import Chrome's own `Bookmarks` file — the JSON file in your profile folder,
+  which has no extension — and Firefox's JSON backups
+  (`bookmarks-YYYY-MM-DD.json`). Both still know which bookmarks were in
+  "Mobile bookmarks", which the browsers' own HTML exports throw away.
+
+### Changed
+
+- **Requires Chrome 136 or later** (was 120). Older Chrome keeps version 1.0.1.
+- "Merge into existing folders" now really merges: a folder you already have is
+  reused and the new bookmarks are added at the end of it. Before, every folder
+  in the file was created again beside yours.
+- "Replace everything" restores a file exactly, duplicate links included — the
+  "skip duplicates" box never applied to it, and now it really does not.
+- Firefox "smart bookmarks" (saved searches, `place:` links) in browser HTML
+  exports are skipped and counted: in Chrome they are dead links. BookmarkMagic's
+  own JSON and CSV files keep them.
+- A bookmark with an empty title stays untitled after import, instead of taking
+  its address as the title.
+- The safety backup taken before "Replace everything" is compact JSON — about
+  half the size.
+- The file picker shows every file; BookmarkMagic recognises the format from
+  the content.
+
+### Fixed
+
+- Restoring a backup put "Other bookmarks" and "Mobile bookmarks" inside Other
+  Bookmarks — one level deeper on every restore. They now go back where they
+  were, and backups made by 1.0.x are recognised and restored correctly too.
+- One address Chrome refuses no longer stops an import half-way — after
+  "Replace everything" had already deleted your bookmarks. Such entries are now
+  skipped before anything is written, and the preview says how many.
+- "Replace everything" now refuses to start when your current bookmarks are too
+  large for a backup BookmarkMagic could read back, instead of writing that
+  backup and deleting everything anyway.
+- Some bookmark files silently lost entries: a folder list after a loose
+  bookmark, everything after a title containing an unescaped `<b>`, and lists
+  wrapped in other markup. Anything that still cannot be read is now counted.
+- A folder marked `PERSONAL_TOOLBAR_FOLDER="false"` is no longer taken for the
+  Bookmarks Bar.
+- A CSV file with an unclosed quote is reported with its line number, instead of
+  one cell swallowing the rest of the file.
+- CSV exports no longer contain cells a spreadsheet would run as a formula; the
+  guard character is removed again when the file is imported.
+- Titles in Markdown exports can no longer turn into links, HTML or broken
+  lines.
 
 ## [1.0.1] — 2026-08-03
 

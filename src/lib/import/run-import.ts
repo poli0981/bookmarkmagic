@@ -1,15 +1,24 @@
 /**
  * The import pipeline — docs/03 §1, steps 2 through 9.
  *
- * Purpose: one place that sequences validate → detect → parse → diff → plan →
+ * Purpose: one place that sequences validate → sniff/parse → diff → plan →
  *   backup → clear → write, so the Svelte component stays presentational.
- * Guarantees: steps 1-7 touch nothing in the browser, and in Replace mode
- *   NOTHING is deleted until the safety backup is proven — either by the file
- *   picker resolving, or by the user explicitly confirming the fallback
- *   download (docs/03 §1 step 6b).
+ * Guarantees: steps 1-7 touch nothing in the browser. The plan is built — and
+ *   can fail — before the backup is taken, and in Replace mode NOTHING is
+ *   deleted until that backup is proven: by the file picker resolving, or by
+ *   the user explicitly confirming the fallback download (docs/03 §1 step 6b).
+ *   A backup the import could not read back is refused before anything at all
+ *   is written, downloaded or deleted.
  */
 import { getGeneratorVersion } from '../browser/app-info';
-import { clearRoots, getRootChildren, getRoots, toBookmarkNodes } from '../browser/bookmarks';
+import {
+  type BookmarkRoots,
+  clearRoots,
+  getRootChildren,
+  getRoots,
+  rootMarkersOf,
+  toBookmarkNodes,
+} from '../browser/bookmarks';
 import {
   isPickerAvailable,
   openSaveTarget,
@@ -21,31 +30,37 @@ import {
 import { BmAborted, BmBackupError } from '../browser/errors';
 import type { ImportMode } from '../browser/storage';
 import { type WriteProgress, writeTree } from '../browser/write-queue';
+import { textCapsBreach, treeCapsBreach } from '../core/caps';
 import { buildUrlIndex } from '../core/dedupe';
-import { detectFormat } from '../core/detect-format';
 import { diffAgainstBrowser, type NodeStatus } from '../core/diff';
 import { MAX_FILE_BYTES } from '../core/limits';
-import { BmParseError, type BookmarkNode, type ImportPlan, type ParseResult } from '../core/model';
-import { parseBmJson } from '../core/parse/bm-json';
-import { parseCsv } from '../core/parse/csv';
-import { parseNetscapeHtml } from '../core/parse/netscape-html';
-import { buildImportPlan } from '../core/plan';
+import {
+  BmParseError,
+  type BookmarkNode,
+  type FileFormat,
+  type ImportPlan,
+  type ParseResult,
+} from '../core/model';
+import type { RootTitles } from '../core/parse/shared';
+import { parseBookmarkFile } from '../core/parse-file';
+import { buildImportPlan, type PlanDestinations } from '../core/plan';
 import { serializeBmJson } from '../core/serialize/bm-json';
 
-const PARSERS = {
-  'netscape-html': parseNetscapeHtml,
-  'bm-json': parseBmJson,
-  csv: parseCsv,
-} as const;
-
 export interface PreparedImport {
+  /** What the file was read as — sniffed from the content (docs/04 intro). */
+  format: FileFormat;
   result: ParseResult;
   /** Bookmarks in the file whose URL already exists in the browser. */
   duplicates: number;
   /** Per-node badges for the preview tree. */
   status: WeakMap<BookmarkNode, NodeStatus>;
-  /** Preview-time snapshot. Used for the diff and dedupe index ONLY. */
+  /** Preview-time snapshot, for the badges. The write dedupes against a fresh read. */
   browserIndex: Set<string>;
+}
+
+export interface PrepareOptions {
+  /** Localized names for roots a file names only by key (Firefox) — docs/04 §2b. */
+  rootTitles?: RootTitles;
 }
 
 /**
@@ -53,7 +68,10 @@ export interface PreparedImport {
  *
  * @throws {BmParseError} `FILE_TOO_LARGE`, plus anything the parsers raise.
  */
-export async function prepareImport(file: File): Promise<PreparedImport> {
+export async function prepareImport(
+  file: File,
+  options: PrepareOptions = {},
+): Promise<PreparedImport> {
   if (file.size > MAX_FILE_BYTES) {
     throw new BmParseError(
       'FILE_TOO_LARGE',
@@ -63,13 +81,12 @@ export async function prepareImport(file: File): Promise<PreparedImport> {
 
   // Blob.text() is UTF-8 decode, which consumes a leading BOM for us.
   const text = await file.text();
-  const format = detectFormat(text);
-  const result = PARSERS[format](text);
+  const { format, result } = parseBookmarkFile(text, options);
 
-  const browserIndex = buildUrlIndex(toBookmarkNodes(await getRootChildren()));
+  const browserIndex = buildUrlIndex(await getRootChildren());
   const { existsCount, status } = diffAgainstBrowser(result.roots, browserIndex);
 
-  return { result, duplicates: existsCount, status, browserIndex };
+  return { format, result, duplicates: existsCount, status, browserIndex };
 }
 
 export interface RunImportOptions {
@@ -98,16 +115,26 @@ export interface ImportOutcome {
   created: number;
 }
 
+function destinationsOf(roots: BookmarkRoots): PlanDestinations {
+  return {
+    toolbar: roots.toolbar,
+    other: roots.other,
+    ...(roots.mobile !== undefined && { mobile: roots.mobile }),
+  };
+}
+
 /**
- * Steps 6b-8: forced backup (Replace only), then the write.
+ * Steps 6b-8: plan, forced backup (Replace only), then the write.
  *
  * Ordering is load-bearing and is why this reads as it does:
  *  1. The picker is opened FIRST, before any `await`, so transient activation
  *     still holds. Only the handle is activation-gated; writing is not.
- *  2. The live tree is read ONCE. The backup is serialized from that exact
- *     read and `clearRoots` deletes those exact nodes, so the backup is
- *     provably a superset of what is removed. Serializing a preview-time
- *     snapshot instead would silently lose anything bookmarked in between.
+ *  2. The live tree is read ONCE. The plan, the backup and `clearRoots` all
+ *     work from that exact read, so the backup is provably a superset of what
+ *     is removed. Serializing a preview-time snapshot instead would silently
+ *     lose anything bookmarked in between.
+ *  3. The plan is built before the backup, so anything that can fail in
+ *     planning fails while the tree is still whole (docs/03 §1 step 7).
  */
 export async function runImport(options: RunImportOptions): Promise<ImportOutcome> {
   const { prepared, mode, dedupe, newFolderTitle, now, signal, onProgress } = options;
@@ -119,26 +146,29 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
     mode === 'replace' && isPickerAvailable()
       ? openSaveTarget(backupFilename, 'application/json')
       : undefined;
+  // Marks the rejection handled. If reading or planning fails below, nothing
+  // ever awaits the dialog, and a later Cancel would surface as an unhandled
+  // rejection; `proveBackup` still receives it when it does await.
+  pendingTarget?.catch(() => undefined);
 
   const roots = await getRoots();
+  const plan = buildImportPlan({
+    roots: prepared.result.roots,
+    mode,
+    dedupe,
+    // Fresh, not the preview's: anything bookmarked since must not be added twice.
+    browserIndex: dedupe && mode !== 'replace' ? buildUrlIndex(roots.all) : new Set(),
+    destinations: destinationsOf(roots),
+    newFolderTitle,
+  });
 
   if (mode === 'replace') {
-    const snapshot = toBookmarkNodes(roots.writable, { toolbarId: roots.toolbarId });
+    const snapshot = toBookmarkNodes(roots.writable, rootMarkersOf(roots));
     await proveBackup(snapshot, now, backupFilename, pendingTarget, options.confirmUnprovenBackup);
     options.onClearing?.();
     if (signal.aborted) throw new BmAborted(0);
     await clearRoots(roots.writable, signal);
   }
-
-  const plan = buildImportPlan({
-    roots: prepared.result.roots,
-    mode,
-    dedupe,
-    browserIndex: prepared.browserIndex,
-    toolbarRootId: roots.toolbarId,
-    otherRootId: roots.otherId,
-    newFolderTitle,
-  });
 
   const { created } = await writeTree(plan, { signal, onProgress });
   return { plan, created };
@@ -159,15 +189,11 @@ export async function proveBackup(
 ): Promise<void> {
   let content: string;
   try {
-    content = serializeBmJson(snapshot, {
-      version: getGeneratorVersion(),
-      exportedAt: now.toISOString(),
-    });
-  } catch (cause) {
-    throw new BmBackupError(
-      'BACKUP_SERIALIZE_FAILED',
-      cause instanceof Error ? cause.message : undefined,
-    );
+    content = serializeBackup(snapshot, now);
+  } catch (err) {
+    // The dialog may still be open, and its eventual answer has nowhere to go.
+    pendingTarget?.catch(() => undefined);
+    throw err;
   }
 
   if (pendingTarget !== undefined) {
@@ -184,4 +210,37 @@ export async function proveBackup(
   if (!confirmed) {
     throw new BmBackupError('BACKUP_CANCELLED', 'the fallback backup was not confirmed');
   }
+}
+
+/**
+ * The backup text, or a refusal — docs/03 §1 step 6b, docs/09 T2.
+ *
+ * Compact (no indentation): about half the size, and a backup only counts if
+ * it stays under the cap the import enforces on the way back in. Both caps are
+ * checked HERE, before any byte is written: in 1.0.x a large profile got a
+ * backup the parser then refused, after the tree had already been deleted.
+ *
+ * @throws {BmBackupError} `BACKUP_EXCEEDS_LIMITS` or `BACKUP_SERIALIZE_FAILED`.
+ */
+function serializeBackup(snapshot: readonly BookmarkNode[], now: Date): string {
+  const treeBreach = treeCapsBreach(snapshot);
+  if (treeBreach !== undefined) throw new BmBackupError('BACKUP_EXCEEDS_LIMITS', treeBreach);
+
+  let content: string;
+  try {
+    content = serializeBmJson(snapshot, {
+      version: getGeneratorVersion(),
+      exportedAt: now.toISOString(),
+      indent: 0,
+    });
+  } catch (cause) {
+    throw new BmBackupError(
+      'BACKUP_SERIALIZE_FAILED',
+      cause instanceof Error ? cause.message : undefined,
+    );
+  }
+
+  const sizeBreach = textCapsBreach(content);
+  if (sizeBreach !== undefined) throw new BmBackupError('BACKUP_EXCEEDS_LIMITS', sizeBreach);
+  return content;
 }

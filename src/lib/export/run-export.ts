@@ -8,7 +8,14 @@
  */
 
 import { getGeneratorVersion } from '../browser/app-info';
-import { getRootChildren, getRoots, type LiveNode, toBookmarkNodes } from '../browser/bookmarks';
+import {
+  getRootChildren,
+  getRoots,
+  type LiveNode,
+  rootMarkersOf,
+  type ToNodesOptions,
+  toBookmarkNodes,
+} from '../browser/bookmarks';
 import { sanitizeFilename, timestampSuffix, triggerDownload } from '../browser/download';
 import type { ExportFormat } from '../browser/storage';
 import type { CsvDelimiter } from '../core/csv-dialect';
@@ -83,13 +90,14 @@ export function countSelected(
 export function buildExport(
   roots: readonly LiveNode[],
   options: ExportOptions,
-  toolbarId?: string,
+  markers: ToNodesOptions = {},
 ): ExportPreview {
   const scoped =
     options.selection === undefined ? [...roots] : filterBySelection(roots, options.selection);
-  // Carrying the toolbar marker is what lets an exported HTML file re-import
-  // into the Bookmarks Bar rather than under Other Bookmarks (docs/03 §1).
-  const nodes = toBookmarkNodes(scoped, toolbarId === undefined ? {} : { toolbarId });
+  // The root markers are what let an exported file re-import into the
+  // Bookmarks Bar, Other and Mobile themselves, instead of as folders named
+  // after them under Other Bookmarks (docs/03 §1).
+  const nodes = toBookmarkNodes(scoped, markers);
 
   let bookmarks = 0;
   const count = (list: readonly { url?: string; children?: unknown[] }[]): void => {
@@ -136,7 +144,7 @@ function serialize(nodes: ReturnType<typeof toBookmarkNodes>, options: ExportOpt
 /** Read the live tree, serialize per `options`, and hand the file to the browser. */
 export async function runExport(options: ExportOptions): Promise<ExportPreview> {
   const [roots, resolved] = await Promise.all([getRootChildren(), getRoots()]);
-  const preview = buildExport(roots, options, resolved.toolbarId);
+  const preview = buildExport(roots, options, rootMarkersOf(resolved));
   triggerDownload(preview.filename, preview.content, preview.mimeType);
   return preview;
 }

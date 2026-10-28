@@ -31,6 +31,10 @@ Real-world exports (committed, small, anonymized):
 chrome-131-export.html      edge-export.html        firefox-html-export.html
 safari-export.html          vivaldi-export.html
 bm-v1-sample.json          csv-comma.csv           csv-semicolon.csv
+chrome-156-export.html               # built to bookmark_html_writer.cc byte for byte (CRLF) (v1.1.0)
+chrome-156-Bookmarks                 # the SAME profile as Chrome's JSON file — no extension (v1.1.0)
+firefox-bookmarks-2026-07-25.json    # Firefox backup of firefox-html-export.html's profile,
+                                     #   plus tags root, separator, iconUri, keyword, description, Mobile
 malformed/no-doctype.html   malformed/truncated.html
 malformed/doctype-only.html          # valid doctype, zero <DL> → NO_BOOKMARKS warning
 malformed/script-injection.html      # <script> + onerror payloads (T1)
@@ -61,6 +65,12 @@ already covers them, and a second file would only be a second thing to maintain:
 | `ADD_DATE="0"` → omitted, **no** warning | `chrome-131-export.html` (same suite, asserted explicitly) |
 | Depth past the cap → `TOO_DEEP` | built synthetically in `parse/netscape-html.test.ts` — cheaper and clearer than committing a 201-level file |
 
+The two browser JSON fixtures are **pairs**: each describes the same profile
+as an HTML fixture written by that browser's own exporter, and the parity rule
+of `04 §2a/§2b` is asserted on them — equal trees and warnings once the JSON's
+extra knowledge (where Other and Mobile were) is projected away. Neither is a
+capture from a real profile yet; capturing one is a `15` backlog item.
+
 **Rule:** every browser-specific parser quirk discovered later gets a fixture
 + regression test in the same PR. `CONTRIBUTING.md` documents the full ritual
 end to end; note `.gitattributes` sets `tests/fixtures/** -text` so EOL
@@ -80,9 +90,17 @@ normalization cannot rewrite the CRLF/BOM bytes a bug may depend on.
   `.roots`, since `parse` returns a `ParseResult` (`02 §4`) — plus
   `warnings.length === 0`, so a parser that silently degrades cannot "pass".
   Run across all three corpora: sample trees, every parsed browser fixture, and
-  a property-style randomized generator (500 random trees, seeded) with titles
-  from a nasty-string pool (quotes, commas, newlines, emoji, `</a>`, path
-  slashes).
+  a property-style randomized generator (200 random trees per format, seeded)
+  with titles from a nasty-string pool (quotes, commas, newlines, emoji, `</a>`,
+  path slashes).
+
+  ⚠️ **Until v1.1.0 the seeded corpus was empty.** `makeRng` seeded xorshift32
+  straight with the integers 1–200, whose first draws are all near zero, so
+  `generateTree` drew a child count of 0 every time and the suite compared 200
+  empty trees. The seed is now scrambled first, and the suite asserts the
+  corpus holds more than 1 000 nodes before it asserts anything else. Any new
+  seeded suite carries the same guard (`merge.test.ts` checks that more than a
+  quarter of its seeds actually reuse a folder).
 
   `project(tree, format)` is a documented pure helper in the test utils that
   models each format's declared lossiness. **A strict identity round-trip is
@@ -105,13 +123,33 @@ normalization cannot rewrite the CRLF/BOM bytes a bug may depend on.
 - **`timestamps.test.ts`** — s/ms/µs magnitude table, invalid → undefined.
 - **`dedupe.test.ts` / `diff.test.ts`** — index building, in-file dupes,
   `skippedExisting` vs `skippedInFile` kept distinct, folder preservation,
-  merge path-matching. **Replace-mode guard:** a Replace plan built from a file
-  whose URLs all exist in the browser must yield `toCreate === <all file
-  bookmarks>` and `skippedExisting === 0` — otherwise a user re-importing their
-  own backup loses everything (`05 §3`).
+  preview badges.
+- **`plan.test.ts` / `route.test.ts` / `merge.test.ts` / `caps.test.ts`**
+  (v1.1.0) — root routing and unwrapping; Merge reusing live folders level by
+  level, case-sensitively, never into managed folders; the 200-seed merge
+  properties (`05 §5`); the backup caps. **Replace-mode guard:** a Replace plan
+  never dedupes — not against the browser, not within the file — and plans
+  against emptied roots, otherwise a user re-importing their own backup loses
+  part of it (`03 §1`).
+- **`import/run-import.test.ts`** (v1.1.0) — the whole pipeline against the
+  in-memory `chrome.bookmarks` (`tests/helpers/fake-bookmarks.ts`, which now
+  rejects unparseable URLs and turns `url: ''` into a folder, as Chrome does):
+  Merge reuses `Bookmarks bar/Dev`; a second Merge with dedupe creates nothing;
+  a Replace restore of its own backup, run twice, gives the original tree with
+  Mobile back in Mobile; a 1.0.x backup restores into the roots; in-file
+  duplicates survive a Replace; the invalid-URL fixture completes; the backup
+  is written before the first removal.
+- **`import/safety-backup.test.ts`** — the picker/anchor gates, and the three
+  cap breaches (nodes, depth, bytes) where nothing is written, downloaded or
+  confirmed.
 - **`csv` state machine** — RFC 4180 torture cases: `""` escapes, CRLF inside
   quotes, delimiter sniffing, BOM tolerance, `\/` path escapes.
-- **`detect-format.test.ts`** — sniffing matrix incl. wrong extensions.
+- **`detect-format.test.ts` / `parse-file.test.ts`** — sniffing matrix
+  incl. wrong extensions, the anchored doctype, JSON dialect routing, and
+  `JSON.parse` called exactly once per file.
+- **`parse/chrome-json.test.ts` / `parse/firefox-json.test.ts`** (v1.1.0) —
+  roots, vendor roots, localized-title fallback, date units, skipped
+  addresses, caps.
 
 ## 4. Browser-layer tests
 

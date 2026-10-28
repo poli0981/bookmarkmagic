@@ -74,18 +74,27 @@ export interface ParseResult {
   warnings: ParseWarning[];
 }
 
-export type FileFormat = 'netscape-html' | 'bm-json' | 'csv';
+/** What a file was read as — decided by content, never the extension (docs/04 intro). */
+export type FileFormat = 'netscape-html' | 'bm-json' | 'csv' | 'chrome-json' | 'firefox-json';
 
 export type MergeMode = 'new-folder' | 'merge' | 'replace';
 
 export interface PlanSegment {
-  /** Chrome folder id to write this subtree under. Always resolved via getTree(). */
-  rootId: string;
+  /**
+   * Live folder to write these nodes under: a browser root, or — in Merge — a
+   * folder that already exists. Always an id read from `getTree()`, never one
+   * hardcoded or created by this plan (docs/02 §4).
+   */
+  parentId: string;
+  /** Created in order and appended; each node's own children nest inside it. */
   nodes: BookmarkNode[];
+  /** Titles from the destination root down to `parentId`, for the progress line. */
+  trail?: string[];
 }
 
 export interface ImportPlan {
   mode: MergeMode;
+  /** The EFFECTIVE setting: always false for Replace, whatever the checkbox said. */
   dedupe: boolean;
   segments: PlanSegment[];
   stats: {
@@ -93,6 +102,10 @@ export interface ImportPlan {
     toCreate: number;
     /** Bookmarks only. Drives the "Import n bookmarks" button label. */
     bookmarkCount: number;
+    /** Folders to create, the new-folder wrapper included. */
+    folderCount: number;
+    /** Existing folders Merge writes into instead of creating a copy. */
+    reusedFolders: number;
     /** Dropped because the URL already exists in the browser. */
     skippedExisting: number;
     /** Dropped because the URL repeats within the file. */

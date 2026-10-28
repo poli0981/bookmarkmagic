@@ -25,8 +25,9 @@ export default {
     counts: 'ブックマーク {bookmarks} 件 · フォルダ {folders} 件',
   },
   import: {
-    dropHint:
-      'ブックマークファイルをドロップするかクリックして選択してください — .html、.json、.csv · 最大 {size}',
+    dropHint: 'ブックマークファイルをドロップするかクリックして選択してください · 最大 {size}',
+    dropFormats:
+      'ブラウザの HTML エクスポート、CSV、BookmarkMagic と Firefox の JSON バックアップ、Chrome 自身の Bookmarks ファイル（拡張子なし）に対応しています。',
     reading: '{name} を読み込んでいます…',
     preview: 'プレビュー',
     folderName: 'インポート {date}',
@@ -38,6 +39,15 @@ export default {
     doneSummary: '完了しました — {created} 件を作成しました。',
     skipped:
       'このブラウザに既にある {existing} 件と、ファイル内で重複する {inFile} 件をスキップしました。',
+    reused: {
+      one: 'コピーを作らずに、既存の {n} 個のフォルダに追加しました。',
+      other: 'コピーを作らずに、既存の {n} 個のフォルダに追加しました。',
+    },
+    rootTitle: {
+      toolbar: 'ブックマークツールバー',
+      unfiled: '他のブックマーク',
+      mobile: 'モバイルブックマーク',
+    },
     cancelledSummary: 'キャンセルしました — 既に作成された {created} 件はそのまま残されています。',
     cancelledAfterClear:
       '既存のブックマークが削除された後にキャンセルされたため、残っているのは再作成された分だけです。',

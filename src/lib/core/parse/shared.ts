@@ -76,3 +76,32 @@ export function bookmarkTitle(title: string, warnings: WarningBag): string {
   if (title.trim() === '') warnings.add('EMPTY_TITLE');
   return title;
 }
+
+export function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * `JSON.parse`, with the failure mapped to the parser error taxonomy.
+ *
+ * @throws {BmParseError} `MALFORMED_JSON`.
+ */
+export function parseJsonText(text: string): unknown {
+  try {
+    return JSON.parse(text);
+  } catch (err) {
+    throw new BmParseError('MALFORMED_JSON', err instanceof Error ? err.message : 'invalid JSON');
+  }
+}
+
+/**
+ * Display titles for browser roots a file names only by an internal key —
+ * Firefox's `toolbar`/`unfiled`/`mobile`. Passed in by the caller so `core/`
+ * stays free of UI strings (docs/07 §1); a missing title falls back to the
+ * file's own key, never to English.
+ */
+export interface RootTitles {
+  toolbar?: string;
+  other?: string;
+  mobile?: string;
+}
