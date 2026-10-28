@@ -383,8 +383,10 @@ means "unknown", not "not done".
       reusable-workflow caller cannot use `continue-on-error` to absorb it
       (§2.3). Unset means skipped, which is the safe default.
 - [x] Dependabot: npm weekly, grouped dev minor+patch, `github-actions` too —
-      `.github/dependabot.yml`. Note it has no awareness of the `package.json`
-      `overrides` block, so those six pins must be reviewed by hand (`09 §3.1`).
+      `.github/dependabot.yml`. Both ecosystems have a 7-day `cooldown`
+      (matching `.npmrc` `min-release-age=7`, `09 §3.1`); WXT is excluded from
+      the group so every WXT bump arrives alone and gets its built-manifest
+      diff; majors of the TypeScript pair and `@types/node` are ignored.
 - [x] Issue templates: `.github/ISSUE_TEMPLATE/` — bug, parser report (requires
       a sanitized sample), translation, feature, plus a `config.yml` chooser.
       Landed 2026-08-03; `13 §6` had asserted they existed since before launch.

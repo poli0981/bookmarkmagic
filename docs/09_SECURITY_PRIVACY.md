@@ -21,7 +21,7 @@
 | T2 | Malicious file — resource exhaustion (huge/deep/zip-bomb-style) | 500 MB file, 1M nodes, 10k-deep nesting | Pre-parse size cap 25 MB; node cap 100 000; depth cap 200 — typed errors, parse aborts early. Lazy tree rendering (§05 §9) bounds DOM size. |
 | T3 | Dangerous URLs in imported bookmarks (`javascript:`, `data:`) | Clicking them in #edit | Never rendered as `<a href>`; "Open" uses `tabs.create`, which refuses `javascript:`. UI marks non-http(s)/ftp/file/about/chrome schemes with a ⚠ badge; they are display-only. Imported URLs are stored verbatim (user's data, not ours to censor) — the browser's own bookmark UI applies its own rules. |
 | T4 | Data loss from destructive import | User picks "Replace all" casually | Non-skippable auto safety-backup (BM JSON download) *before* deletion; danger-styled confirm with exact counts; default mode is non-destructive new-folder. |
-| T5 | Supply-chain compromise | Malicious transitive dep | **Zero runtime deps**; dev deps pinned via lockfile; Dependabot + `npm audit` in CI; Biome installed exact-pinned. See §5.1 for the `overrides` block. |
+| T5 | Supply-chain compromise | Malicious transitive dep | **Zero runtime deps**; dev deps pinned via lockfile; Dependabot with a 7-day cooldown + `min-release-age=7`; `npm audit --omit=dev` in CI; Biome installed exact-pinned. See §3.1. |
 | T6 | Store-listing impersonation / trademark issues | — | Unique name + linked GitHub; report via CWS if cloned. |
 | T7 | XSS via filenames/titles echoed into UI (result cards, toasts) | Weird characters in file name | Same as T1 — text interpolation only; filenames additionally sanitized for the *download* name (`[\\/:*?"<>|]` → `_`). |
 | T8 | Clipboard abuse | "Copy URL" action | Uses `navigator.clipboard.writeText` on explicit user click only; never reads the clipboard. |
@@ -77,32 +77,32 @@ mechanical was watching:
   ≤120-char excerpt of the offending line (avoids log-injection weirdness in
   screenshots/issues).
 
-### 3.1 The `package.json` `overrides` block
+### 3.1 Dev-dependency advisories
 
-Six Dependabot alerts and six `npm audit` highs were all transitive **dev**
-dependencies that their parents pinned to vulnerable ranges, so Dependabot's own
-per-package PRs could not fix them — every one failed. `overrides` is the npm
-mechanism for exactly this, and it takes `npm audit` to **0**.
+**There is no `overrides` block any more** (removed 2026-10-28). The six pins
+added on 2026-07-26 (`shell-quote`, `adm-zip`, `tmp`, `uuid`, `esbuild`,
+`brace-expansion`) had all become dead: WXT 0.21 dropped `web-ext-run`, which
+four of them sat under, and Vite 8 bundles with rolldown rather than esbuild.
+None of the six packages was in the lockfile — and a stale override is worse
+than none, because the day the package returns it silently pins it.
 
-| Override | Was | Reached through | Remove when |
-|---|---|---|---|
-| `shell-quote ^1.9.0` | 1.7.3 | `wxt > web-ext-run > fx-runner` | `web-ext-run` updates `fx-runner` |
-| `adm-zip ^0.6.0` | 0.5.18 | `wxt > web-ext-run > firefox-profile` | `web-ext-run` updates `firefox-profile` |
-| `tmp ^0.2.6` | 0.2.5 | `wxt > web-ext-run` | `web-ext-run` bumps `tmp` |
-| `uuid ^11.1.1` | 8.3.2 | `wxt > web-ext-run > node-notifier` | `web-ext-run` updates `node-notifier` |
-| `esbuild ^0.28.1` | 0.27.7 | `vite`, `wxt`, `unplugin` | vite/wxt allow 0.28.x |
-| `brace-expansion ^5.0.8` | 1.1.16 | `web-ext-run > multimatch > minimatch` | `multimatch` unpins `minimatch` |
+State after the v1.1.0 toolchain pass (Node 26, Vitest 5, Vite 8.3, WXT 0.21.4):
 
-Four of the six exist only under **`web-ext-run`**, the Firefox dev runner
-behind `npm run dev:firefox` — which `00 §7` lists as a v1.0 non-goal, and which
-neither CI nor the Chrome build touches. ⚠️ **`npm run dev:firefox` is therefore
-the one script these overrides could plausibly break**, and it is the one script
-no gate exercises. Verify it by hand before relying on it.
+| Check | Result |
+|---|---|
+| `npm audit --omit=dev` | **0** — nothing third-party is a runtime dependency (CI runs this, `12 §2.1`) |
+| `npm audit` (dev included) | 3 low, one root cause: **`deepmerge`** (GHSA-gcqx-w48m-w2h4, prototype poisoning in `mergeObject`), reached through `@sveltejs/vite-plugin-svelte`. **No fixed version exists.** It merges the build's own plugin options at dev/build time — never user data, never in the shipped extension — so it is accepted and recorded rather than overridden. Re-check when the plugin drops or bumps it. |
 
-Everything CI runs was re-verified after the overrides landed: lint, check,
-knip, coverage, guard, build, `check:manifest` and `zip`, plus a clean-room
-`npm ci`. Drop an override as soon as its parent ships the fix — a stale
-override silently holds a package back.
+How new advisories are kept out:
+
+- `.npmrc` sets `min-release-age=7`, and Dependabot's `cooldown` is 7 days:
+  a release must have been public for a week before this repo installs it. The
+  2025 npm compromises were caught and pulled within hours to days, so that
+  window is the point (`01 §6`).
+- `npm ci` installs exactly what the lockfile pins and is unaffected by the
+  age rule — verified, not assumed.
+- Dependabot *security* PRs bypass `cooldown`; one for a version younger than
+  a week may fail to resolve until it ages. That is the intended trade-off.
 
 ## 4. Permissions posture
 

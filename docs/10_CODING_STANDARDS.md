@@ -46,14 +46,18 @@ rather than assign `undefined`. Build nodes with conditional spreads
 - Discriminated unions over boolean flags for state
   (`{ kind: 'parsed', … } | { kind: 'error', … }`).
 
-## 3. Biome — `biome.json` (2.5.x)
+## 3. Biome — `biome.json` (2.6.x)
 
 ```jsonc
 {
-  "$schema": "https://biomejs.dev/schemas/2.5.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
-  // Svelte and CSS are excluded on purpose — see the note below.
-  "files": { "includes": ["src/**", "tests/**", "*.ts", "!**/*.svelte", "!**/*.css"] },
+  // Svelte, CSS, Markdown and YAML are excluded on purpose — see the notes below.
+  "files": {
+    "ignoreUnknown": true,
+    "includes": ["**", "!**/*.svelte", "!**/*.css", "!**/*.md", "!**/*.yml", "!**/*.yaml",
+                 "!.output", "!.wxt", "!coverage", "!tests/fixtures"]
+  },
   "formatter": { "enabled": true, "indentStyle": "space", "indentWidth": 2, "lineWidth": 100 },
   "javascript": { "formatter": { "quoteStyle": "single", "semicolons": "always", "trailingCommas": "all" } },
   "linter": {
@@ -74,6 +78,10 @@ rather than assign `undefined`. Build nodes with conditional spreads
   (`switch-every-tab-hotkey`) excludes `.svelte` and `.css` instead, and we
   follow it rather than putting the build on an experimental flag.
   **`svelte-check` is the authority** for everything inside `.svelte`.
+- **Markdown and YAML are excluded since Biome 2.6**, which started formatting
+  both. The docs and workflow files are laid out by hand (long explanatory
+  comments, deliberate wrapping); letting a formatter own them would turn every
+  doc edit into a reflow diff.
 - There is **no Biome rule that catches `{@html}`.** `noDangerouslySetInnerHtml`
   is a React rule and does not apply to Svelte. The ban in `09 §3` is enforced
   by the canonical grep gate (`08 §3`, run as `npm run guard`) and by review —
