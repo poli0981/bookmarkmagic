@@ -4,9 +4,13 @@
 
 1. **Zero data collection.** No analytics, no telemetry, no crash reporting,
    no update pings. There is no server.
-2. **Zero network activity at runtime.** Enforced by the canonical grep gate
-   defined in `08_MV3 §3` — that block is the single source of truth for the
-   pattern; do not restate it here.
+2. **Zero network activity at runtime.** Enforced in three layers, all in
+   `08 §3`: the production CSP (`connect-src 'none'` — the browser itself
+   refuses), `check:manifest`'s scan of the shipped bundle, and the source gate
+   `scripts/guard.mjs`. Do not restate their rules here. Links the user
+   chooses to open (About, the legal documents, "Open" on a bookmark) load in a
+   browser tab; that is navigation the user asked for, not a request the
+   extension makes.
 3. **Everything on-device.** Bookmarks are read/written via `chrome.bookmarks`
    locally; files are parsed in-page and downloaded via Blob URLs. `chrome.
    storage.local` holds only settings + legal flag (no `storage.sync` — even
@@ -61,11 +65,12 @@ mechanical was watching:
 
 ## 3. Secure coding rules (enforced)
 
-- `{@html}` — **forbidden**. Enforced by the canonical grep gate (`08 §3`) and
-  review. Biome has no rule for this: `noDangerouslySetInnerHtml` is a React
+- `{@html}` — **forbidden**. Enforced by the source gate (`scripts/guard.mjs`,
+  `08 §3`) and review. Biome has no rule for this: `noDangerouslySetInnerHtml` is a React
   rule and does not see Svelte templates.
-- `innerHTML`, `outerHTML`, `insertAdjacentHTML` assignment — forbidden (same
-  gate).
+- `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `setHTMLUnsafe`,
+  `createContextualFragment`, `srcdoc`, `document.write` — forbidden outright,
+  reads included (same gate).
 - All user/file-derived strings cross into the DOM only via Svelte text
   bindings or `textContent`.
 - `URL` constructor for any URL handling; no string-splitting of URLs.

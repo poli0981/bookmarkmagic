@@ -9,8 +9,9 @@ import type { Locale } from './resolve-locale';
  *
  * chrome.i18n always follows the browser UI language and cannot be switched at
  * runtime, so every in-app string resolves through this store instead. The
- * dictionaries are static imports, not fetched — `fetch` is banned repo-wide
- * (docs/08 §3), and bundling three small dicts costs nothing at our size.
+ * dictionaries are static imports, never loaded over the network — network
+ * calls are banned repo-wide (docs/08 §3), and bundling three small dicts costs
+ * nothing at our size.
  */
 const dicts = { en, vi, ja };
 

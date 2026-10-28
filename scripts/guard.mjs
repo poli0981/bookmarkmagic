@@ -1,51 +1,138 @@
+// @ts-check
 /**
- * The canonical grep gate — docs/08_MV3_COMPLIANCE.md §3.
+ * The zero-network / no-raw-HTML gate — docs/08 §3.
  *
- * This file is the single implementation of that pattern. It runs both locally
- * (`npm run verify`) and in CI (`npm run guard`), so the gate cannot drift
- * between the two. Zero dependencies, Node stdlib only.
+ * This file IS the rule set; docs/08 §3 points here instead of restating it,
+ * because two copies of a security pattern drift (they did: the doc's
+ * `\{@html\}` matched only the literal `{@html}`, never `{@html x}`).
  *
- * Why a grep and not a lint rule: MV3's default CSP blocks remote code, but it
- * has no connect-src at all and does not restrict network egress. And no Biome
- * rule sees Svelte's {@html} — noDangerouslySetInnerHtml is a React rule. This
- * script plus review is the entire enforcement of the zero-network and
- * no-raw-HTML promises.
+ * It runs locally (`npm run verify`) and in CI (`npm run guard`), so the gate
+ * cannot differ between the two. Zero dependencies, Node stdlib only.
+ *
+ * It is no longer the ONLY enforcement: since v1.1.0 the production manifest
+ * declares a CSP with `connect-src 'none'` (docs/08 §3), so the browser itself
+ * refuses fetch/XHR/WebSocket/EventSource/beacons. This gate catches the rest —
+ * raw HTML sinks, code execution, remote resources in markup and CSS — and
+ * keeps network code out of review in the first place.
+ *
+ * Matching runs over the WHOLE file, not line by line, so `\s*` spans newlines
+ * and splitting a call across two lines no longer gets past a rule. Identifiers
+ * are banned outright where an alias would otherwise slip through
+ * (`const go = fetch; go(u)`), which means the bare words are banned in
+ * comments too — write "network call", not the API name, in prose.
+ *
+ * Usage: node scripts/guard.mjs [--root <dir>]   (--root is for its own tests)
  */
 import { readFileSync } from 'node:fs';
 import { readdir } from 'node:fs/promises';
-import { extname, join, relative } from 'node:path';
+import { extname, join, relative, resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = new URL('..', import.meta.url).pathname.replace(/^\/([A-Za-z]:)/, '$1');
+/**
+ * fileURLToPath, never `new URL(...).pathname`: the pathname stays
+ * percent-encoded, so a checkout under `C:\Users\Nguyễn\…` or `my dir` became a
+ * path that does not exist — and the walker reported "clean" after scanning
+ * nothing.
+ */
+const DEFAULT_ROOT = fileURLToPath(new URL('..', import.meta.url));
+
 const SCAN_DIRS = ['src'];
-const SCAN_EXTS = new Set(['.ts', '.js', '.mjs', '.svelte']);
+const SCAN_EXTS = new Set([
+  '.ts',
+  '.mts',
+  '.cts',
+  '.js',
+  '.mjs',
+  '.cjs',
+  '.svelte',
+  '.html',
+  '.css',
+]);
 const SKIP_DIRS = new Set(['node_modules', '.output', '.wxt', '.git']);
 
-/** Each entry: [human-readable name, pattern]. Keep in sync with docs/08 §3. */
-const BANNED = [
-  ['network: fetch', /\bfetch\s*\(/],
-  ['network: XMLHttpRequest', /\bXMLHttpRequest\b/],
-  ['network: WebSocket', /\bWebSocket\b/],
-  ['network: EventSource', /\bEventSource\b/],
-  ['network: sendBeacon', /\bsendBeacon\b/],
-  ['remote code: eval', /\beval\s*\(/],
-  ['remote code: new Function', /\bnew\s+Function\s*\(/],
-  ['remote code: dynamic import', /(^|[^.\w])import\s*\(/],
-  ['raw HTML: {@html}', /\{@html\b/],
-  ['raw HTML: innerHTML assignment', /\b(?:inner|outer)HTML\s*=/],
-  ['raw HTML: insertAdjacentHTML', /\binsertAdjacentHTML\b/],
+/** A URL that leaves the extension: `https://`, `http://` or protocol-relative `//`. */
+const REMOTE = String.raw`(?:https?:)?\/\/`;
+
+/**
+ * [category, name, pattern]. Every pattern carries the `g` flag and is run over
+ * the whole file. Each one has a positive and a negative case in
+ * tests/unit/scripts/guard.test.ts — add both when adding a rule.
+ */
+const RULES = [
+  // Network. Identifiers, not call shapes: aliasing, tagged templates and
+  // `.call()` all start with the bare name.
+  ['network', 'fetch', /\bfetch\b/g],
+  ['network', 'XMLHttpRequest', /\bXMLHttpRequest\b/g],
+  ['network', 'WebSocket', /\bWebSocket\b/g],
+  ['network', 'WebTransport', /\bWebTransport\b/g],
+  ['network', 'EventSource', /\bEventSource\b/g],
+  ['network', 'sendBeacon', /\bsendBeacon\b/g],
+  ['network', 'RTCPeerConnection', /\bRTCPeerConnection\b/g],
+  ['network', 'importScripts', /\bimportScripts\b/g],
+  // `globalThis['fe' + 'tch']` — computed access on a global is how every
+  // identifier rule above is evaded, so it is banned as a shape.
+  ['network', 'computed global access', /\b(?:globalThis|window|self|navigator|document)\s*\[/g],
+  [
+    'network',
+    'resource hint',
+    /\brel\s*=\s*["'`]?\s*(?:pre(?:fetch|connect|render|load)|dns-prefetch)\b/g,
+  ],
+  [
+    'network',
+    'remote resource in markup',
+    new RegExp(
+      String.raw`<(?:img|script|iframe|frame|link|source|video|audio|embed|object|track|image)\b[^>]*?\b(?:src|href|srcset|data|poster)\s*=\s*["'{]?\s*` +
+        REMOTE,
+      'gi',
+    ),
+  ],
+  ['network', 'remote url() in CSS', new RegExp(String.raw`url\(\s*["']?\s*` + REMOTE, 'gi')],
+  [
+    'network',
+    'remote @import',
+    new RegExp(String.raw`@import\s+(?:url\(\s*)?["']?\s*` + REMOTE, 'gi'),
+  ],
+  // Remote code.
+  ['remote code', 'eval', /\beval\b/g],
+  ['remote code', 'Function constructor', /\bFunction\s*\(/g],
+  ['remote code', 'string timer', /\bset(?:Timeout|Interval)\s*\(\s*["'`]/g],
+  // `[ \t]*`, not `\s*`: prose that ends a line with "import" and opens the
+  // next with "(" is common in comments, and the MV3 CSP already refuses any
+  // remote script, so this rule is a second line of defence, not the only one.
+  ['remote code', 'dynamic import', /(?:^|[^.\w$])import[ \t]*\(/g],
+  [
+    'remote code',
+    'import from URL',
+    new RegExp(String.raw`\b(?:from|import)\s+["']` + REMOTE, 'g'),
+  ],
+  // Raw HTML sinks.
+  ['raw HTML', '{@html}', /\{\s*@html\b/g],
+  ['raw HTML', 'innerHTML / outerHTML', /\b(?:inner|outer)HTML\b/g],
+  ['raw HTML', 'insertAdjacentHTML', /\binsertAdjacentHTML\b/g],
+  ['raw HTML', 'setHTMLUnsafe / parseHTMLUnsafe', /\b(?:set|parse)HTMLUnsafe\b/g],
+  ['raw HTML', 'createContextualFragment', /\bcreateContextualFragment\b/g],
+  ['raw HTML', 'srcdoc', /\bsrcdoc\b/gi],
+  ['raw HTML', 'document.write', /\bdocument\s*\.\s*write(?:ln)?\b/g],
 ];
 
-/** Test files may reference banned identifiers when asserting they are absent. */
-const isExempt = (path) => /\.(test|spec)\.ts$/.test(path);
-
-async function* walk(dir) {
-  let entries;
-  try {
-    entries = await readdir(dir, { withFileTypes: true });
-  } catch {
-    return; // directory not created yet — nothing to scan
+/** @param {string[]} argv */
+function rootFrom(argv) {
+  const at = argv.indexOf('--root');
+  if (at === -1) return DEFAULT_ROOT;
+  const value = argv[at + 1];
+  if (value === undefined || value.startsWith('--')) {
+    console.error('guard: --root needs a directory');
+    process.exit(2);
   }
-  for (const entry of entries) {
+  return resolve(value);
+}
+
+/**
+ * @param {string} dir
+ * @returns {AsyncGenerator<string>}
+ */
+async function* walk(dir) {
+  for (const entry of await readdir(dir, { withFileTypes: true })) {
     const full = join(dir, entry.name);
     if (entry.isDirectory()) {
       if (!SKIP_DIRS.has(entry.name)) yield* walk(full);
@@ -55,30 +142,84 @@ async function* walk(dir) {
   }
 }
 
+/**
+ * Every rule over one file's text.
+ * @param {string} text
+ * @returns {{ line: number, name: string, category: string, excerpt: string }[]}
+ */
+function scan(text) {
+  const lines = text.split('\n');
+  const lineStarts = [0];
+  for (let i = 0; i < text.length; i++) if (text.charCodeAt(i) === 0x0a) lineStarts.push(i + 1);
+  /** @param {number} index */
+  const lineOf = (index) => {
+    let lo = 0;
+    let hi = lineStarts.length - 1;
+    while (lo < hi) {
+      const mid = (lo + hi + 1) >> 1;
+      if ((lineStarts[mid] ?? 0) <= index) lo = mid;
+      else hi = mid - 1;
+    }
+    return lo + 1;
+  };
+
+  const found = [];
+  const seen = new Set();
+  for (const [category, name, pattern] of RULES) {
+    for (const match of text.matchAll(/** @type {RegExp} */ (pattern))) {
+      const line = lineOf(match.index ?? 0);
+      const key = `${line}\u0000${name}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      const excerpt = (lines[line - 1] ?? '').trim().slice(0, 120);
+      found.push({
+        line,
+        name: /** @type {string} */ (name),
+        category: /** @type {string} */ (category),
+        excerpt,
+      });
+    }
+  }
+  return found;
+}
+
+const root = rootFrom(process.argv.slice(2));
 const violations = [];
+let scanned = 0;
 
 for (const dir of SCAN_DIRS) {
-  for await (const file of walk(join(ROOT, dir))) {
-    const rel = relative(ROOT, file).replace(/\\/g, '/');
-    if (isExempt(rel)) continue;
-    const lines = readFileSync(file, 'utf8').split(/\r?\n/);
-    lines.forEach((line, i) => {
-      for (const [name, pattern] of BANNED) {
-        if (pattern.test(line)) violations.push({ rel, line: i + 1, name, text: line.trim() });
-      }
-    });
+  const base = join(root, dir);
+  try {
+    for await (const file of walk(base)) {
+      scanned++;
+      const rel = relative(root, file).replace(/\\/g, '/');
+      const text = readFileSync(file, 'utf8').replace(/\r\n?/g, '\n');
+      for (const hit of scan(text)) violations.push({ rel, ...hit });
+    }
+  } catch (cause) {
+    // A missing src/ used to be "nothing to scan" and printed clean. A gate
+    // that cannot see the code has not passed it.
+    console.error(`guard: cannot scan ${base} — ${cause instanceof Error ? cause.message : cause}`);
+    process.exitCode = 1;
   }
+}
+
+if (process.exitCode !== 1 && scanned === 0) {
+  console.error(`guard: scanned 0 files under ${root} — refusing to report clean.`);
+  process.exitCode = 1;
 }
 
 if (violations.length > 0) {
   for (const v of violations) {
-    console.error(`::error file=${v.rel},line=${v.line}::[${v.name}] ${v.text}`);
-    console.error(`  ${v.rel}:${v.line}  ${v.name}\n    ${v.text}`);
+    console.error(`::error file=${v.rel},line=${v.line}::[${v.category}: ${v.name}] ${v.excerpt}`);
+    console.error(`  ${v.rel}:${v.line}  ${v.category}: ${v.name}\n    ${v.excerpt}`);
   }
-  console.error(
-    `\nguard: ${violations.length} banned pattern(s) found. See docs/08_MV3_COMPLIANCE.md §3.`,
-  );
-  process.exit(1);
+  console.error(`\nguard: ${violations.length} banned pattern(s). See docs/08 §3.`);
+  process.exitCode = 1;
 }
 
-console.warn(`guard: clean — no banned patterns in ${SCAN_DIRS.join(', ')}`);
+if (process.exitCode !== 1) {
+  console.warn(
+    `guard: clean — ${scanned} files under ${SCAN_DIRS.join(', ')}, ${RULES.length} rules`,
+  );
+}

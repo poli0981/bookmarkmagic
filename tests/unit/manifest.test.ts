@@ -28,7 +28,6 @@ const FORBIDDEN_KEYS = [
   'content_scripts',
   'web_accessible_resources',
   'externally_connectable',
-  'content_security_policy',
   'declarative_net_request',
   'devtools_page',
   'chrome_url_overrides',
@@ -86,6 +85,26 @@ describe('manifest', () => {
     };
     expect(tsconfig.compilerOptions.target).toBe('ES2025');
     expect(tsconfig.compilerOptions.lib).toEqual(['ES2025', 'DOM', 'DOM.Iterable']);
+  });
+
+  it('declares the extension-page CSP once, production-only, and only ever stricter', () => {
+    // docs/08 §3: the CSP is what makes the zero-network promise browser-
+    // enforced. check-manifest.mjs pins the exact built string; this pins the
+    // shape of the config that produces it.
+    expect(CONFIG.match(/content_security_policy/g)?.length ?? 0).toBe(1);
+    expect(CONFIG).toMatch(/command === 'build' && \{\s*content_security_policy:/);
+    const csp = RAW.slice(RAW.indexOf('const EXTENSION_PAGE_CSP'), RAW.indexOf("].join('; ')"));
+    for (const directive of [
+      "script-src 'self'",
+      "object-src 'none'",
+      "connect-src 'none'",
+      "img-src 'self' data: blob:",
+      "form-action 'none'",
+    ]) {
+      expect(csp).toContain(`"${directive}"`);
+    }
+    // Loosening is what MV3 forbids and what this test exists to stop.
+    expect(csp).not.toMatch(/unsafe-|https?:|\*|default-src/);
   });
 
   it('keeps the manifest at v3 by not overriding WXT’s default', () => {

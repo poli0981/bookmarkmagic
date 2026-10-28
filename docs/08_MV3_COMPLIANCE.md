@@ -34,32 +34,64 @@ deliberately avoids each (see `01_TECH_STACK.md §3`, `02_ARCHITECTURE.md §6`).
 ## 3. Code integrity rules
 
 - **No remotely hosted code.** All JS/CSS ships in the package. No CDN
-  `<script>`, no `import()` of URLs, no `eval`, no `new Function`,
-  no string `setTimeout`. MV3's default extension CSP —
-  `script-src 'self' 'wasm-unsafe-eval'; object-src 'self';` — enforces this,
-  and Chrome rejects any manifest that loosens it. Never add a custom
-  `content_security_policy`.
-- **No runtime network requests at all** (stronger than required): no
-  `fetch`, no remote favicons, no update pings. ⚠️ The default CSP does **not**
-  help here — it has no `connect-src`/`img-src` at all and restricts code
-  execution only, not network egress. The *only* thing enforcing the
-  zero-network promise is the grep gate below.
+  `<script>`, no `import()` of URLs, no `eval`, no `new Function`, no string
+  `setTimeout`. The extension-page CSP (below) enforces this, and Chrome
+  rejects any manifest that loosens the MV3 minimum.
+- **No runtime network requests at all** (stronger than required): no network
+  calls, no remote favicons, no update pings. Three layers enforce it since
+  v1.1.0 — the browser, a build gate and a source gate:
 
-#### The canonical grep gate
+#### Layer 1 — the extension-page CSP (browser-enforced)
 
-One pattern, defined **here and nowhere else**. `09 §1`, `09 §3`, `12 §2.1`
-and §8 below all reference this block rather than restating it — four
-divergent copies is exactly how a gate ends up weaker than the promise it
-guards.
+MV3's default extension CSP (`script-src 'self' 'wasm-unsafe-eval';
+object-src 'self';`) restricts code execution only; it has no `connect-src` or
+`img-src` at all. Until v1.0.1 that left a grep gate as the *only* thing between
+the product and its zero-network claim. The production manifest now declares:
 
 ```
-fetch\(|XMLHttpRequest|WebSocket|EventSource|sendBeacon|\beval\(|new Function|\{@html\}|(inner|outer)HTML\s*=|insertAdjacentHTML|import\s*\(
+script-src 'self'; object-src 'none'; connect-src 'none'; img-src 'self' data: blob:;
+font-src 'self'; media-src 'none'; frame-src 'none'; worker-src 'self';
+form-action 'none'; base-uri 'none'
 ```
 
-must return nothing across `src/` (which contains `entrypoints/` — `02 §2`
-sets `srcDir: 'src'`), excluding `*.test.ts`. Implemented as
-`scripts/guard.mjs` and run by `npm run guard`, so the same gate runs locally
-(in `npm run verify`) and in CI — it cannot drift between them.
+`connect-src 'none'` makes Chrome refuse every fetch, XHR, WebSocket,
+EventSource and beacon from an extension page; the rest closes remote images,
+fonts, media, frames and form posts. There is **no `default-src`**, on purpose:
+it would also govern `style-src` and break Svelte's styles. User-initiated
+navigation — an About link, or "Open" on a bookmark via `tabs.create` — is not
+governed by a page CSP and is not a request the extension makes (`09 §1`).
+
+- **The rule is: only ever tighten.** Adding `'unsafe-*'`, a remote source, or
+  removing a directive is a security regression, and `check:manifest` fails on
+  any string other than the exact one above.
+- **Production builds only.** `wxt.config.ts` emits it when the command is
+  `build` (so `npm run build` and `npm run zip`), because the dev server reloads
+  the extension over a localhost websocket that `connect-src 'none'` blocks.
+- Vite's modulepreload polyfill is disabled (`modulePreload.polyfill: false`):
+  it was the one network call in the shipped bundle, dead code for every Chrome
+  at the floor.
+
+#### Layer 2 — the built-artifact gate
+
+`npm run check:manifest` (`scripts/check-manifest.mjs`) scans every `.js` file
+in `.output/chrome-mv3` for network APIs — including code that arrived through
+a dependency, which no source gate can see — and pins the manifest: MV3, the
+permission list, the exact key set, the Chrome floor, the exact CSP, and that
+every file the manifest and pages reference exists.
+
+#### Layer 3 — the source gate
+
+`npm run guard` (`scripts/guard.mjs`). **The rule set lives in that file, not
+here** — this section used to restate it, and the copy drifted (its `\{@html\}`
+matched only the literal `{@html}`). The script header explains each rule and
+`tests/unit/scripts/guard.test.ts` holds a passing and a failing case for every
+one, including the bypasses an audit found against the old line-by-line regexes
+(aliases, computed global access, multi-line calls, `+=`, `{ @html }`, remote
+`url()` in CSS, resource hints). It scans `src/**` — `.ts`, `.svelte`, `.html`,
+`.css` and friends — with no exemptions, matches across line breaks, and fails
+if it scanned nothing. Because identifiers are banned outright, the bare API
+names cannot appear in `src/` comments either; write "network call".
+
 - **Minification: yes. Obfuscation: NO.** CWS has prohibited obfuscated code
   since 2018; WXT/Vite default minify (whitespace/identifier shortening) is
   allowed and sufficient. Never add an obfuscator plugin. Open-source repo +
@@ -134,9 +166,10 @@ any of them changes (`09 §4`).
       "Load unpacked" on a fresh profile.
 - [ ] Manifest diff reviewed — permission list unchanged (`bookmarks`,
       `storage` only).
-- [ ] `npm run guard` passes (the canonical grep gate, §3). Note `{@html}` is
-      **not** catchable by Biome — no such rule exists for Svelte — so this
-      gate plus review is the whole enforcement.
+- [ ] `npm run guard` and `npm run check:manifest` pass (§3: the source gate,
+      and the built-artifact gate that pins the CSP and scans the bundle). Note
+      `{@html}` is **not** catchable by Biome — no such rule exists for Svelte —
+      so the source gate plus review is its whole enforcement.
 - [ ] Right-click → Options lands on `#settings` both on a fresh profile and
       with a Manager tab already open on another route (§1 uses an undocumented
       URL fragment; `02 §5`).
