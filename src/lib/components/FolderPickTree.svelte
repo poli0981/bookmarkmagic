@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { LiveNode } from '../browser/bookmarks';
-  import { checkStateOf, toggleSelection } from '../core/select';
+  import { checkStates, toggleSelection } from '../core/select';
   import FolderPickNode from './FolderPickNode.svelte';
   import { t } from '../i18n/index.svelte';
 
@@ -14,6 +14,7 @@
   let { roots, selection, onchange }: Props = $props();
 
   const everything = $derived(selection === undefined);
+  const states = $derived(selection === undefined ? undefined : checkStates(roots, selection));
 
   function toggleNode(node: LiveNode, checked: boolean): void {
     // Leaving "Everything" materialises it into a real selection first, so the
@@ -28,7 +29,7 @@
     <input
       type="checkbox"
       checked={everything}
-      onchange={(e) => onchange((e.currentTarget as HTMLInputElement).checked ? undefined : new Set())}
+      onchange={(e) => onchange(e.currentTarget.checked ? undefined : new Set())}
     />
     <strong>{t('export.everything')}</strong>
   </label>
@@ -38,9 +39,8 @@
       <FolderPickNode
         node={root}
         depth={1}
-        checkState={everything ? 'checked' : checkStateOf(roots, root, selection ?? new Set())}
-        resolve={(node) =>
-          everything ? 'checked' : checkStateOf(roots, node, selection ?? new Set())}
+        checkState={states?.get(root.id) ?? 'checked'}
+        resolve={(node) => states?.get(node.id) ?? 'checked'}
         ontoggle={toggleNode}
       />
     {/each}

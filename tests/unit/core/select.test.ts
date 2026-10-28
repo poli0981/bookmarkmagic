@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
-  checkStateOf,
+  checkStates,
   filterBySelection,
   pathTo,
   subtreeIds,
@@ -54,21 +54,28 @@ describe('subtreeIds / pathTo', () => {
   });
 });
 
-describe('checkStateOf', () => {
+const stateOf = (node: Node, selection: ReadonlySet<string>) =>
+  checkStates(TREE, selection).get(node.id);
+
+describe('checkStates', () => {
+  it('answers for every node in the tree, in one map', () => {
+    expect(checkStates(TREE, new Set(['dev'])).size).toBe(7);
+  });
+
   it('reports a directly selected node as checked', () => {
-    expect(checkStateOf(TREE, byId('dev'), new Set(['dev']))).toBe('checked');
+    expect(stateOf(byId('dev'), new Set(['dev']))).toBe('checked');
   });
 
   it('reports a node covered by a selected ancestor as checked', () => {
-    expect(checkStateOf(TREE, byId('gh'), new Set(['bar']))).toBe('checked');
+    expect(stateOf(byId('gh'), new Set(['bar']))).toBe('checked');
   });
 
   it('reports a partially covered folder as indeterminate', () => {
-    expect(checkStateOf(TREE, byId('bar'), new Set(['gh']))).toBe('indeterminate');
+    expect(stateOf(byId('bar'), new Set(['gh']))).toBe('indeterminate');
   });
 
   it('reports an untouched folder as unchecked', () => {
-    expect(checkStateOf(TREE, byId('other'), new Set(['gh']))).toBe('unchecked');
+    expect(stateOf(byId('other'), new Set(['gh']))).toBe('unchecked');
   });
 });
 
@@ -97,16 +104,16 @@ describe('toggleSelection — unchecking', () => {
     // Without the expansion the untick would silently do nothing.
     const selection = toggleSelection(TREE, byId('dev'), false, new Set(['bar']));
     expect([...selection].sort()).toEqual(['a']);
-    expect(checkStateOf(TREE, byId('a'), selection)).toBe('checked');
-    expect(checkStateOf(TREE, byId('gh'), selection)).toBe('unchecked');
-    expect(checkStateOf(TREE, byId('bar'), selection)).toBe('indeterminate');
+    expect(stateOf(byId('a'), selection)).toBe('checked');
+    expect(stateOf(byId('gh'), selection)).toBe('unchecked');
+    expect(stateOf(byId('bar'), selection)).toBe('indeterminate');
   });
 
   it('splits across two levels', () => {
     const selection = toggleSelection(TREE, byId('gh'), false, new Set(['bar']));
     expect([...selection].sort()).toEqual(['a', 'mdn']);
-    expect(checkStateOf(TREE, byId('mdn'), selection)).toBe('checked');
-    expect(checkStateOf(TREE, byId('gh'), selection)).toBe('unchecked');
+    expect(stateOf(byId('mdn'), selection)).toBe('checked');
+    expect(stateOf(byId('gh'), selection)).toBe('unchecked');
   });
 });
 

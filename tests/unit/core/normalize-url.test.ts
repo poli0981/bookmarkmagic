@@ -63,3 +63,17 @@ describe('normalizeUrl', () => {
     }
   });
 });
+
+describe('normalizeUrl — empty query and fragment (v1.1.0)', () => {
+  it('treats a bare ? or # as no query or fragment at all', () => {
+    const key = normalizeUrl('https://a.example/');
+    expect(normalizeUrl('https://a.example/?')).toBe(key);
+    expect(normalizeUrl('https://a.example/#')).toBe(key);
+    expect(normalizeUrl('https://a.example/x?')).toBe(normalizeUrl('https://a.example/x'));
+  });
+
+  it('still keeps a real query and fragment', () => {
+    expect(normalizeUrl('https://a.example/?q=1')).toBe('https://a.example/?q=1');
+    expect(normalizeUrl('https://a.example/#top')).toBe('https://a.example/#top');
+  });
+});
