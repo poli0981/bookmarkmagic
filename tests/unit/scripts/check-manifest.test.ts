@@ -37,6 +37,7 @@ const MANIFEST = {
 const FILES: Record<string, string> = {
   'manager.html': '<!doctype html>',
   'popup.html': '<!doctype html>',
+  'THIRD_PARTY_NOTICES.txt': 'notices',
   '_locales/en/messages.json': '{}',
   '_locales/vi/messages.json': '{}',
   '_locales/ja/messages.json': '{}',
@@ -116,7 +117,7 @@ describe('check-manifest.mjs', () => {
     expect(output).toContain('missing expected top-level key(s): content_security_policy');
   });
 
-  it.each(['_locales/vi/messages.json', 'icon/128.png', 'popup.html'])(
+  it.each(['_locales/vi/messages.json', 'icon/128.png', 'popup.html', 'THIRD_PARTY_NOTICES.txt'])(
     'fails when %s is missing from the build',
     (file) => {
       const { status, output } = check(build(MANIFEST, { [file]: null }));
