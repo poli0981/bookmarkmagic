@@ -16,15 +16,14 @@
  *      (WXT drops `_locales/` and `icon/` silently when publicDir is wrong);
  *   3. the bundle: no network API anywhere in the shipped JavaScript.
  *
- * Usage: node scripts/check-manifest.mjs [<extension dir>]
- *   default: <repo>/.output/chrome-mv3 (resolved from this file, not the cwd)
+ * Usage: node scripts/check-manifest.mjs — checks <repo>/.output/chrome-mv3,
+ * resolved from this file, not the cwd. It takes no arguments on purpose: a
+ * path from the command line flowed straight into file reads (SonarCloud
+ * S8707). Its tests call `checkExtension(dir)` directly instead.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
-import { tmpdir } from 'node:os';
-import { join, relative, resolve, sep } from 'node:path';
+import { join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-
-const REPO = resolve(fileURLToPath(new URL('..', import.meta.url)));
 
 /** Exactly this, in any order. Adding one is a minor-version event (docs/09 §4). */
 const ALLOWED_PERMISSIONS = ['bookmarks', 'storage'];
@@ -102,20 +101,6 @@ const NETWORK_IN_BUNDLE =
 /** @param {string} a @param {string} b */
 const byName = (a, b) => a.localeCompare(b, 'en');
 
-/**
- * The directory to check. An argument is accepted only inside this repository
- * or the OS temp directory (where its own tests build fake extensions): the
- * script reads every file below it, so it must never be pointed elsewhere.
- *
- * @param {string | undefined} arg
- * @returns {string | undefined}
- */
-function outDirFrom(arg) {
-  const dir = resolve(arg ?? join(REPO, '.output', 'chrome-mv3'));
-  const bases = [REPO, resolve(tmpdir())];
-  return bases.some((base) => dir === base || dir.startsWith(base + sep)) ? dir : undefined;
-}
-
 /** @param {string} dir @returns {string[]} */
 function listFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -126,16 +111,13 @@ function listFiles(dir) {
 
 /**
  * @param {string} outDir
- * @returns {Record<string, unknown> | undefined}
+ * @returns {Record<string, unknown> | string} the manifest, or why it could not be read
  */
 function readManifest(outDir) {
-  const path = join(outDir, 'manifest.json');
   try {
-    return JSON.parse(readFileSync(path, 'utf8'));
+    return JSON.parse(readFileSync(join(outDir, 'manifest.json'), 'utf8'));
   } catch (cause) {
-    console.error(`check-manifest: cannot read ${path} — run \`npm run build\` first.`);
-    console.error(`  ${cause instanceof Error ? cause.message : cause}`);
-    return undefined;
+    return `cannot read manifest.json (${cause instanceof Error ? cause.message : cause})`;
   }
 }
 
@@ -210,17 +192,32 @@ function checkBundle(outDir, problems) {
   }
 }
 
-/** @param {string} outDir @returns {number} the exit code */
-function run(outDir) {
+/**
+ * Check one built extension directory.
+ *
+ * @param {string} outDir
+ * @returns {{ problems: string[], readError?: string }} no problems and no read
+ *   error means the build is clean
+ */
+export function checkExtension(outDir) {
   const manifest = readManifest(outDir);
-  if (manifest === undefined) return 1;
-
+  if (typeof manifest === 'string') return { problems: [], readError: manifest };
   /** @type {string[]} */
   const problems = [];
   checkManifest(manifest, problems);
   checkInventory(outDir, manifest, problems);
   checkBundle(outDir, problems);
+  return { problems };
+}
 
+/** @returns {number} the exit code */
+function main() {
+  const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
+  const { problems, readError } = checkExtension(join(repo, '.output', 'chrome-mv3'));
+  if (readError !== undefined) {
+    console.error(`check-manifest: ${readError} — run \`npm run build\` first.`);
+    return 1;
+  }
   if (problems.length > 0) {
     for (const problem of problems) {
       console.error(`::error::check-manifest: ${problem}`);
@@ -237,11 +234,13 @@ function run(outDir) {
   return 0;
 }
 
-const outDir = outDirFrom(process.argv[2]);
-if (outDir === undefined) {
-  console.error('check-manifest: refusing to read outside this repository or the temp directory.');
-  process.exitCode = 1;
-} else {
+// Run only as the entry point. Under a test runner `import.meta.url` may not
+// even be a file: URL, so it is not resolved until it is known to be one.
+const isEntry =
+  import.meta.url.startsWith('file:') &&
+  process.argv[1] !== undefined &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isEntry) {
   // exitCode, not exit(): exit() can cut off piped stderr before CI reads it.
-  process.exitCode = run(outDir);
+  process.exitCode = main();
 }
