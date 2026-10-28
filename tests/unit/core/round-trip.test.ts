@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { BookmarkNode } from '@/lib/core/model';
+import { type BookmarkNode, computeStats } from '@/lib/core/model';
 import { parseBmJson } from '@/lib/core/parse/bm-json';
 import { parseCsv } from '@/lib/core/parse/csv';
 import { parseNetscapeHtml } from '@/lib/core/parse/netscape-html';
@@ -67,6 +67,10 @@ describe.each(FORMATS)('round-trip: %s', (format) => {
   });
 
   it('survives 200 seeded random trees', () => {
+    // Guard against the generator going quiet again: with an unscrambled seed
+    // every one of these trees was empty and this test proved nothing.
+    const sizes = Array.from({ length: 200 }, (_, i) => computeStats(generateTree(makeRng(i + 1))));
+    expect(sizes.reduce((n, s) => n + s.bookmarks + s.folders, 0)).toBeGreaterThan(1_000);
     for (let seed = 1; seed <= 200; seed++) {
       const tree = generateTree(makeRng(seed));
       const expected = project(tree, format);

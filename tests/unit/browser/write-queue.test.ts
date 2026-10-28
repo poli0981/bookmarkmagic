@@ -13,7 +13,14 @@ function planOf(segments: ImportPlan['segments']): ImportPlan {
     mode: 'merge',
     dedupe: false,
     segments,
-    stats: { toCreate, bookmarkCount: 0, skippedExisting: 0, skippedInFile: 0 },
+    stats: {
+      toCreate,
+      bookmarkCount: 0,
+      folderCount: 0,
+      reusedFolders: 0,
+      skippedExisting: 0,
+      skippedInFile: 0,
+    },
   };
 }
 
@@ -31,7 +38,7 @@ const TREE: BookmarkNode[] = [
 describe('writeTree — ordering', () => {
   it('creates parents before children and siblings in order', async () => {
     const fake = new FakeBookmarks();
-    await writeTree(planOf([{ rootId: '2', nodes: TREE }]), { create: fake.create });
+    await writeTree(planOf([{ parentId: '2', nodes: TREE }]), { create: fake.create });
 
     expect(fake.calls).toEqual([
       'create:2:Folder',
@@ -46,8 +53,8 @@ describe('writeTree — ordering', () => {
     const fake = new FakeBookmarks();
     await writeTree(
       planOf([
-        { rootId: '1', nodes: [{ title: 'bar item', url: 'https://bar.example/' }] },
-        { rootId: '2', nodes: [{ title: 'other item', url: 'https://other.example/' }] },
+        { parentId: '1', nodes: [{ title: 'bar item', url: 'https://bar.example/' }] },
+        { parentId: '2', nodes: [{ title: 'other item', url: 'https://other.example/' }] },
       ]),
       { create: fake.create },
     );
@@ -60,12 +67,26 @@ describe('writeTree — ordering', () => {
     const fake = new FakeBookmarks();
     fake.seed('2', { title: 'existing', url: 'https://existing.example/' });
     await writeTree(
-      planOf([{ rootId: '2', nodes: [{ title: 'new', url: 'https://new.example/' }] }]),
+      planOf([{ parentId: '2', nodes: [{ title: 'new', url: 'https://new.example/' }] }]),
       {
         create: fake.create,
       },
     );
     expect(fake.childTitles('2')).toEqual(['existing', 'new']);
+  });
+
+  it('writes into an existing folder a Merge segment names, after what is there', async () => {
+    const fake = new FakeBookmarks();
+    const dev = fake.seed('1', { title: 'Dev' });
+    fake.seed(dev, { title: 'old', url: 'https://old.example/' });
+    await writeTree(
+      planOf([
+        { parentId: dev, trail: ['Dev'], nodes: [{ title: 'new', url: 'https://n.example/' }] },
+      ]),
+      { create: fake.create },
+    );
+    expect(fake.childTitles('1')).toEqual(['Dev']);
+    expect(fake.childTitles(dev)).toEqual(['old', 'new']);
   });
 });
 
@@ -76,7 +97,7 @@ describe('writeTree — progress', () => {
   it('reports every 50 creates and once at the end', async () => {
     const fake = new FakeBookmarks();
     const events: WriteProgress[] = [];
-    await writeTree(planOf([{ rootId: '2', nodes: wideTree(120) }]), {
+    await writeTree(planOf([{ parentId: '2', nodes: wideTree(120) }]), {
       create: fake.create,
       onProgress: (p) => events.push({ ...p }),
     });
@@ -88,7 +109,7 @@ describe('writeTree — progress', () => {
   it('still emits a final event when the total is under the cadence', async () => {
     const fake = new FakeBookmarks();
     const events: WriteProgress[] = [];
-    await writeTree(planOf([{ rootId: '2', nodes: wideTree(3) }]), {
+    await writeTree(planOf([{ parentId: '2', nodes: wideTree(3) }]), {
       create: fake.create,
       onProgress: (p) => events.push({ ...p }),
     });
@@ -108,11 +129,21 @@ describe('writeTree — progress', () => {
     const deep: BookmarkNode[] = [
       { title: 'L1', children: [{ title: 'L2', children: wideTree(50) }] },
     ];
-    await writeTree(planOf([{ rootId: '2', nodes: deep }]), {
+    await writeTree(planOf([{ parentId: '2', nodes: deep }]), {
       create: fake.create,
       onProgress: (p) => events.push({ ...p }),
     });
     expect(events[0]?.currentPath).toBe('L1 / L2');
+  });
+
+  it('prefixes the path with the trail of the folder a segment writes into', async () => {
+    const fake = new FakeBookmarks();
+    const events: WriteProgress[] = [];
+    await writeTree(planOf([{ parentId: '2', trail: ['Dev', 'Tools'], nodes: wideTree(50) }]), {
+      create: fake.create,
+      onProgress: (p) => events.push({ ...p }),
+    });
+    expect(events[0]?.currentPath).toBe('Dev / Tools');
   });
 
   it('counts progress across segments with one shared denominator', async () => {
@@ -120,8 +151,8 @@ describe('writeTree — progress', () => {
     const events: WriteProgress[] = [];
     await writeTree(
       planOf([
-        { rootId: '1', nodes: wideTree(30) },
-        { rootId: '2', nodes: wideTree(30) },
+        { parentId: '1', nodes: wideTree(30) },
+        { parentId: '2', nodes: wideTree(30) },
       ]),
       { create: fake.create, onProgress: (p) => events.push({ ...p }) },
     );
@@ -147,7 +178,7 @@ describe('writeTree — abort', () => {
     };
 
     await expect(
-      writeTree(planOf([{ rootId: '2', nodes }]), { signal: controller.signal, create }),
+      writeTree(planOf([{ parentId: '2', nodes }]), { signal: controller.signal, create }),
     ).rejects.toBeInstanceOf(BmAborted);
 
     expect(fake.countCalls('create')).toBe(5);
@@ -166,7 +197,7 @@ describe('writeTree — abort', () => {
       await writeTree(
         planOf([
           {
-            rootId: '2',
+            parentId: '2',
             nodes: Array.from({ length: 9 }, (_, i) => ({
               title: `b${i}`,
               url: `https://e${i}.example/`,
@@ -186,7 +217,7 @@ describe('writeTree — abort', () => {
     const controller = new AbortController();
     controller.abort();
     await expect(
-      writeTree(planOf([{ rootId: '2', nodes: [{ title: 'a', url: 'https://a.example/' }] }]), {
+      writeTree(planOf([{ parentId: '2', nodes: [{ title: 'a', url: 'https://a.example/' }] }]), {
         signal: controller.signal,
         create: fake.create,
       }),
@@ -203,7 +234,7 @@ describe('writeTree — API failure', () => {
     const fake = new FakeBookmarks({ failOnCreate: 4 });
 
     await expect(
-      writeTree(planOf([{ rootId: '2', nodes: sixNodes() }]), { create: fake.create }),
+      writeTree(planOf([{ parentId: '2', nodes: sixNodes() }]), { create: fake.create }),
     ).rejects.toThrow(/injected failure/);
 
     expect(fake.childTitles('2')).toEqual(['b0', 'b1', 'b2']);
@@ -216,7 +247,7 @@ describe('writeTree — API failure', () => {
     // needs it at least as much, because nobody chose it.
     const fake = new FakeBookmarks({ failOnCreate: 4 });
 
-    const err = await writeTree(planOf([{ rootId: '2', nodes: sixNodes() }]), {
+    const err = await writeTree(planOf([{ parentId: '2', nodes: sixNodes() }]), {
       create: fake.create,
     }).catch((e: unknown) => e);
 
@@ -234,7 +265,7 @@ describe('writeTree — API failure', () => {
     const fake = new FakeBookmarks();
     const controller = new AbortController();
 
-    const err = await writeTree(planOf([{ rootId: '2', nodes: sixNodes() }]), {
+    const err = await writeTree(planOf([{ parentId: '2', nodes: sixNodes() }]), {
       create: async (details) => {
         controller.abort();
         return fake.create(details);
@@ -256,7 +287,7 @@ describe('writeTree — responsiveness', () => {
     await writeTree(
       planOf([
         {
-          rootId: '2',
+          parentId: '2',
           nodes: Array.from({ length: 450 }, (_, i) => ({
             title: `b${i}`,
             url: `https://e${i}.example/`,

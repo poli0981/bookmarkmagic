@@ -2,7 +2,7 @@
   import { describeError } from '../browser/describe-error';
   import { timestampSuffix } from '../browser/download';
   import { BmAborted } from '../browser/errors';
-  import { num, t } from '../i18n/index.svelte';
+  import { num, t, tPlural } from '../i18n/index.svelte';
   import { prepareImport, runImport } from '../import/run-import';
   import { getSettings } from '../stores/settings.svelte';
   import {
@@ -39,7 +39,13 @@
   async function onFile(file: File): Promise<void> {
     setImportState({ kind: 'validating', filename: file.name });
     try {
-      const result = await prepareImport(file);
+      const result = await prepareImport(file, {
+        rootTitles: {
+          toolbar: t('import.rootTitle.toolbar'),
+          other: t('import.rootTitle.unfiled'),
+          mobile: t('import.rootTitle.mobile'),
+        },
+      });
       setPrepared(result);
       setImportOptions({ mode: getSettings().defaultMergeMode });
       setImportState({
@@ -204,6 +210,11 @@
       inFile: num(session.plan.stats.skippedInFile),
     })}
   </p>
+  {#if session.plan.stats.reusedFolders > 0}
+    <p class="muted">
+      {tPlural('import.reused', session.plan.stats.reusedFolders)}
+    </p>
+  {/if}
   <p class="muted">{t('import.dateNotice')}</p>
   <div class="actions">
     <Button variant="primary" onclick={() => navigate('edit')}>{t('import.openEdit')}</Button>

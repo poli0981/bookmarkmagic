@@ -35,7 +35,9 @@ const dict = {
     counts: '{bookmarks} bookmarks · {folders} folders',
   },
   import: {
-    dropHint: 'Drop a bookmark file or click to browse — .html, .json, .csv · max {size}',
+    dropHint: 'Drop a bookmark file or click to browse · max {size}',
+    dropFormats:
+      'Browser HTML exports, CSV, BookmarkMagic and Firefox JSON backups, and Chrome’s own Bookmarks file (it has no extension).',
     reading: 'Reading {name}…',
     preview: 'Preview',
     folderName: 'Imported {date}',
@@ -46,6 +48,18 @@ const dict = {
     progress: 'Importing… {done} / {total}',
     doneSummary: 'Done — {created} items created.',
     skipped: 'Skipped {existing} already in this browser and {inFile} repeated in the file.',
+    reused: {
+      one: 'Added to {n} folder you already had, instead of creating a copy.',
+      other: 'Added to {n} folders you already had, instead of creating copies.',
+    },
+    // Firefox names its roots only by key ("toolbar", "unfiled", "mobile");
+    // these become real folder names when importing into a new folder. Not
+    // `other`: a branch with an `other` key reads as a plural (docs/07 §5).
+    rootTitle: {
+      toolbar: 'Bookmarks Toolbar',
+      unfiled: 'Other Bookmarks',
+      mobile: 'Mobile Bookmarks',
+    },
     cancelledSummary: 'Cancelled — {created} items were already created and were left in place.',
     // docs/05 §6 and docs/00 §8 both require saying this, and nothing did.
     // chrome.bookmarks.create takes no dateAdded, so every imported bookmark is

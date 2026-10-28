@@ -2,11 +2,8 @@ import { execFileSync } from 'node:child_process';
 import { mkdirSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { detectFormat } from '@/lib/core/detect-format';
 import { type BookmarkNode, computeStats, type ParseResult, walkTree } from '@/lib/core/model';
-import { parseBmJson } from '@/lib/core/parse/bm-json';
-import { parseCsv } from '@/lib/core/parse/csv';
-import { parseNetscapeHtml } from '@/lib/core/parse/netscape-html';
+import { parseBookmarkFile } from '@/lib/core/parse-file';
 
 /**
  * `scripts/sanitize-bookmarks.mjs` — docs/11 §2, docs/09 §6.
@@ -70,7 +67,8 @@ function corpus(): string[] {
       if (entry.name === 'generated') continue;
       const full = join(dir, entry.name);
       if (entry.isDirectory()) walk(full);
-      else if (/\.(html|json|csv)$/.test(entry.name)) out.push(relative(fixtures, full));
+      // Extensionless too: Chrome's profile file is just `Bookmarks`.
+      else if (/\.(html|json|csv)$|^[^.]+$/.test(entry.name)) out.push(relative(fixtures, full));
     }
   };
   walk(fixtures);
@@ -79,12 +77,9 @@ function corpus(): string[] {
 
 const FIXTURES = corpus();
 
-/** Parse with whichever parser the sniffed format selects. */
+/** Parse with whichever reader the sniffed format selects — the import's own entry point. */
 function parseAny(text: string): ParseResult {
-  const format = detectFormat(text);
-  if (format === 'netscape-html') return parseNetscapeHtml(text);
-  if (format === 'bm-json') return parseBmJson(text);
-  return parseCsv(text);
+  return parseBookmarkFile(text).result;
 }
 
 /** Structure only: folder/bookmark shape and nesting, with no titles or URLs. */
@@ -109,7 +104,7 @@ describe.each(FIXTURES)('sanitize %s', (name) => {
     // success — publishing a real bookmark set to a public issue.
     let parserAccepts = true;
     try {
-      detectFormat(original);
+      parseBookmarkFile(original);
     } catch {
       parserAccepts = false;
     }
@@ -133,7 +128,7 @@ describe.each(FIXTURES)('sanitize %s', (name) => {
 
   it('keeps the file recognisable as the same format', () => {
     if (cleaned === null) return;
-    expect(detectFormat(cleaned)).toBe(detectFormat(original));
+    expect(parseBookmarkFile(cleaned).format).toBe(parseBookmarkFile(original).format);
   });
 
   it('parses to the same stats, warnings and structure', () => {

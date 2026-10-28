@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { BM_BACKUP_ERROR_CODES } from '@/lib/browser/errors';
 import { BM_PARSE_ERROR_CODES, PARSE_WARNING_CODES } from '@/lib/core/model';
 import en from '@/lib/i18n/locales/en';
 import ja from '@/lib/i18n/locales/ja';
@@ -113,10 +114,13 @@ describe('every code the core can emit has a message', () => {
     }
   });
 
-  it.each(ALL)('%s has a message for every BmParseErrorCode', (_name, dict) => {
-    const leaves = flatten(dict);
-    for (const code of BM_PARSE_ERROR_CODES) {
-      expect(leaves.get(`errors.${code}`), code).toBeTypeOf('string');
-    }
-  });
+  it.each(ALL)(
+    '%s has a message for every BmParseErrorCode and BmBackupErrorCode',
+    (_name, dict) => {
+      const leaves = flatten(dict);
+      for (const code of [...BM_PARSE_ERROR_CODES, ...BM_BACKUP_ERROR_CODES]) {
+        expect(leaves.get(`errors.${code}`), code).toBeTypeOf('string');
+      }
+    },
+  );
 });

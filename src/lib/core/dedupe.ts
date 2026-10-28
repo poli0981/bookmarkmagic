@@ -6,21 +6,20 @@
  * Inputs: a parsed tree plus an index built from the current browser tree.
  * Guarantees: pure; folders are preserved even when every child is dropped.
  */
-import { type BookmarkNode, isFolder } from './model';
+import { type BookmarkNode, isFolder, walkTree } from './model';
 import { normalizeUrl } from './normalize-url';
 
 export type UrlIndex = ReadonlySet<string>;
 
-/** Build the comparison index from a tree (normally the live browser tree). */
+/**
+ * Build the comparison index from a tree — normally the LIVE browser tree,
+ * which has no depth cap, hence the iterative walk (docs/05 §1).
+ */
 export function buildUrlIndex(roots: readonly BookmarkNode[]): Set<string> {
   const index = new Set<string>();
-  const walk = (nodes: readonly BookmarkNode[]): void => {
-    for (const node of nodes) {
-      if (node.url !== undefined) index.add(normalizeUrl(node.url));
-      if (node.children !== undefined) walk(node.children);
-    }
-  };
-  walk(roots);
+  for (const { node } of walkTree(roots)) {
+    if (node.url !== undefined) index.add(normalizeUrl(node.url));
+  }
   return index;
 }
 

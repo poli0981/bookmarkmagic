@@ -53,18 +53,22 @@ export const warnings = {
 
 export const errors = {
   NOT_NETSCAPE: 'Đây có vẻ không phải tệp HTML bookmark.',
-  NOT_BM_JSON: 'Tệp JSON này không do BookmarkMagic tạo ra.',
+  NOT_BM_JSON:
+    'Tệp JSON này không phải tệp bookmark mà BookmarkMagic đọc được. Ứng dụng đọc bản sao lưu của chính nó, bản sao lưu JSON của Firefox và tệp Bookmarks của Chrome.',
   MALFORMED_JSON: 'Tệp này không phải JSON hợp lệ.',
   INVALID_NODE: 'Tệp này có một mục mà BookmarkMagic không đọc được.',
   BAD_CSV_HEADER: 'Thiếu dòng tiêu đề CSV hoặc các cột sai thứ tự.',
   CSV_ROW_MISMATCH: 'Một dòng CSV có số cột không đúng.',
   CSV_UNCLOSED_QUOTE:
     'Một trường CSV mở dấu ngoặc kép nhưng không đóng lại, nên phần còn lại của tệp không thể đọc chính xác.',
-  UNKNOWN_FORMAT: 'Không nhận diện được tệp — cần HTML, JSON hoặc CSV bookmark.',
+  UNKNOWN_FORMAT:
+    'Không nhận diện được tệp — cần tệp HTML xuất bookmark, CSV, bản sao lưu JSON của BookmarkMagic hoặc Firefox, hoặc tệp Bookmarks của Chrome.',
   FILE_TOO_LARGE: 'Tệp này quá lớn để nhập.',
   TOO_MANY_NODES: 'Tệp này chứa quá nhiều bookmark để nhập an toàn.',
   TOO_DEEP: 'Tệp này lồng thư mục quá sâu.',
   BACKUP_SERIALIZE_FAILED: 'Không thể chuẩn bị bản sao lưu, nên không có gì bị thay đổi.',
+  BACKUP_EXCEEDS_LIMITS:
+    'Bookmark hiện tại của bạn nhiều hơn mức BookmarkMagic có thể đọc lại từ một bản sao lưu, nên thao tác Thay thế đã dừng trước khi xóa bất cứ thứ gì. Hãy dùng Gộp hoặc nhập vào thư mục mới.',
   BACKUP_CANCELLED: 'Bạn đã hủy bản sao lưu, nên không có gì bị xóa.',
   BACKUP_WRITE_FAILED: 'Không thể lưu bản sao lưu, nên không có gì bị xóa.',
   BROWSER: 'Trình duyệt đã từ chối một thao tác bookmark.',

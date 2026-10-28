@@ -27,7 +27,7 @@ const LIVE: LiveNode[] = [
 
 describe('buildExport — scope', () => {
   it('exports everything when no selection is given', () => {
-    const preview = buildExport(LIVE, { format: 'bm-json', now: NOW }, '1');
+    const preview = buildExport(LIVE, { format: 'bm-json', now: NOW }, { toolbarId: '1' });
     expect(preview.bookmarks).toBe(3);
     expect(preview.filename).toBe('bookmarks-all-20260725-1405.json');
   });
@@ -36,7 +36,7 @@ describe('buildExport — scope', () => {
     const preview = buildExport(
       LIVE,
       { format: 'bm-json', selection: new Set(['11']), now: NOW },
-      '1',
+      { toolbarId: '1' },
     );
     expect(preview.bookmarks).toBe(1);
     expect(preview.filename).toBe('bookmarks-partial-20260725-1405.json');
@@ -50,7 +50,7 @@ describe('buildExport — formats', () => {
   it.each(Object.keys(FORMAT_META) as (keyof typeof FORMAT_META)[])(
     'produces the documented extension and mime type for %s',
     (format) => {
-      const preview = buildExport(LIVE, { format, now: NOW }, '1');
+      const preview = buildExport(LIVE, { format, now: NOW }, { toolbarId: '1' });
       expect(preview.filename.endsWith(`.${FORMAT_META[format].extension}`)).toBe(true);
       expect(preview.mimeType).toBe(FORMAT_META[format].mimeType);
       expect(preview.content.length).toBeGreaterThan(0);
@@ -58,21 +58,29 @@ describe('buildExport — formats', () => {
   );
 
   it('honours the CSV delimiter setting', () => {
-    const preview = buildExport(LIVE, { format: 'csv', csvDelimiter: ';', now: NOW }, '1');
+    const preview = buildExport(
+      LIVE,
+      { format: 'csv', csvDelimiter: ';', now: NOW },
+      { toolbarId: '1' },
+    );
     expect(preview.content).toContain('folder_path;title;url;add_date');
   });
 
   it('honours the Markdown style setting', () => {
-    const nested = buildExport(LIVE, { format: 'markdown', now: NOW }, '1');
-    const flat = buildExport(LIVE, { format: 'markdown', markdownStyle: 'flat', now: NOW }, '1');
+    const nested = buildExport(LIVE, { format: 'markdown', now: NOW }, { toolbarId: '1' });
+    const flat = buildExport(
+      LIVE,
+      { format: 'markdown', markdownStyle: 'flat', now: NOW },
+      { toolbarId: '1' },
+    );
     expect(nested.content).toContain('- **Bookmarks bar**');
     expect(flat.content).toContain('## Bookmarks bar');
   });
 
   it('dates the Markdown heading with an ISO date, not a locale format', () => {
-    expect(buildExport(LIVE, { format: 'markdown', now: NOW }, '1').content).toContain(
-      '# Bookmarks — 2026-07-25',
-    );
+    expect(
+      buildExport(LIVE, { format: 'markdown', now: NOW }, { toolbarId: '1' }).content,
+    ).toContain('# Bookmarks — 2026-07-25');
   });
 });
 
@@ -80,7 +88,7 @@ describe('buildExport — round trip', () => {
   it('exported HTML re-imports with the toolbar intact', () => {
     // The Phase 3 exit criterion: an exported file must come back losslessly,
     // including which folder is the Bookmarks Bar.
-    const preview = buildExport(LIVE, { format: 'netscape-html', now: NOW }, '1');
+    const preview = buildExport(LIVE, { format: 'netscape-html', now: NOW }, { toolbarId: '1' });
     const { roots, warnings } = parseNetscapeHtml(preview.content);
 
     expect(warnings).toEqual([]);
@@ -90,8 +98,21 @@ describe('buildExport — round trip', () => {
   });
 
   it('converts live millisecond dates to the file format seconds', () => {
-    const preview = buildExport(LIVE, { format: 'netscape-html', now: NOW }, '1');
+    const preview = buildExport(LIVE, { format: 'netscape-html', now: NOW }, { toolbarId: '1' });
     expect(parseNetscapeHtml(preview.content).roots[0]?.children?.[0]?.addDate).toBe(1751500000);
+  });
+
+  it('marks Other too, so a re-import unwraps it instead of nesting a copy', () => {
+    const preview = buildExport(
+      LIVE,
+      { format: 'netscape-html', now: NOW },
+      { toolbarId: '1', otherId: '2', mobileId: '3' },
+    );
+    expect(preview.content).toContain('UNFILED_BOOKMARKS_FOLDER="true"');
+    expect(parseNetscapeHtml(preview.content).roots.map((r) => [r.toolbar, r.root])).toEqual([
+      [true, undefined],
+      [undefined, 'other'],
+    ]);
   });
 
   it('does not mark a toolbar at all when none is resolved', () => {
