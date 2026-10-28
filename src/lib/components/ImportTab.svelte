@@ -106,6 +106,7 @@
         dedupe: options.dedupe,
         newFolderTitle: folder,
         backupFilename,
+        backupDescription: t('import.backupFileType'),
         now,
         signal,
         onProgress: (progress) => {

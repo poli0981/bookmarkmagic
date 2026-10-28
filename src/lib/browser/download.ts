@@ -71,7 +71,12 @@ export type SaveTarget = FileSystemHandle;
  *
  * @throws {BmBackupError} `BACKUP_CANCELLED` when the dialog is dismissed.
  */
-export async function openSaveTarget(filename: string, mimeType: string): Promise<SaveTarget> {
+export async function openSaveTarget(
+  filename: string,
+  mimeType: string,
+  /** The file-type label the dialog shows, localized by the caller (it was hardcoded English). */
+  description: string,
+): Promise<SaveTarget> {
   const picker = (globalThis as { showSaveFilePicker?: SaveFilePicker }).showSaveFilePicker;
   if (picker === undefined) {
     throw new BmBackupError('BACKUP_WRITE_FAILED', 'showSaveFilePicker unavailable');
@@ -80,9 +85,7 @@ export async function openSaveTarget(filename: string, mimeType: string): Promis
   try {
     return await picker({
       suggestedName: sanitizeFilename(filename),
-      types: [
-        { description: 'Bookmark backup', accept: { [mimeType]: [`.${extensionOf(filename)}`] } },
-      ],
+      types: [{ description, accept: { [mimeType]: [`.${extensionOf(filename)}`] } }],
     });
   } catch (cause) {
     if (cause instanceof Error && cause.name === 'AbortError') {

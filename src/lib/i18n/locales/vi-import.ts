@@ -65,6 +65,7 @@ export const importTab = {
     other:
       '{n} mục ở cấp cao nhất đã bị xóa trước khi lỗi xảy ra. Hãy khôi phục từ tệp sao lưu của bạn.',
   },
+  backupFileType: 'Bản sao lưu bookmark',
   backupHint: 'Tệp sao lưu an toàn đã được lưu với tên {name}. Nhập lại tệp JSON đó để khôi phục.',
   openEdit: 'Mở thẻ Chỉnh sửa',
   another: 'Nhập tệp khác',

@@ -142,6 +142,8 @@ export interface RunImportOptions {
   newFolderTitle: string;
   /** Localized backup filename. */
   backupFilename?: string;
+  /** Localized file-type label for the save dialog. */
+  backupDescription?: string;
   now: Date;
   signal: AbortSignal;
   onProgress: (progress: WriteProgress) => void;
@@ -189,7 +191,7 @@ export async function runImport(options: RunImportOptions): Promise<ImportOutcom
     options.backupFilename ?? `bookmarkmagic-backup-${timestampSuffix(now)}.json`;
   const pendingTarget: Promise<SaveTarget> | undefined =
     mode === 'replace' && isPickerAvailable()
-      ? openSaveTarget(backupFilename, 'application/json')
+      ? openSaveTarget(backupFilename, 'application/json', options.backupDescription ?? 'JSON')
       : undefined;
   // Marks the rejection handled. If reading or planning fails below, nothing
   // ever awaits the dialog, and a later Cancel would surface as an unhandled

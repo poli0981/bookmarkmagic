@@ -76,6 +76,7 @@ export const importTab = {
     other:
       '{n} top-level items had already been deleted before this failed. Restore them from your backup.',
   },
+  backupFileType: 'Bookmark backup',
   backupHint: 'Your safety backup was saved as {name}. Restore it by importing that JSON file.',
   openEdit: 'Open Edit tab',
   another: 'Import another file',
