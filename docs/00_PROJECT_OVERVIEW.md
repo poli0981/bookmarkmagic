@@ -17,16 +17,18 @@
 > 5 users) on 2026-10-28. ⚠️ The exact approval date was never recorded — the
 > owner can read it from the dashboard. Installed users are on 1.0.1.
 >
-> **v1.1.0 is in preparation** on `release/1.1.0`: versioned, with its
-> CHANGELOG section dated 2026-10-29, but not yet tagged, released or
-> submitted. Until it clears review, installed users stay on 1.0.1. It raises
+> **v1.1.0 is RELEASED on GitHub, not yet on the store.** Tagged and
+> released 2026-10-29 (signed tag on `9040f84`, checksum-verified zip). ⚠️ It
+> still needs the owner's manual pass on real Chrome, including the 1.0.1 →
+> 1.1.0 upgrade over an existing profile, and a hand upload to the store
+> (`13 §1b`); until it clears review, installed users stay on 1.0.1. It raises
 > the floor to Chrome 136 (`08 §7`); permissions are unchanged.
 >
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
 > bump, a CHANGELOG entry and an update submission (`13 §1b`). Sequencing lives
 > in `/CLAUDE.md`; what is still open is in §10 below.
-> **Doc suite version:** 1.8 (2026-10-29 — specs reconciled with `release/1.1.0`)
+> **Doc suite version:** 1.9 (2026-10-29 — v1.1.0 released on GitHub)
 
 ---
 
@@ -220,6 +222,13 @@ Derived identifiers (canonical across docs and code):
     open: the exact approval date, and `13 §1b` step 10 against the published
     build (install on a clean profile, re-run the upgrade check) — no result is
     recorded for either.
+12. ⚠️ **v1.1.0 to the store.** The GitHub Release exists and is verified
+    (`15`'s progress table). Still human-only: the `11 §5` manual pass on real
+    Chrome — the **1.0.1 → 1.1.0 upgrade over an existing profile** above all —
+    then the hand upload of the Release zip (`13 §1b`), with new screenshots
+    chosen from `store/screenshots/`. Also unverified outside the harness: the
+    account-storage roots of a signed-in profile and the hidden empty Mobile
+    root (`02 §4`), and the `MAX_WRITE_DEPTH` rationale against a real Chrome.
 
 ## 11. Reading order
 
