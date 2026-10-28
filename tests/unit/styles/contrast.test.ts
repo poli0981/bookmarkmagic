@@ -45,29 +45,35 @@ const darkMedia = {
   ...blockOf(/:root:not\(\[data-theme='light'\]\)\s*\{([\s\S]*?)\n\s{2}\}/),
 };
 
+/**
+ * Every surface text can sit on: the page, raised panels, sunken wells (inputs,
+ * the status bar) and the accent tint of a selected row or tab.
+ */
+const SURFACES = ['--bg', '--bg-raised', '--bg-sunken', '--accent-subtle'];
+
+/** Tokens rendered as TEXT somewhere — body copy, links, status colours. */
+const TEXT_TOKENS = ['--fg', '--fg-muted', '--accent', '--danger', '--success', '--warn'];
+
 /** [foreground, background] — every pair where the fg is rendered as TEXT. */
 const TEXT_PAIRS: [fg: string, bg: string][] = [
-  ['--fg', '--bg'],
-  ['--fg', '--bg-raised'],
-  ['--fg-muted', '--bg'],
-  ['--fg-muted', '--bg-raised'],
-  // base.css colours every <a> with --accent, and rows/links sit on both.
-  ['--accent', '--bg'],
-  ['--accent', '--bg-raised'],
-  // Rendered as text: DuplicatePanel counts, TreePreviewNode badges,
-  // WarningList's summary, TreeRow's ⚠ unsafe-scheme marker. Checked against
-  // BOTH surfaces — a row sits on --bg until it is hovered or focused.
-  ['--danger', '--bg-raised'],
-  ['--danger', '--bg'],
-  ['--success', '--bg-raised'],
-  ['--success', '--bg'],
-  ['--warn', '--bg-raised'],
-  ['--warn', '--bg'],
+  ...TEXT_TOKENS.flatMap((fg) => SURFACES.map((bg): [string, string] => [fg, bg])),
   // Ink on a filled control: Button .primary/.danger, ConfirmDialog .danger,
   // ThemeToggle .selected.
   ['--accent-fg', '--accent'],
   ['--danger-fg', '--danger'],
 ];
+
+/**
+ * Non-text UI (WCAG 1.4.11, 3:1): the boundary of every interactive control,
+ * and the focus ring, which is --accent.
+ */
+const UI_PAIRS: [fg: string, bg: string][] = [
+  ['--border-strong', '--bg'],
+  ['--border-strong', '--bg-raised'],
+  ['--accent', '--bg'],
+  ['--accent', '--bg-raised'],
+];
+const UI_RATIO = 3;
 
 const THEMES: [name: string, tokens: Record<string, string>][] = [
   ['light', light],
@@ -90,6 +96,14 @@ describe('token contrast', () => {
         failures.push(`${fg} (${fgValue}) on ${bg} (${bgValue}) = ${ratio.toFixed(2)}:1`);
       }
     }
+    expect(failures).toEqual([]);
+  });
+
+  it.each(THEMES)('%s meets 3:1 on every interactive boundary', (_name, tokens) => {
+    const failures = UI_PAIRS.filter(([fg, bg]) => {
+      const [a, b] = [tokens[fg], tokens[bg]];
+      return a === undefined || b === undefined || contrast(a, b) < UI_RATIO;
+    });
     expect(failures).toEqual([]);
   });
 

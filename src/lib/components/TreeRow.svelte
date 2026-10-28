@@ -1,60 +1,32 @@
 <script lang="ts">
   import { isBlockedUrl } from '../browser/open-url';
+  import { type DropZone, planDrop } from '../edit/move-target';
   import type { EditNode } from '../edit/patch-tree';
+  import type { VisibleRow } from '../edit/tree-keyboard';
   import { t } from '../i18n/index.svelte';
+  import type { EditSession } from '../stores/edit-session.svelte';
+  import Icon from './icons/Icon.svelte';
 
   interface Props {
-    node: EditNode;
-    depth: number;
-    expandable: boolean;
-    expanded: boolean;
-    focused: boolean;
-    matched: boolean;
-    renaming: boolean;
-    ontoggle: () => void;
-    onfocus: () => void;
-    onrename: (title: string) => void;
-    oncancelRename: () => void;
-    onstartRename: () => void;
-    ondelete: () => void;
-    onopen: () => void;
-    oncopyUrl: () => void;
-    onmoveTo: () => void;
-    ondragstart: () => void;
-    ondropinto: () => void;
-    dropTarget: boolean;
-    draggable: boolean;
-    /** False for permanent roots and policy-managed nodes — docs/02 §4. */
-    editable: boolean;
+    row: VisibleRow;
+    session: EditSession;
+    onopen: (node: EditNode) => void;
+    oncopy: (node: EditNode) => void;
+    onsort: (node: EditNode) => void;
   }
 
-  let {
-    node,
-    depth,
-    expandable,
-    expanded,
-    focused,
-    matched,
-    renaming,
-    ontoggle,
-    onfocus,
-    onrename,
-    oncancelRename,
-    onstartRename,
-    ondelete,
-    onopen,
-    oncopyUrl,
-    onmoveTo,
-    ondragstart,
-    ondropinto,
-    dropTarget,
-    draggable,
-    editable,
-  }: Props = $props();
+  let { row, session, onopen, oncopy, onsort }: Props = $props();
 
+  const node = $derived(row.node);
   const isFolder = $derived(node.url === undefined);
+  const editable = $derived(session.isEditable(node));
+  const focused = $derived(session.focusedId === node.id);
+  const renaming = $derived(session.renamingId === node.id && editable);
   const domain = $derived(hostOf(node.url));
   const blocked = $derived(!isFolder && isBlockedUrl(node.url));
+
+  /** Which part of this row a drag is over, when the drop there is legal. */
+  let zone = $state<DropZone | undefined>();
 
   function hostOf(url: string | undefined): string {
     if (url === undefined) return '';
@@ -65,114 +37,152 @@
       return '';
     }
   }
+
+  type RowDragEvent = DragEvent & { currentTarget: EventTarget & HTMLDivElement };
+
+  /** Upper quarter: before. Lower quarter: after. Middle: into a folder. */
+  function zoneAt(event: RowDragEvent): DropZone {
+    const box = event.currentTarget.getBoundingClientRect();
+    const y = (event.clientY - box.top) / box.height;
+    if (isFolder && y > 0.25 && y < 0.75) return 'into';
+    return y < 0.5 ? 'before' : 'after';
+  }
+
+  function onDragOver(event: RowDragEvent): void {
+    const dragging = session.draggingId;
+    if (dragging === undefined) return;
+    const at = zoneAt(event);
+    if (planDrop(session.roots, dragging, node.id, at) === undefined) {
+      zone = undefined;
+      return;
+    }
+    // preventDefault is what marks this as a valid drop target.
+    event.preventDefault();
+    zone = at;
+  }
+
+  /** A row button must not also focus/activate the row under it. */
+  function act(run: () => void): (event: MouseEvent) => void {
+    return (event) => {
+      event.stopPropagation();
+      run();
+    };
+  }
 </script>
 
+<!-- The row is presentation inside its `treeitem`: keyboard input goes to the
+     tree (aria-activedescendant), and the buttons below are mouse shortcuts
+     with keyboard equivalents — so none of them is a tab stop. -->
 <div
   class="row"
   class:focused
-  class:matched
-  class:drop-target={dropTarget}
-  style:padding-left="{(depth - 1) * 16}px"
-  onclick={onfocus}
+  class:matched={session.search.matched.has(node.id)}
+  class:dragging={session.draggingId === node.id}
+  class:drop-before={zone === 'before'}
+  class:drop-after={zone === 'after'}
+  class:drop-into={zone === 'into'}
+  style:--depth={row.depth - 1}
+  onclick={() => (session.focusedId = node.id)}
+  ondblclick={() => (isFolder ? session.toggle(node.id) : onopen(node))}
   onkeydown={() => {}}
   role="presentation"
-  {draggable}
-  ondragstart={(e) => {
-    e.dataTransfer?.setData('text/plain', node.id);
-    ondragstart();
+  draggable={editable && !renaming}
+  ondragstart={(event) => {
+    event.dataTransfer?.setData('text/plain', node.id);
+    if (event.dataTransfer !== null) event.dataTransfer.effectAllowed = 'move';
+    session.draggingId = node.id;
   }}
-  ondragover={(e) => {
-    // Only folders accept a drop; preventDefault is what marks it as valid.
-    if (isFolder) e.preventDefault();
+  ondragend={() => {
+    // Fires on every drag end — dropped, cancelled with Esc, or released
+    // outside the tree. Without it a cancelled drag left every row lit up.
+    session.draggingId = undefined;
+    zone = undefined;
   }}
-  ondrop={(e) => {
-    e.preventDefault();
-    ondropinto();
+  ondragover={onDragOver}
+  ondragleave={() => (zone = undefined)}
+  ondrop={(event) => {
+    event.preventDefault();
+    const at = zone;
+    zone = undefined;
+    if (at !== undefined) void session.drop(node.id, at);
   }}
 >
-  {#if expandable}
+  {#if row.expandable}
     <button
       class="disclosure"
-      aria-label={expanded ? t('import.collapse') : t('import.expand')}
-      onclick={(e) => {
-        e.stopPropagation();
-        ontoggle();
-      }}>{expanded ? '▾' : '▸'}</button
+      tabindex="-1"
+      aria-hidden="true"
+      onclick={act(() => session.toggle(node.id))}
     >
+      <Icon name="chevron" size={12} turned={row.expanded} />
+    </button>
   {:else}
     <span class="disclosure" aria-hidden="true"></span>
   {/if}
 
-  <span class="glyph" aria-hidden="true">{isFolder ? '🗀' : '🔗'}</span>
+  <span class="glyph" class:folder={isFolder}>
+    {#if node.unmodifiable !== undefined}
+      <Icon name="lock" size={14} />
+    {:else if isFolder}
+      <Icon name={row.expanded ? 'folder-open' : 'folder'} size={14} />
+    {:else}
+      <Icon name="link" size={14} />
+    {/if}
+  </span>
 
-  {#if renaming && editable}
+  {#if renaming}
     <!-- svelte-ignore a11y_autofocus -->
     <input
       class="rename"
       value={node.title}
+      aria-label={t('edit.rename')}
       autofocus
-      onkeydown={(e) => {
-        if (e.key === 'Enter') onrename((e.currentTarget as HTMLInputElement).value);
-        if (e.key === 'Escape') oncancelRename();
-        e.stopPropagation();
+      onkeydown={(event) => {
+        event.stopPropagation();
+        if (event.key === 'Enter') void session.commitRename(node.id, event.currentTarget.value);
+        if (event.key === 'Escape') session.renamingId = undefined;
       }}
-      onblur={(e) => onrename((e.currentTarget as HTMLInputElement).value)}
+      onblur={(event) => {
+        // Esc already cancelled; a blur after it must not commit (uL1).
+        if (session.renamingId === node.id) void session.commitRename(node.id, event.currentTarget.value);
+      }}
     />
   {:else}
-    <span class="title">{node.title}</span>
+    <span class="title" class:untitled={node.title === ''}>{node.title === '' ? (node.url ?? '') : node.title}</span>
     {#if domain !== ''}<span class="domain">{domain}</span>{/if}
+    {#if isFolder}<span class="count">{node.children?.length ?? 0}</span>{/if}
     {#if blocked}
       <!-- docs/09 T3: a javascript:/data: bookmark must not look like an
            ordinary link that merely does nothing when clicked. -->
-      <span class="unsafe" title={t('edit.unsafeUrl')} aria-label={t('edit.unsafeUrl')}>⚠</span>
+      <span class="unsafe" title={t('edit.unsafeUrl')}>
+        <Icon name="warning" size={13} /><span class="sr-only">{t('edit.unsafeUrl')}</span>
+      </span>
     {/if}
 
     <span class="actions">
-      {#if editable}
-        <button
-          title={t('edit.rename')}
-          aria-label={t('edit.rename')}
-        onclick={(e) => {
-          e.stopPropagation();
-          onstartRename();
-          }}><span aria-hidden="true">✎</span></button
-        >
-      {/if}
       {#if !isFolder}
-        <button
-          title={t('edit.open')}
-          aria-label={t('edit.open')}
-          onclick={(e) => {
-            e.stopPropagation();
-            onopen();
-          }}><span aria-hidden="true">↗</span></button
-        >
-        <button
-          title={t('edit.copyUrl')}
-          aria-label={t('edit.copyUrl')}
-          onclick={(e) => {
-            e.stopPropagation();
-            oncopyUrl();
-          }}><span aria-hidden="true">⧉</span></button
-        >
+        <button tabindex="-1" title={t('edit.open')} aria-label={t('edit.open')} onclick={act(() => onopen(node))}>
+          <Icon name="external" size={14} />
+        </button>
+        <button tabindex="-1" title={t('edit.copyUrl')} aria-label={t('edit.copyUrl')} onclick={act(() => oncopy(node))}>
+          <Icon name="copy" size={14} />
+        </button>
+      {/if}
+      {#if session.canSort(node)}
+        <button tabindex="-1" title={t('edit.sort')} aria-label={t('edit.sort')} onclick={act(() => onsort(node))}>
+          <Icon name="sort" size={14} motion="bob" />
+        </button>
       {/if}
       {#if editable}
-        <button
-          title={t('edit.moveTo')}
-          aria-label={t('edit.moveTo')}
-          onclick={(e) => {
-            e.stopPropagation();
-            onmoveTo();
-          }}><span aria-hidden="true">⇄</span></button
-        >
-        <button
-          title={t('edit.delete')}
-          aria-label={t('edit.delete')}
-          onclick={(e) => {
-            e.stopPropagation();
-            ondelete();
-          }}><span aria-hidden="true">🗑</span></button
-        >
+        <button tabindex="-1" title={t('edit.rename')} aria-label={t('edit.rename')} onclick={act(() => (session.renamingId = node.id))}>
+          <Icon name="edit" size={14} />
+        </button>
+        <button tabindex="-1" title={t('edit.moveTo')} aria-label={t('edit.moveTo')} onclick={act(() => (session.movingNode = node))}>
+          <Icon name="move" size={14} motion="bob" />
+        </button>
+        <button tabindex="-1" class="delete" title={t('edit.delete')} aria-label={t('edit.delete')} onclick={act(() => (session.pendingDelete = node))}>
+          <Icon name="trash" size={14} motion="tilt" />
+        </button>
       {/if}
     </span>
   {/if}
@@ -180,13 +190,30 @@
 
 <style>
   .row {
+    position: relative;
     display: flex;
     align-items: center;
     gap: var(--sp-2);
-    padding-block: 3px;
+    min-height: 28px;
+    padding-block: 2px;
+    padding-left: calc(var(--depth) * 18px + var(--sp-1));
     padding-right: var(--sp-2);
     border-radius: var(--radius-sm);
     cursor: default;
+    user-select: none;
+  }
+
+  /* Indent rails: one faint line per ancestor level. */
+  .row::before {
+    content: '';
+    position: absolute;
+    inset-block: 0;
+    left: var(--sp-1);
+    width: calc(var(--depth) * 18px);
+    background-image: linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 18px 100%;
+    background-position: 8px 0;
+    pointer-events: none;
   }
 
   .row:hover {
@@ -194,14 +221,26 @@
   }
 
   .focused {
-    background: var(--bg-raised);
-    outline: 2px solid var(--accent);
-    outline-offset: -2px;
+    background: var(--accent-subtle);
+    box-shadow: inset 2px 0 0 var(--accent);
   }
 
-  .drop-target {
-    outline: 2px dashed var(--accent);
-    outline-offset: -2px;
+  .dragging {
+    color: var(--fg-muted);
+  }
+
+  .drop-into {
+    outline: 1px dashed var(--accent);
+    outline-offset: -1px;
+    background: var(--accent-subtle);
+  }
+
+  .drop-before {
+    box-shadow: inset 0 2px 0 var(--accent);
+  }
+
+  .drop-after {
+    box-shadow: inset 0 -2px 0 var(--accent);
   }
 
   .matched .title {
@@ -210,13 +249,26 @@
   }
 
   .disclosure {
-    width: 1.2em;
-    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    height: 16px;
+    flex: none;
     background: none;
     border: none;
     color: var(--fg-muted);
     cursor: pointer;
     padding: 0;
+  }
+
+  .glyph {
+    display: inline-flex;
+    color: var(--fg-muted);
+  }
+
+  .glyph.folder {
+    color: var(--accent);
   }
 
   .title {
@@ -225,7 +277,15 @@
     white-space: nowrap;
   }
 
-  .domain {
+  .untitled {
+    font-family: var(--font-mono);
+    font-size: var(--fs-0);
+    color: var(--fg-muted);
+  }
+
+  .domain,
+  .count {
+    font-family: var(--font-mono);
     font-size: var(--fs-0);
     color: var(--fg-muted);
     overflow: hidden;
@@ -233,9 +293,16 @@
     white-space: nowrap;
   }
 
+  .count {
+    flex: none;
+    padding: 0 5px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+  }
+
   .unsafe {
-    flex-shrink: 0;
-    font-size: var(--fs-0);
+    display: inline-flex;
+    flex: none;
     color: var(--warn);
     cursor: help;
   }
@@ -253,25 +320,34 @@
 
   .actions {
     margin-left: auto;
-    display: none;
-    gap: var(--sp-1);
+    display: flex;
+    gap: 2px;
+    visibility: hidden;
   }
 
   .row:hover .actions,
   .focused .actions {
-    display: flex;
+    visibility: visible;
   }
 
   .actions button {
-    font: inherit;
+    display: inline-flex;
+    align-items: center;
+    padding: 3px;
     background: none;
-    border: none;
+    border: 1px solid transparent;
+    border-radius: var(--radius-sm);
     color: var(--fg-muted);
     cursor: pointer;
-    padding: 0 var(--sp-1);
   }
 
   .actions button:hover {
     color: var(--accent);
+    border-color: var(--border);
+    background: var(--bg);
+  }
+
+  .actions .delete:hover {
+    color: var(--danger);
   }
 </style>

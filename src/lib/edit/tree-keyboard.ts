@@ -14,6 +14,13 @@ export interface VisibleRow {
   parentId: string | undefined;
   expandable: boolean;
   expanded: boolean;
+  /**
+   * Position among the visible siblings, 1-based, and how many there are. The
+   * rows render flat, so the browser cannot count siblings itself — without
+   * these, a screen reader announced "1 of 1" on every row.
+   */
+  posInSet: number;
+  setSize: number;
 }
 
 export type TreeAction =
@@ -23,6 +30,7 @@ export type TreeAction =
   | { kind: 'activate'; id: string }
   | { kind: 'rename'; id: string }
   | { kind: 'delete'; id: string }
+  | { kind: 'move'; id: string }
   | { kind: 'none' };
 
 const NONE: TreeAction = { kind: 'none' };
@@ -35,8 +43,8 @@ export function visibleRows(
 ): VisibleRow[] {
   const rows: VisibleRow[] = [];
   const walk = (nodes: readonly EditNode[], depth: number, parentId: string | undefined): void => {
-    for (const node of nodes) {
-      if (visible !== undefined && !visible.has(node.id)) continue;
+    const shown = visible === undefined ? nodes : nodes.filter((node) => visible.has(node.id));
+    for (const [index, node] of shown.entries()) {
       const children = node.children ?? [];
       const isOpen = expanded.has(node.id);
       rows.push({
@@ -45,6 +53,8 @@ export function visibleRows(
         parentId,
         expandable: node.url === undefined && children.length > 0,
         expanded: isOpen,
+        posInSet: index + 1,
+        setSize: shown.length,
       });
       if (isOpen) walk(children, depth + 1, node.id);
     }
@@ -96,6 +106,10 @@ export function resolveKey(
       return current === undefined ? NONE : { kind: 'rename', id: current.node.id };
     case 'Delete':
       return current === undefined ? NONE : { kind: 'delete', id: current.node.id };
+    // The menu key (and Shift+F10, which the tab maps onto it) opens "Move to…",
+    // the one row action with no other key: the row buttons are not tab stops.
+    case 'ContextMenu':
+      return current === undefined ? NONE : { kind: 'move', id: current.node.id };
     default:
       return key.length === 1 ? typeAhead(key, index, rows) : NONE;
   }

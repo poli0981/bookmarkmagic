@@ -131,6 +131,8 @@ const dict = {
     },
   },
   edit: {
+    tree: 'Bookmark tree',
+    loading: 'Reading your bookmarks…',
     search: 'Search bookmarks',
     newFolder: 'New folder',
     newFolderTitle: 'New folder',
@@ -147,23 +149,44 @@ const dict = {
     moveToBody: 'Move "{title}" into which folder?',
     noMoveTargets: 'No other folder is available.',
     delete: 'Delete',
+    untitled: '(untitled)',
     empty: 'No bookmarks yet — import some to get started.',
     noMatches: 'Nothing matches that search.',
+    showMore: 'Show {n} more rows · {total} not shown',
     deleteTitle: 'Delete this item?',
     deleteBody: 'Delete "{title}"? This cannot be undone.',
-    deleteFolderBody: 'Delete "{title}" and the {n} items inside it? This cannot be undone.',
+    deleteFolderBody: {
+      one: 'Delete "{title}" and the {n} item inside it? This cannot be undone.',
+      other: 'Delete "{title}" and the {n} items inside it? This cannot be undone.',
+    },
     duplicates: 'Duplicates',
     duplicatesFound: '{groups} duplicated links · {extra} extra copies',
     noDuplicates: 'No duplicate links found.',
-    keepFirst: 'Keep the first of each, delete {n}',
+    keepFirst: {
+      one: 'Keep the first of each, delete {n} copy',
+      other: 'Keep the first of each, delete {n} copies',
+    },
     keeps: 'kept',
+    deleteCopy: 'Delete the copy "{title}" in {path}',
     keepFirstTitle: 'Delete duplicate copies?',
-    keepFirstBody:
-      'Keep the first copy of each link and delete the other {n}? This cannot be undone.',
+    keepFirstBody: {
+      one: 'Keep the first copy of each link and delete the other {n}? This cannot be undone.',
+      other: 'Keep the first copy of each link and delete the other {n}? This cannot be undone.',
+    },
     // The dialog promises an exact number, so a partial delete has to reconcile
     // against it — the action cannot be undone.
     keepFirstPartial:
       'Deleted {done} of {total} copies before this failed. Nothing else was removed.',
+    sort: 'Sort A→Z',
+    sortTitle: 'Sort "{title}"?',
+    sortBody: {
+      one: 'Folders first, then bookmarks, by name. {n} item moves; nothing is renamed or deleted, and the browser has no undo for it.',
+      other:
+        'Folders first, then bookmarks, by name. {n} items move; nothing is renamed or deleted, and the browser has no undo for it.',
+    },
+    sortPartial:
+      'Moved {done} of {total} items before the browser refused. The folder shows its real order now.',
+    alreadySorted: 'This folder is already in order.',
   },
   settings: {
     autosave: 'Changes are saved as you make them.',

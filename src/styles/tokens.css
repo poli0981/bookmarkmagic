@@ -1,31 +1,44 @@
 /* Design tokens — docs/06 §1. Theme via data-theme on <html>; default follows
    prefers-color-scheme, manual override persisted in Settings.
 
-   Every `*-fg`/`*` pair and every token used as TEXT clears 4.5:1 against both
-   --bg and --bg-raised, in both themes (docs/06 §5). The numbers are not a
-   matter of taste: tests/unit/styles/contrast.test.ts parses this file and
-   fails the build if any pair drops below. Re-run it after changing a colour. */
+   The look since v1.1.0 is "technical": a cool neutral ramp, monospace for
+   labels and readouts, a faint grid, square-ish corners and quick, small
+   motion. No font is bundled — every stack below is a system one.
+
+   Every `*-fg`/`*` pair and every token used as TEXT clears 4.5:1 against
+   --bg, --bg-raised, --bg-sunken and --accent-subtle, in both themes; every
+   non-text UI token (--border-strong, the focus ring) clears 3:1 (docs/06 §5).
+   The numbers are not a matter of taste: tests/unit/styles/contrast.test.ts
+   parses this file and fails the build if any pair drops below. */
 
 :root {
-  --bg: #ffffff;
-  --bg-raised: #f6f7f9;
-  --border: #e2e5ea;
-  --fg: #1b1e24;
-  --fg-muted: #5b6472;
-  --accent: #6d4aff; /* violet — "magic" identity */
-  --accent-fg: #ffffff;
-  /* danger/success/warn are darker than an eyeball would pick, because all
-     three are used as text on --bg-raised: at the original values they measured
-     4.27, 3.26 and 3.40 against a 4.5 requirement. */
-  --danger: #ce3547;
-  --danger-fg: #ffffff;
-  --success: #198045;
-  --warn: #99651a;
+  color-scheme: light;
+  accent-color: var(--accent);
 
-  --radius: 10px;
-  --radius-sm: 6px;
+  --bg: #fbfbfd;
+  --bg-raised: #f2f3f7;
+  --bg-sunken: #eceef3;
+  /* Decorative dividers only. Anything that marks an interactive boundary —
+     inputs, checkboxes, the drop zone — uses --border-strong (≥ 3:1). */
+  --border: #dde1e8;
+  --border-strong: #7b8496;
+  --fg: #151821;
+  --fg-muted: #535d6e;
+  --accent: #6447f0; /* violet — "magic" identity */
+  --accent-fg: #ffffff;
+  --accent-subtle: #ece7ff;
+  --danger: #c22f3e;
+  --danger-fg: #ffffff;
+  --success: #15733c;
+  --warn: #8a5a12;
+  --grid: rgb(21 24 33 / 4.5%);
+
+  --radius: 6px;
+  --radius-sm: 4px;
 
   --font: system-ui, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:
+    ui-monospace, 'Cascadia Code', 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
   --fs-0: 12px;
   --fs-1: 13.5px;
   --fs-2: 15px;
@@ -38,38 +51,69 @@
   --sp-4: 16px;
   --sp-5: 24px;
   --sp-6: 32px;
+
+  --shadow-1: 0 1px 2px rgb(15 17 23 / 8%), 0 1px 1px rgb(15 17 23 / 4%);
+  --shadow-2: 0 12px 32px rgb(15 17 23 / 16%), 0 2px 6px rgb(15 17 23 / 8%);
+
+  --z-dialog: 40;
+  --z-toast: 50;
+
+  --width-page: 1040px;
+  --width-side: 360px;
+
+  /* Motion. Durations are only ever used inside
+     `@media (prefers-reduced-motion: no-preference)` — tests/unit/styles/
+     motion.test.ts fails on an animation outside that guard. */
+  --dur-1: 120ms;
+  --dur-2: 200ms;
+  --dur-3: 320ms;
+  --ease: cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 [data-theme='dark'] {
-  --bg: #16181d;
-  --bg-raised: #1e2128;
-  --border: #2b3039;
-  --fg: #e8eaee;
-  --fg-muted: #9aa3b0;
-  --accent: #8f72ff;
+  color-scheme: dark;
+  --bg: #0e1015;
+  --bg-raised: #161a22;
+  --bg-sunken: #0a0c10;
+  --border: #262b35;
+  --border-strong: #5f697c;
+  --fg: #e6e9f0;
+  --fg-muted: #9aa4b5;
+  --accent: #9a80ff;
   /* Dark mode lightens --accent for contrast against --bg, which drops white
-     ink on it under the 4.5:1 docs/06 §5 requires. --accent-fg must be
-     redefined alongside it, in the opposite direction. */
-  --accent-fg: #16181d;
+     ink on it under 4.5:1. --accent-fg must be redefined alongside it, in the
+     opposite direction. */
+  --accent-fg: #0e1015;
+  --accent-subtle: #241c44;
   --danger: #ff6b7d;
-  --danger-fg: #16181d;
+  --danger-fg: #0e1015;
   --success: #3ecf8e;
   --warn: #e2b93b;
+  --grid: rgb(230 233 240 / 3.5%);
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+  --shadow-2: 0 12px 32px rgb(0 0 0 / 55%), 0 2px 6px rgb(0 0 0 / 35%);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
-    --bg: #16181d;
-    --bg-raised: #1e2128;
-    --border: #2b3039;
-    --fg: #e8eaee;
-    --fg-muted: #9aa3b0;
-    --accent: #8f72ff;
+    color-scheme: dark;
+    --bg: #0e1015;
+    --bg-raised: #161a22;
+    --bg-sunken: #0a0c10;
+    --border: #262b35;
+    --border-strong: #5f697c;
+    --fg: #e6e9f0;
+    --fg-muted: #9aa4b5;
+    --accent: #9a80ff;
     /* Keep in step with the [data-theme='dark'] block above. */
-    --accent-fg: #16181d;
+    --accent-fg: #0e1015;
+    --accent-subtle: #241c44;
     --danger: #ff6b7d;
-    --danger-fg: #16181d;
+    --danger-fg: #0e1015;
     --success: #3ecf8e;
     --warn: #e2b93b;
+    --grid: rgb(230 233 240 / 3.5%);
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-2: 0 12px 32px rgb(0 0 0 / 55%), 0 2px 6px rgb(0 0 0 / 35%);
   }
 }

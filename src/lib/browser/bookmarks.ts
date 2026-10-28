@@ -194,6 +194,11 @@ export interface BookmarkEvents {
   onRemoved: (id: string) => void;
   onChanged: (id: string, changes: { title?: string; url?: string }) => void;
   onMoved: (id: string, info: { parentId: string; index: number }) => void;
+  /** A folder's children were reordered wholesale (Chrome's own "Sort by name"). */
+  onChildrenReordered?: (id: string) => void;
+  /** Chrome's own importer is running; it sends no per-node events meanwhile. */
+  onImportBegan?: () => void;
+  onImportEnded?: () => void;
 }
 
 type Listenable<T extends unknown[]> = {
@@ -204,41 +209,44 @@ type Listenable<T extends unknown[]> = {
 /**
  * Subscribe to bookmark changes; returns an unsubscribe function.
  *
- * Listeners attach on tab enter and detach on leave (docs/03 §3) — an #edit
- * tab left subscribed while an import runs would otherwise take one event per
- * created node.
+ * Listeners attach on tab enter and detach on leave (docs/03 §3). Each handler
+ * is isolated: an exception in one used to escape into Chrome's event
+ * dispatch, and the tree silently stopped following the browser.
  */
-export function subscribe(handlers: BookmarkEvents): () => void {
-  const api = browser.bookmarks as unknown as {
-    onCreated: Listenable<[string, LiveNode]>;
-    onRemoved: Listenable<[string, unknown]>;
-    onChanged: Listenable<[string, { title?: string; url?: string }]>;
-    onMoved: Listenable<[string, { parentId: string; index: number }]>;
-  };
+export function subscribe(
+  handlers: BookmarkEvents,
+  onError?: (error: unknown) => void,
+): () => void {
+  // SAFETY: every name looked up below is a `chrome.bookmarks` event object;
+  // the record type only erases their argument lists so one loop wires them.
+  const api = browser.bookmarks as unknown as Record<string, Listenable<unknown[]> | undefined>;
+  const safe =
+    <T extends unknown[]>(fn: ((...args: T) => void) | undefined) =>
+    (...args: T): void => {
+      try {
+        fn?.(...args);
+      } catch (error) {
+        onError?.(error);
+      }
+    };
 
-  const onCreated = (id: string, node: LiveNode): void => {
-    handlers.onCreated(id, node);
-  };
-  const onRemoved = (id: string): void => {
-    handlers.onRemoved(id);
-  };
-  const onChanged = (id: string, changes: { title?: string; url?: string }): void => {
-    handlers.onChanged(id, changes);
-  };
-  const onMoved = (id: string, info: { parentId: string; index: number }): void => {
-    handlers.onMoved(id, info);
-  };
-
-  api.onCreated.addListener(onCreated);
-  api.onRemoved.addListener(onRemoved);
-  api.onChanged.addListener(onChanged);
-  api.onMoved.addListener(onMoved);
+  const wired: [string, (...args: never[]) => void][] = [
+    ['onCreated', safe(handlers.onCreated)],
+    ['onRemoved', safe(handlers.onRemoved)],
+    ['onChanged', safe(handlers.onChanged)],
+    ['onMoved', safe(handlers.onMoved)],
+    ['onChildrenReordered', safe(handlers.onChildrenReordered)],
+    ['onImportBegan', safe(handlers.onImportBegan)],
+    ['onImportEnded', safe(handlers.onImportEnded)],
+  ];
+  // Not every Chromium build has every event (Firefox lacks the import pair).
+  // SAFETY: each listener is registered on the event whose arguments it was
+  // typed for in `BookmarkEvents`; the cast only matches the erased record.
+  const erased = wired as unknown as [string, (...args: unknown[]) => void][];
+  for (const [name, fn] of erased) api[name]?.addListener(fn);
 
   return () => {
-    api.onCreated.removeListener(onCreated);
-    api.onRemoved.removeListener(onRemoved);
-    api.onChanged.removeListener(onChanged);
-    api.onMoved.removeListener(onMoved);
+    for (const [name, fn] of erased) api[name]?.removeListener(fn);
   };
 }
 
