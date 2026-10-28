@@ -93,7 +93,12 @@ describe('manifest', () => {
     // shape of the config that produces it.
     expect(CONFIG.match(/content_security_policy/g)?.length ?? 0).toBe(1);
     expect(CONFIG).toMatch(/command === 'build' && \{\s*content_security_policy:/);
-    const csp = RAW.slice(RAW.indexOf('const EXTENSION_PAGE_CSP'), RAW.indexOf("].join('; ')"));
+    // From the comment-stripped config: the explanatory comments beside the
+    // directives mention default-src on purpose.
+    const csp = CONFIG.slice(
+      CONFIG.indexOf('const EXTENSION_PAGE_CSP'),
+      CONFIG.indexOf("].join('; ')"),
+    );
     for (const directive of [
       "script-src 'self'",
       "object-src 'none'",
@@ -103,8 +108,12 @@ describe('manifest', () => {
     ]) {
       expect(csp).toContain(`"${directive}"`);
     }
-    // Loosening is what MV3 forbids and what this test exists to stop.
-    expect(csp).not.toMatch(/unsafe-|https?:|\*|default-src/);
+    // Loosening is what MV3 forbids and what this test exists to stop. The one
+    // 'unsafe-inline' allowed is for STYLE (Svelte sets style attributes) —
+    // never for script.
+    expect(csp).toContain(`"style-src 'self' 'unsafe-inline'"`);
+    const withoutInlineStyle = csp.replace(`"style-src 'self' 'unsafe-inline'"`, '');
+    expect(withoutInlineStyle).not.toMatch(/unsafe-|https?:|\*|default-src/);
   });
 
   it('keeps the manifest at v3 by not overriding WXT’s default', () => {

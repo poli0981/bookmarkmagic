@@ -38,6 +38,9 @@ const EXTENSION_PAGE_CSP = [
   "object-src 'none'",
   "connect-src 'none'",
   "img-src 'self' data: blob:",
+  // Inline styles stay allowed (Svelte sets style attributes); remote
+  // stylesheets do not — with no default-src, style-src was otherwise open.
+  "style-src 'self' 'unsafe-inline'",
   "font-src 'self'",
   "media-src 'none'",
   "frame-src 'none'",

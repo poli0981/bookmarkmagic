@@ -48,7 +48,7 @@ function urlAttrSpans(text, mapUrl) {
 }
 
 /** The next element that ends a description: `<DT>`, `<DD>`, `<DL>` or a close. */
-const DESCRIPTION_END = /<\s*\/?\s*(?:dt|dd|dl)\b/gi;
+const DESCRIPTION_END = /<\s*(?:\/\s*)?(?:dt|dd|dl)\b/gi;
 
 /**
  * `<DD>` descriptions, found in one linear pass.

@@ -54,9 +54,14 @@ const SKIP_DIRS = new Set(['node_modules', '.output', '.wxt', '.git']);
 const REMOTE = String.raw`(?:https?:)?\/\/`;
 
 /**
- * [category, name, pattern]. Every pattern carries the `g` flag and is run over
- * the whole file. Each one has a positive and a negative case in
- * tests/unit/scripts/guard.test.ts — add both when adding a rule.
+ * [category, name, pattern, refine?]. Every pattern carries the `g` flag and is
+ * run over the whole file; when `refine` is present, a match only counts if
+ * `refine` also matches the matched text. Each rule has a positive and a
+ * negative case in tests/unit/scripts/guard.test.ts — add both when adding one.
+ *
+ * No pattern may let two quantifiers compete for the same characters (a
+ * `\s*` beside an optional quote beside another `\s*`): that backtracks
+ * polynomially (SonarCloud S8786), and this script scans whatever lands in src/.
  */
 const RULES = [
   // Network. Identifiers, not call shapes: aliasing, tagged templates and
@@ -72,25 +77,26 @@ const RULES = [
   // `globalThis['fe' + 'tch']` — computed access on a global is how every
   // identifier rule above is evaded, so it is banned as a shape.
   ['network', 'computed global access', /\b(?:globalThis|window|self|navigator|document)\s*\[/g],
+  // Resource hints fetch ahead of time. These words have no use in this
+  // extension, so they are banned outright; `preload` is ordinary English, so
+  // only as a rel value.
   [
     'network',
     'resource hint',
-    /\brel\s*=\s*["'`]?\s*(?:pre(?:fetch|connect|render|load)|dns-prefetch)\b/g,
+    /\b(?:prefetch|preconnect|prerender|dns-prefetch|modulepreload)\b|\brel\s*=\s*["'`]?preload\b/gi,
   ],
+  // Two linear steps: find a resource-loading tag, then look inside it.
   [
     'network',
     'remote resource in markup',
-    new RegExp(
-      String.raw`<(?:img|script|iframe|frame|link|source|video|audio|embed|object|track|image)\b[^>]*?\b(?:src|href|srcset|data|poster)\s*=\s*["'{]?\s*` +
-        REMOTE,
-      'gi',
-    ),
+    /<(?:img|script|iframe|frame|link|source|video|audio|embed|object|track|image)\b[^>]*>/gi,
+    new RegExp(String.raw`\b(?:src|href|srcset|data|poster)\s*=\s*(?:["'{]\s*)?` + REMOTE, 'i'),
   ],
-  ['network', 'remote url() in CSS', new RegExp(String.raw`url\(\s*["']?\s*` + REMOTE, 'gi')],
+  ['network', 'remote url() in CSS', new RegExp(String.raw`url\(\s*(?:["']\s*)?` + REMOTE, 'gi')],
   [
     'network',
     'remote @import',
-    new RegExp(String.raw`@import\s+(?:url\(\s*)?["']?\s*` + REMOTE, 'gi'),
+    new RegExp(String.raw`@import\s+(?:url\(\s*)?(?:["']\s*)?` + REMOTE, 'gi'),
   ],
   // Remote code.
   ['remote code', 'eval', /\beval\b/g],
@@ -165,8 +171,9 @@ function scan(text) {
 
   const found = [];
   const seen = new Set();
-  for (const [category, name, pattern] of RULES) {
+  for (const [category, name, pattern, refine] of RULES) {
     for (const match of text.matchAll(/** @type {RegExp} */ (pattern))) {
+      if (refine instanceof RegExp && !refine.test(match[0])) continue;
       const line = lineOf(match.index ?? 0);
       const key = `${line}\u0000${name}`;
       if (seen.has(key)) continue;
