@@ -64,7 +64,11 @@ Full policy: [`legal/PRIVACY.md`](legal/PRIVACY.md).
 
 From the Chrome Web Store: [here](https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg)
 
-From source:
+Requires Chrome 136 or later (April 2025), or any Chromium browser of the same
+vintage — Edge, Brave, Vivaldi, Opera. On an older browser the store keeps the
+version you already have and simply stops updating it.
+
+From source (Node.js 26):
 
 ```bash
 npm ci && npm run build

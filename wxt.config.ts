@@ -10,9 +10,17 @@ import { defineConfig } from 'wxt';
  *   is never loosened.
  * - srcDir: 'src' so entrypoints/, public/ and lib/ all live under src/ and
  *   the `@` alias resolves there (docs/02 §2).
+ * - One runtime floor, stated three times on purpose: `minimum_chrome_version`
+ *   below, Vite's `build.target`, and tsconfig's `ES2025` lib. Chrome 136 is
+ *   the first release with every ES2025 built-in (RegExp.escape landed in 136,
+ *   Float16Array in 135), so the types the compiler allows are exactly the
+ *   APIs the oldest supported browser has (docs/01 §1, docs/08 §7).
  */
+const CHROME_FLOOR = 136;
+
 export default defineConfig({
   srcDir: 'src',
+  vite: () => ({ build: { target: `chrome${CHROME_FLOOR}` } }),
   // publicDir is resolved against the project ROOT, not srcDir — WXT's default
   // is `<root>/public`, so this line is required to keep _locales/ and icon/
   // under src/. Without it they are silently omitted from the build and Chrome
@@ -23,7 +31,7 @@ export default defineConfig({
     name: '__MSG_appName__',
     description: '__MSG_appDesc__',
     default_locale: 'en',
-    minimum_chrome_version: '120',
+    minimum_chrome_version: String(CHROME_FLOOR),
     permissions: ['bookmarks', 'storage'],
     // Deep-link lands on #settings only when no Manager tab is open — with
     // open_in_tab Chrome matches the singleton tab ignoring the fragment,

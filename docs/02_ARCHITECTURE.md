@@ -220,7 +220,7 @@ submission (`08 §8`).
 
 `browser/open-manager.ts`:
 1. `browser.runtime.getContexts({ contextTypes: ['TAB'] })` → find an existing
-   manager context (requires Chrome 116+; we target 120+).
+   manager context (requires Chrome 116+; the floor is 136 — `01 §1`).
 2. Found → `browser.tabs.update(tabId, { active: true })` +
    `browser.windows.update(windowId, { focused: true })` (no `tabs`
    permission needed for these calls).
