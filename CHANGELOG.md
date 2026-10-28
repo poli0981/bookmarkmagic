@@ -15,6 +15,9 @@ Nothing yet.
 
 ## [1.0.1] — 2026-08-03
 
+Released and submitted 2026-08-03; live on the Chrome Web Store (confirmed on
+the listing 2026-10-28).
+
 Stabilization, from the first pass over the shipped extension. No new features,
 no change to permissions, and nothing you have to do — Chrome updates itself.
 

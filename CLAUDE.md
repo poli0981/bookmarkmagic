@@ -6,9 +6,10 @@ This file is the entry point; the `docs/` suite is the specification.
 
 > ## ⚠️ This is shipped software
 >
-> **v1.0.0 is published on the Chrome Web Store and has real users** (submitted
-> 2026-07-26, live by 2026-08-03). Phases 0–5 are complete; the project is in
-> **maintenance**. That changes the rules of the game:
+> **BookmarkMagic is published on the Chrome Web Store and has real users**
+> (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
+> 2026-10-28). Phases 0–6 are complete; the project is in **maintenance**.
+> That changes the rules of the game:
 >
 > - Every change now reaches installed users through a store review. It needs a
 >   semver bump, a `CHANGELOG.md` entry and an update submission — `13 §1b`.
@@ -110,10 +111,11 @@ install, privacy summary, donate), full manual QA (docs/11 §5), `wxt zip`
 clean-install test. Also carried in from the Phase 4 review:
 - ✔ About's "Changelog" link now targets `CHANGELOG.md`, pinned by
   `tests/unit/links.test.ts`;
-- ✔ `EditTab.svelte` split (589 → 459, under the hard limit). **It has since
-  grown back to 481** (script block 300) via the Phase 5 review commits — 19
-  lines of headroom against the hard 500. Anything added there now has to come
-  out first; `src/lib/edit/` is where extracted logic goes;
+- ✔ `EditTab.svelte` split (589 → 459, under the hard limit). It grew back
+  through the Phase 5 and 6 review commits — **476 lines with a 356-line script
+  block** as of 2026-10-28, against a 150-line soft limit for script blocks
+  (docs/10 §1). Anything added there has to come out first; `src/lib/edit/` is
+  where extracted logic goes;
 - ✔ contrast tokens fixed, and `tests/unit/styles/contrast.test.ts` now fails
   the build on any text pair under 4.5:1. Two blind spots to know about: it is
   token-level, so it cannot see the `opacity`-on-text bypass it was written to
@@ -129,9 +131,8 @@ machinery (`.github/ISSUE_TEMPLATE`, `CONTRIBUTING.md`, the sanitizer — docs/1
 reporting and the routing deadlock → localized `#edit`/`#export` failures and
 bounded search expansion → cross-tab settings/legal sync → dependency bumps and
 CI hardening → the About store link → cut 1.0.1.
-**Exit:** `main` tag-ready, docs/11 §5 manual pass green including the
-**1.0.0 → 1.0.1 upgrade over an existing profile**; the human signs and pushes
-the tag and performs the store update per docs/13 §1b.
+**Exit:** ✔ v1.0.1 tagged and released 2026-08-03, live on the store
+(confirmed 2026-10-28).
 
 ## Working style
 
