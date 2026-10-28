@@ -15,7 +15,7 @@
     "url": "https://github.com/poli0981/bookmarkmagic/issues"
   },
   "engines": {
-    "node": ">=24"
+    "node": ">=26"
   },
   "scripts": {
     "postinstall": "wxt prepare",
@@ -39,14 +39,15 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.5",
     "@sveltejs/vite-plugin-svelte": "^7.2.0",
-    "@types/node": "^24.13.3",
+    "@types/node": "^26.6.5",
+    "@typescript/native": "npm:typescript@~7.0.2",
     "@vitest/coverage-v8": "^4.1.10",
     "@wxt-dev/module-svelte": "^2.0.5",
     "jsdom": "^30.0.1",
     "knip": "^6.29.0",
     "svelte": "^5.56.8",
     "svelte-check": "^4.7.4",
-    "typescript": "~6.0.3",
+    "typescript": "npm:@typescript/typescript6@~6.0.2",
     "vitest": "^4.1.10",
     "wxt": "^0.21.3"
   },

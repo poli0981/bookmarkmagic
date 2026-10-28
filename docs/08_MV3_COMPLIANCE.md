@@ -11,7 +11,7 @@ export default defineConfig({
     name: '__MSG_appName__',
     description: '__MSG_appDesc__',
     default_locale: 'en',
-    minimum_chrome_version: '120',
+    minimum_chrome_version: String(CHROME_FLOOR),   // 136 — the ES2025 floor, 01 §1
     permissions: ['bookmarks', 'storage'],   // ← the complete list, forever (v1)
     action: { default_popup: 'popup.html' }, // WXT wires this automatically
     options_ui: { page: 'manager.html#settings', open_in_tab: true },
@@ -114,11 +114,19 @@ any of them changes (`09 §4`).
   event-driven only.
 - Extension pages (popup/manager) may use `DOMParser`, `Blob`, `<a download>`
   freely — these need no permissions.
-- `browser.runtime.getContexts()` (Chrome 116+) is our highest **hard**-floor
-  API → `minimum_chrome_version: 120` gives margin. `scheduler.yield()`
-  (Chrome 129+) is used only behind the nullish fallback in `05 §6`, so it does
-  not raise the floor — but that fallback only works if it is written with
-  explicit parentheses; see the warning there.
+- **The floor is Chrome 136** (`minimum_chrome_version: "136"`, since v1.1.0;
+  120 before). It is set by the language, not by an extension API: 136 is the
+  first Chrome with every ES2025 built-in, and tsconfig's `lib` is ES2025
+  (`01 §1`). The highest extension-API floors are far below it —
+  `browser.runtime.getContexts()` needs 116 and `scheduler.yield()` 129 — so
+  `scheduler.yield()` is in fact always present. The write queue still keeps
+  its nullish fallback (`05 §6`) because the test environment has no
+  `scheduler`; it only works if written with explicit parentheses, see the
+  warning there.
+- Raising the floor is a **user-visible** event even though it is not a
+  permission change: a user below it keeps the installed version and simply
+  stops receiving updates. Say so in the CHANGELOG, and never raise it in a
+  patch release.
 
 ## 8. Review-readiness checklist (before every submission)
 

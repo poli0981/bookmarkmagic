@@ -72,6 +72,22 @@ describe('manifest', () => {
     expect(CONFIG).not.toMatch(/\bbackground\s*:/);
   });
 
+  it('states one runtime floor: Chrome 136, the first with every ES2025 built-in', () => {
+    // The manifest floor, Vite's transpile target and tsconfig's lib must agree.
+    // A lib newer than the floor lets the compiler accept APIs (RegExp.escape,
+    // Float16Array) that throw on the oldest Chrome still allowed to install.
+    expect(CONFIG).toMatch(/const CHROME_FLOOR = 136;/);
+    expect(CONFIG).toMatch(/minimum_chrome_version:\s*String\(CHROME_FLOOR\)/);
+    expect(CONFIG).toMatch(/target:\s*`chrome\$\{CHROME_FLOOR\}`/);
+    // SAFETY: tsconfig.json is a committed file with exactly this shape; a
+    // missing key fails the expectations below rather than passing silently.
+    const tsconfig = JSON.parse(readFileSync(join(process.cwd(), 'tsconfig.json'), 'utf8')) as {
+      compilerOptions: { target: string; lib: string[] };
+    };
+    expect(tsconfig.compilerOptions.target).toBe('ES2025');
+    expect(tsconfig.compilerOptions.lib).toEqual(['ES2025', 'DOM', 'DOM.Iterable']);
+  });
+
   it('keeps the manifest at v3 by not overriding WXT’s default', () => {
     // WXT emits manifest_version 3 for the chrome-mv3 target. An explicit
     // downgrade here would be the only way to lose it.
