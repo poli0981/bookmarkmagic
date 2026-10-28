@@ -2,7 +2,8 @@
 #
 # The `quality` job is local because the ops reusable runs NO quality gates at
 # all: its entire surface is install → build → assert manifest_version == 3 →
-# zip → upload. Lint, type-check, knip, coverage and the grep gate are ours.
+# zip → upload. Lint, type-check, knip, coverage, audit and the grep gate are
+# ours.
 name: CI
 
 on:
@@ -26,22 +27,57 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: .nvmrc
           cache: npm
-      - run: npm ci
+
+      # --ignore-scripts: no dependency runs code at install time. `wxt prepare`
+      # (our postinstall) generates .wxt/tsconfig.json, which tsconfig.json
+      # extends, so it runs explicitly from the local binary.
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install wxt prepare
+
       - run: npm run lint # biome check .
-      - run: npm run check # svelte-check + tsc --noEmit
+      - run: npm run check # svelte-check (TS 6 API) + tsc (TS 7)
       - run: npm run knip
       - run: npm run coverage # vitest --coverage, thresholds per docs/11 §1
-      - run: npm run guard # the canonical grep gate, docs/08 §3
+      - run: npm run guard # the zero-network / no-raw-HTML gate, docs/08 §3
+
+      # Zero runtime dependencies is a public claim (README, docs/09 T5); this
+      # is the check that keeps it true. Dev-only advisories are tracked by
+      # Dependabot and docs/09 §3.1, not here.
+      - run: npm audit --omit=dev --audit-level=low
 
       # The unit test proves what wxt.config.ts ASKS for. Only this proves what
       # WXT actually emitted — a dev build of the same config carries
       # tabs/scripting/host_permissions that never appear in the config file.
       - run: npm run build
       - run: npm run check:manifest
+
+  windows:
+    # Not a required check. The owner develops on Windows, and the paths that
+    # only break there — drive letters and percent-encoding in script paths,
+    # CRLF in a checkout — had no CI coverage at all.
+    name: Windows smoke (guard + unit tests)
+    runs-on: windows-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npx --no-install wxt prepare
+      - run: npm run guard
+      - run: npm test
 
   build:
     name: Build + package
@@ -66,7 +102,9 @@ jobs:
       # 'none' default skips install and build, then fails on
       # `test -f ./manifest.json` — a file WXT never writes to the repo root.
       package-manager: 'npm'
-      node-version: '24'
+      # A string input, so it cannot read .nvmrc — keep it equal by hand
+      # (docs/01 §2).
+      node-version: '26'
       build-command: 'npm run build'
       source-dir: '.output/chrome-mv3'
       release: false

@@ -77,6 +77,20 @@ function writeFlat(roots: readonly BookmarkNode[], out: string[]): void {
   }
 }
 
+/**
+ * Drop trailing line feeds in one backward pass.
+ *
+ * Replaces `.replace(/\n+$/, '')`, which backtracks: for every newline in a
+ * long run that is NOT at the end (a title holding thousands of them, say), the
+ * engine re-scans the rest of the run before failing at `$` — quadratic in the
+ * run length (SonarCloud S8786).
+ */
+function trimTrailingNewlines(text: string): string {
+  let end = text.length;
+  while (end > 0 && text.charCodeAt(end - 1) === 0x0a) end--;
+  return text.slice(0, end);
+}
+
 /** Serialize a tree to Markdown. */
 export function serializeMarkdown(
   roots: readonly BookmarkNode[],
@@ -85,5 +99,5 @@ export function serializeMarkdown(
   const out: string[] = [`# Bookmarks — ${options.date}`, ''];
   if ((options.style ?? 'nested') === 'flat') writeFlat(roots, out);
   else writeNested(roots, 0, out);
-  return `${out.join('\n').replace(/\n+$/, '')}\n`;
+  return `${trimTrailingNewlines(out.join('\n'))}\n`;
 }

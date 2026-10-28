@@ -9,10 +9,13 @@
 | Components/UI | Manual QA checklist (§5) | No component-test framework in v1 (cost/benefit) |
 | End-to-end | Out of scope v1 (Roadmap: Playwright + `--load-extension`) | — |
 
-`vitest.config.ts`: `plugins: [WxtVitest()]` (WXT aliases/auto-imports resolve
-in tests), `environment: 'jsdom'`, `coverage.provider: 'v8'`,
-`coverage.thresholds: { lines: 90, functions: 90, branches: 85 }` scoped to
-`src/lib/core/**`.
+`vitest.config.ts`: `plugins: [svelte(), WxtVitest()]` (the svelte plugin
+compiles runes in `.svelte.ts` stores; WXT's resolves aliases and auto-imports),
+`environment: 'jsdom'`, `coverage.provider: 'v8'`. Coverage **measures** every
+`src/**/*.ts` module and writes `text` + `lcov` (SonarCloud reads the lcov,
+`12 §2.5`), but only core is **gated**: a glob threshold
+`'src/lib/core/**': { lines: 90, functions: 90, branches: 85 }`, so widening
+what is measured cannot change what is enforced.
 
 **Environment canary.** Add one test asserting that a Chrome fixture parses to
 a `<DL>` nested *inside* its `<DT>` (`dl.querySelector('dt').querySelector(':scope > dl') !== null`).
