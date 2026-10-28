@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { clearToasts, dismissToast, getVisibleToast, pushToast } from '@/lib/stores/toast.svelte';
+import {
+  clearToasts,
+  dismissToast,
+  getPinnedToast,
+  getVisibleToast,
+  pushToast,
+} from '@/lib/stores/toast.svelte';
 
 beforeEach(() => {
   clearToasts();
@@ -52,8 +58,11 @@ describe('toast queue', () => {
   it('treats the same text with a different tone as a distinct toast', () => {
     pushToast('Done', 'success');
     pushToast('Done', 'danger');
+    expect(getVisibleToast()?.tone).toBe('success');
+    expect(getPinnedToast()?.tone).toBe('danger');
     vi.advanceTimersByTime(4000);
-    expect(getVisibleToast()?.tone).toBe('danger');
+    expect(getVisibleToast()).toBeUndefined();
+    expect(getPinnedToast()?.message).toBe('Done');
   });
 
   it('does not let a stale timer shift the next item early after a manual dismiss', () => {
@@ -106,22 +115,36 @@ describe('toast queue', () => {
 });
 
 describe('toast — failures stay until dismissed (v1.1.0)', () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    clearToasts();
-  });
-  afterEach(() => {
-    vi.useRealTimers();
-  });
-
-  it('never auto-dismisses a danger toast, and moves on once it is dismissed', () => {
+  it('pins a failure without holding up the toasts after it', () => {
     pushToast('It failed', 'danger');
     pushToast('Later news');
-    vi.advanceTimersByTime(60_000);
-    expect(getVisibleToast()?.message).toBe('It failed');
-    dismissToast(getVisibleToast()?.id ?? '');
+    // In 1.1.0's first cut the failure sat at the head of the queue, and
+    // "Later news" waited behind it until someone dismissed it.
     expect(getVisibleToast()?.message).toBe('Later news');
     vi.advanceTimersByTime(4000);
     expect(getVisibleToast()).toBeUndefined();
+    vi.advanceTimersByTime(60_000);
+    expect(getPinnedToast()?.message).toBe('It failed');
+    dismissToast(getPinnedToast()?.id ?? '');
+    expect(getPinnedToast()).toBeUndefined();
+  });
+
+  it('shows only the latest failure, and keeps the item for a repeat', () => {
+    pushToast('First failure', 'danger');
+    const first = getPinnedToast();
+    pushToast('First failure', 'danger');
+    expect(getPinnedToast()).toBe(first);
+    pushToast('Second failure', 'danger');
+    expect(getPinnedToast()?.message).toBe('Second failure');
+  });
+
+  it('dismissing the transient toast leaves the pinned one alone, and vice versa', () => {
+    pushToast('Broken', 'danger');
+    pushToast('Copied', 'success');
+    dismissToast(getVisibleToast()?.id ?? '');
+    expect(getPinnedToast()?.message).toBe('Broken');
+    pushToast('Copied again', 'success');
+    dismissToast(getPinnedToast()?.id ?? '');
+    expect(getVisibleToast()?.message).toBe('Copied again');
   });
 });

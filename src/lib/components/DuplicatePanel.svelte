@@ -2,7 +2,7 @@
   import type { DuplicateGroup } from '../core/dedupe';
   import { folderPaths } from '../edit/edit-node';
   import type { EditNode } from '../edit/patch-tree';
-  import { num, t, tPlural } from '../i18n/index.svelte';
+  import { t, tPlural } from '../i18n/index.svelte';
   import Button from './Button.svelte';
   import Icon from './icons/Icon.svelte';
 
@@ -29,7 +29,7 @@
   </header>
 
   <p class="summary" aria-live="polite">
-    {t('edit.duplicatesFound', { groups: num(groups.length), extra: num(extra) })}
+    {tPlural('edit.duplicateLinks', groups.length)} · {tPlural('edit.extraCopies', extra)}
   </p>
 
   {#if groups.length === 0}

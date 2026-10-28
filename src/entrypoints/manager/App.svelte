@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { getAppVersion } from '@/lib/browser/app-info';
   import AboutTab from '@/lib/components/AboutTab.svelte';
   import EditTab from '@/lib/components/EditTab.svelte';
   import ExportTab from '@/lib/components/ExportTab.svelte';
@@ -8,13 +7,13 @@
   import LanguageSwitcher from '@/lib/components/LanguageSwitcher.svelte';
   import LegalGate from '@/lib/components/LegalGate.svelte';
   import SettingsTab from '@/lib/components/SettingsTab.svelte';
+  import StatusBar from '@/lib/components/StatusBar.svelte';
   import TabBar from '@/lib/components/TabBar.svelte';
   import ThemeToggle from '@/lib/components/ThemeToggle.svelte';
   import Toast from '@/lib/components/Toast.svelte';
   import Icon from '@/lib/components/icons/Icon.svelte';
   import { t } from '@/lib/i18n/index.svelte';
   import { isWriting } from '@/lib/stores/import-session.svelte';
-  import { REPO_URL } from '@/lib/links';
   import {
     getBlockedRoutes,
     getLegalStatus,
@@ -23,7 +22,7 @@
   } from '@/lib/stores/legal.svelte';
   import { getRoute, isRoute, navigate, startRouting } from '@/lib/stores/route.svelte';
   import { subscribeStorage } from '@/lib/browser/storage';
-  import { MANAGER_CHANNEL, type NavigateMessage } from '@/lib/browser/open-manager';
+  import { onNavigateRequest } from '@/lib/browser/open-manager';
   import { adoptExternalLegal } from '@/lib/stores/legal.svelte';
   import {
     adoptExternalSettings,
@@ -35,7 +34,6 @@
 
   // Settings are loaded and awaited in main.ts, before this ever mounts.
   const settings = $derived(getSettings());
-  const version = getAppVersion();
   const legal = $derived(getLegalStatus());
   const gated = $derived(isGateRequired() && isGatedRoute(getRoute()));
 
@@ -89,16 +87,14 @@
 
     // The popup asks an open Manager to switch route (uM12). Refused while an
     // import is writing, exactly like the tab bar and browser Back.
-    const channel = new BroadcastChannel(MANAGER_CHANNEL);
-    channel.onmessage = (event: MessageEvent<NavigateMessage>) => {
-      if (event.data?.kind !== 'navigate') return;
+    const stopNavigate = onNavigateRequest((hash) => {
       if (isWriting()) {
         pushToast(t('common.busy'), 'info');
         return;
       }
-      const route = String(event.data.route).replace(/^#/, '');
+      const route = hash.slice(1);
       if (isRoute(route)) navigate(route);
-    };
+    });
 
     globalThis.addEventListener('beforeunload', onBeforeUnload);
     globalThis.document?.addEventListener('visibilitychange', onVisibilityChange);
@@ -106,7 +102,7 @@
     return () => {
       stopRouting();
       stopStorage();
-      channel.close();
+      stopNavigate();
       globalThis.removeEventListener('beforeunload', onBeforeUnload);
       globalThis.document?.removeEventListener('visibilitychange', onVisibilityChange);
     };
@@ -161,44 +157,7 @@
   {/if}
 </main>
 
-<!-- An IDE-style status bar: what this build is, what it can touch, and the
-     two secondary routes. -->
-<footer class="mono">
-  <span class="cell local" title={t('status.localNote')}>
-    <span class="dot" aria-hidden="true"></span>{t('status.local')}
-  </span>
-  <span class="cell" title={t('status.permissionsNote')}>
-    <Icon name="shield" size={12} />bookmarks, storage
-  </span>
-  {#if version !== ''}<span class="cell">v{version}</span>{/if}
-  <span class="cell">GPL-3.0</span>
-  <a class="cell" href={REPO_URL} target="_blank" rel="noopener noreferrer">
-    <Icon name="code" size={12} />GitHub
-  </a>
-  <nav aria-label={t('status.more')}>
-    <!-- Gated like TabBar's tabs: navigating away mid-write unmounts ImportTab
-         and strands the attestation resolver, deadlocking the import
-         (docs/03 §5). -->
-    <button
-      class="cell"
-      aria-current={getRoute() === 'settings' ? 'page' : undefined}
-      disabled={isWriting()}
-      title={isWriting() ? t('common.busy') : undefined}
-      onclick={() => navigate('settings')}
-    >
-      <Icon name="gear" size={12} motion="spin" />{t('common.settings')}
-    </button>
-    <button
-      class="cell"
-      aria-current={getRoute() === 'about' ? 'page' : undefined}
-      disabled={isWriting()}
-      title={isWriting() ? t('common.busy') : undefined}
-      onclick={() => navigate('about')}
-    >
-      <Icon name="info" size={12} />{t('common.about')}
-    </button>
-  </nav>
-</footer>
+<StatusBar />
 
 <!-- Mounted once, outside <main>, so the route chain below cannot unmount it
      mid-dismiss and strand a timer (docs/06 §4). -->
@@ -268,70 +227,6 @@
 
   main:focus {
     outline: none;
-  }
-
-  footer {
-    position: sticky;
-    bottom: 0;
-    display: flex;
-    flex-wrap: wrap;
-    align-items: stretch;
-    gap: 0;
-    padding: 0 max(var(--sp-2), calc((100% - var(--width-page)) / 2));
-    border-top: 1px solid var(--border);
-    background: var(--bg-sunken);
-    color: var(--fg-muted);
-    font-size: var(--fs-0);
-  }
-
-  .cell {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px var(--sp-2);
-    border-right: 1px solid var(--border);
-    color: inherit;
-    text-decoration: none;
-    white-space: nowrap;
-  }
-
-  .local {
-    color: var(--success);
-  }
-
-  .dot {
-    width: 7px;
-    height: 7px;
-    border-radius: 50%;
-    background: currentColor;
-  }
-
-  footer nav {
-    display: flex;
-    margin-left: auto;
-  }
-
-  footer nav .cell:last-child {
-    border-right: none;
-  }
-
-  footer button {
-    font: inherit;
-    background: none;
-    border: none;
-    border-left: 1px solid var(--border);
-    cursor: pointer;
-  }
-
-  a.cell:hover,
-  footer button:hover:not(:disabled),
-  footer button[aria-current='page'] {
-    color: var(--accent);
-    background: var(--bg-raised);
-  }
-
-  footer button:disabled {
-    cursor: not-allowed;
   }
 
   @media (max-width: 640px) {

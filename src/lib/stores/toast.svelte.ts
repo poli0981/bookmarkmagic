@@ -1,12 +1,13 @@
 /**
- * Transient status messages — docs/06 §4 (queue, auto-dismiss 4 s — failures
- * excepted, ARIA status).
+ * Transient status messages — docs/06 §4 (queue, auto-dismiss 4 s, ARIA
+ * status; failures pinned until dismissed).
  *
  * Purpose: one place that owns toast state AND its timers.
  * Inputs: `pushToast` calls from anywhere in the Manager.
- * Guarantees: exactly one toast is visible at a time; a timer can only ever
- *   dismiss the item that started it; nothing here touches the DOM, so a fired
- *   timer is harmless even when no `<Toast>` is rendered.
+ * Guarantees: at most one transient toast and one pinned failure are visible;
+ *   a timer can only ever dismiss the item that started it; nothing here
+ *   touches the DOM, so a fired timer is harmless even when no `<Toast>` is
+ *   rendered.
  *
  * The store owns the timers rather than the component because `<Toast>` mounts
  * once at the App root while the route chain below it unmounts on every
@@ -26,7 +27,15 @@ const AUTO_DISMISS_MS = 4000;
 /** Overflow drops the oldest *pending* item — never the one on screen. */
 const MAX_QUEUED = 3;
 
+/** Successes and notices, shown one at a time. Never holds a failure. */
 let queue = $state<ToastItem[]>([]);
+/**
+ * The latest failure, in a slot of its own until it is dismissed: 4 s is not
+ * long enough to read an error, let alone act on it (uM7). It used to wait at
+ * the head of the queue instead, and every later toast — "Copied", "Saved" —
+ * queued behind it, unseen, until someone found the close button.
+ */
+let pinned = $state<ToastItem | undefined>();
 let timer: ReturnType<typeof setTimeout> | undefined;
 let nextId = 0;
 
@@ -34,9 +43,19 @@ export function getVisibleToast(): ToastItem | undefined {
   return queue[0];
 }
 
-export function pushToast(message: string, tone: ToastTone = 'info'): void {
-  const visible = queue[0];
+export function getPinnedToast(): ToastItem | undefined {
+  return pinned;
+}
 
+export function pushToast(message: string, tone: ToastTone = 'info'): void {
+  if (tone === 'danger') {
+    // The same failure again keeps its item, so it is not announced twice.
+    if (pinned?.message === message) return;
+    pinned = { id: `toast-${++nextId}`, message, tone };
+    return;
+  }
+
+  const visible = queue[0];
   // A repeat of what is already on screen restarts its timer instead of
   // queueing a twin. One debounced settings save resolves one promise that may
   // have several subscribers, and without this the user gets three identical
@@ -46,9 +65,7 @@ export function pushToast(message: string, tone: ToastTone = 'info'): void {
     return;
   }
 
-  nextId += 1;
-  const item: ToastItem = { id: `toast-${nextId}`, message, tone };
-
+  const item: ToastItem = { id: `toast-${++nextId}`, message, tone };
   if (queue.length >= MAX_QUEUED) queue = [...queue.slice(0, 1), ...queue.slice(2), item];
   else queue = [...queue, item];
 
@@ -56,6 +73,10 @@ export function pushToast(message: string, tone: ToastTone = 'info'): void {
 }
 
 export function dismissToast(id: string): void {
+  if (pinned?.id === id) {
+    pinned = undefined;
+    return;
+  }
   if (queue[0]?.id !== id) return;
   shift();
 }
@@ -64,6 +85,7 @@ export function dismissToast(id: string): void {
 export function clearToasts(): void {
   clearTimer();
   queue = [];
+  pinned = undefined;
   nextId = 0;
 }
 
@@ -76,9 +98,6 @@ function shift(): void {
 
 function startTimer(id: string): void {
   clearTimer();
-  // A failure stays until it is dismissed: 4 s is not long enough to read an
-  // error, let alone act on it, and it is the one toast that matters (uM7).
-  if (queue.find((item) => item.id === id)?.tone === 'danger') return;
   timer = setTimeout(() => {
     timer = undefined;
     // The identity check is what stops a user dismiss racing this timeout from

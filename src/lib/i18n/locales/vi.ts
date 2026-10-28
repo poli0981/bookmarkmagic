@@ -66,6 +66,7 @@ export default {
     tree: 'Cây bookmark',
     loading: 'Đang đọc bookmark của bạn…',
     search: 'Tìm bookmark',
+    filterFolders: 'Lọc thư mục',
     newFolder: 'Thư mục mới',
     newFolderTitle: 'Thư mục mới',
     findDuplicates: 'Tìm mục trùng',
@@ -84,7 +85,11 @@ export default {
     untitled: '(không tên)',
     empty: 'Chưa có bookmark nào — hãy nhập để bắt đầu.',
     noMatches: 'Không có kết quả phù hợp.',
-    showMore: 'Hiện thêm {n} dòng · còn {total} dòng chưa hiện',
+    showMore: {
+      one: 'Hiện thêm {n} dòng · còn {total} dòng chưa hiện',
+      other: 'Hiện thêm {n} dòng · còn {total} dòng chưa hiện',
+    },
+    showEarlier: { one: 'Hiện {n} dòng phía trên', other: 'Hiện {n} dòng phía trên' },
     deleteTitle: 'Xóa mục này?',
     deleteBody: 'Xóa "{title}"? Không thể hoàn tác.',
     deleteFolderBody: {
@@ -92,7 +97,8 @@ export default {
       other: 'Xóa "{title}" và {n} mục bên trong? Không thể hoàn tác.',
     },
     duplicates: 'Mục trùng',
-    duplicatesFound: '{groups} liên kết bị trùng · {extra} bản dư',
+    duplicateLinks: { one: '{n} liên kết bị trùng', other: '{n} liên kết bị trùng' },
+    extraCopies: { one: '{n} bản dư', other: '{n} bản dư' },
     noDuplicates: 'Không tìm thấy liên kết trùng.',
     keepFirst: {
       one: 'Giữ bản đầu tiên, xóa {n} bản',
@@ -158,6 +164,7 @@ export default {
     diagnosticsNote:
       'Nhật ký cục bộ ngắn về những gì tab này đã làm — mã lỗi và số lượng, không bao giờ có tiêu đề hay địa chỉ. Nó chỉ rời máy bạn nếu bạn tự dán ở đâu đó.',
     diagnosticsCopied: 'Đã sao chép chẩn đoán',
+    diagnosticsCopyFailed: 'Không sao chép được thông tin chẩn đoán.',
     tagline:
       'Nhập, xuất và chỉnh sửa bookmark giữa các trình duyệt — ngoại tuyến, không tài khoản, không đám mây. Dữ liệu của bạn không bao giờ rời khỏi máy.',
     version: 'Phiên bản {version}',

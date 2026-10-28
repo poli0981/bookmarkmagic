@@ -29,13 +29,16 @@ export interface MergeResult {
  * @param expanded ids currently expanded
  * @param wanted ids the search needs expanded
  * @param opened ids a previous merge opened and has not yet collapsed
+ * @param closed ids the user collapsed during this search. They stay closed:
+ *   re-merging on the next tree change reopened them under the user's cursor.
  */
 export function mergeSearchExpansion(
   expanded: ReadonlySet<string>,
   wanted: ReadonlySet<string>,
   opened: ReadonlySet<string>,
+  closed: ReadonlySet<string> = new Set(),
 ): MergeResult {
-  const missing = [...wanted].filter((id) => !expanded.has(id));
+  const missing = [...wanted].filter((id) => !expanded.has(id) && !closed.has(id));
   // Identity is preserved when there is nothing to do — the caller stores these
   // in `$state`, and reassigning an equal Set would re-run every dependent.
   if (missing.length === 0) return { expanded, opened };

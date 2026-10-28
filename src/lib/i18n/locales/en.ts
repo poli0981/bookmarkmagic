@@ -77,6 +77,7 @@ const dict = {
     tree: 'Bookmark tree',
     loading: 'Reading your bookmarks…',
     search: 'Search bookmarks',
+    filterFolders: 'Filter folders',
     newFolder: 'New folder',
     newFolderTitle: 'New folder',
     findDuplicates: 'Find duplicates',
@@ -95,7 +96,11 @@ const dict = {
     untitled: '(untitled)',
     empty: 'No bookmarks yet — import some to get started.',
     noMatches: 'Nothing matches that search.',
-    showMore: 'Show {n} more rows · {total} not shown',
+    showMore: {
+      one: 'Show {n} more row · {total} not shown',
+      other: 'Show {n} more rows · {total} not shown',
+    },
+    showEarlier: { one: 'Show {n} earlier row', other: 'Show {n} earlier rows' },
     deleteTitle: 'Delete this item?',
     deleteBody: 'Delete "{title}"? This cannot be undone.',
     deleteFolderBody: {
@@ -103,7 +108,8 @@ const dict = {
       other: 'Delete "{title}" and the {n} items inside it? This cannot be undone.',
     },
     duplicates: 'Duplicates',
-    duplicatesFound: '{groups} duplicated links · {extra} extra copies',
+    duplicateLinks: { one: '{n} duplicated link', other: '{n} duplicated links' },
+    extraCopies: { one: '{n} extra copy', other: '{n} extra copies' },
     noDuplicates: 'No duplicate links found.',
     keepFirst: {
       one: 'Keep the first of each, delete {n} copy',
@@ -172,6 +178,7 @@ const dict = {
     diagnosticsNote:
       'A short local log of what this tab did — error codes and counts, never titles or addresses. It leaves your computer only if you paste it somewhere.',
     diagnosticsCopied: 'Diagnostics copied',
+    diagnosticsCopyFailed: 'Could not copy the diagnostics.',
     tagline:
       'Import, export and edit bookmarks between browsers — offline, no account, no cloud. Your data never leaves your device.',
     version: 'Version {version}',

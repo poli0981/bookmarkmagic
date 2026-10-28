@@ -1,11 +1,14 @@
 <script lang="ts">
   import { isBlockedUrl } from '../browser/open-url';
-  import { type DropZone, planDrop } from '../edit/move-target';
+  import { type DropZone, planDrop, zoneFor } from '../edit/move-target';
+  import { hostOf } from '../edit/edit-node';
   import type { EditNode } from '../edit/patch-tree';
   import type { VisibleRow } from '../edit/tree-keyboard';
   import { t } from '../i18n/index.svelte';
   import type { EditSession } from '../stores/edit-session.svelte';
   import Icon from './icons/Icon.svelte';
+  import RenameInput from './RenameInput.svelte';
+  import RowActions from './RowActions.svelte';
 
   interface Props {
     row: VisibleRow;
@@ -28,24 +31,11 @@
   /** Which part of this row a drag is over, when the drop there is legal. */
   let zone = $state<DropZone | undefined>();
 
-  function hostOf(url: string | undefined): string {
-    if (url === undefined) return '';
-    try {
-      return new URL(url).host;
-    } catch {
-      // javascript:, data:, malformed — show nothing rather than guessing.
-      return '';
-    }
-  }
-
   type RowDragEvent = DragEvent & { currentTarget: EventTarget & HTMLDivElement };
 
-  /** Upper quarter: before. Lower quarter: after. Middle: into a folder. */
   function zoneAt(event: RowDragEvent): DropZone {
     const box = event.currentTarget.getBoundingClientRect();
-    const y = (event.clientY - box.top) / box.height;
-    if (isFolder && y > 0.25 && y < 0.75) return 'into';
-    return y < 0.5 ? 'before' : 'after';
+    return zoneFor((event.clientY - box.top) / box.height, isFolder);
   }
 
   function onDragOver(event: RowDragEvent): void {
@@ -59,14 +49,6 @@
     // preventDefault is what marks this as a valid drop target.
     event.preventDefault();
     zone = at;
-  }
-
-  /** A row button must not also focus/activate the row under it. */
-  function act(run: () => void): (event: MouseEvent) => void {
-    return (event) => {
-      event.stopPropagation();
-      run();
-    };
   }
 </script>
 
@@ -86,7 +68,7 @@
   ondblclick={() => (isFolder ? session.toggle(node.id) : onopen(node))}
   onkeydown={() => {}}
   role="presentation"
-  draggable={editable && !renaming}
+  draggable={editable && !renaming && !session.busy}
   ondragstart={(event) => {
     event.dataTransfer?.setData('text/plain', node.id);
     if (event.dataTransfer !== null) event.dataTransfer.effectAllowed = 'move';
@@ -112,7 +94,11 @@
       class="disclosure"
       tabindex="-1"
       aria-hidden="true"
-      onclick={act(() => session.toggle(node.id))}
+      onclick={(event) => {
+        // The row under it must not also take the click.
+        event.stopPropagation();
+        session.toggle(node.id);
+      }}
     >
       <Icon name="chevron" size={12} turned={row.expanded} />
     </button>
@@ -124,29 +110,14 @@
     {#if node.unmodifiable !== undefined}
       <Icon name="lock" size={14} />
     {:else if isFolder}
-      <Icon name={row.expanded ? 'folder-open' : 'folder'} size={14} />
+      <Icon name={row.expandable && row.expanded ? 'folder-open' : 'folder'} size={14} />
     {:else}
       <Icon name="link" size={14} />
     {/if}
   </span>
 
   {#if renaming}
-    <!-- svelte-ignore a11y_autofocus -->
-    <input
-      class="rename"
-      value={node.title}
-      aria-label={t('edit.rename')}
-      autofocus
-      onkeydown={(event) => {
-        event.stopPropagation();
-        if (event.key === 'Enter') void session.commitRename(node.id, event.currentTarget.value);
-        if (event.key === 'Escape') session.renamingId = undefined;
-      }}
-      onblur={(event) => {
-        // Esc already cancelled; a blur after it must not commit (uL1).
-        if (session.renamingId === node.id) void session.commitRename(node.id, event.currentTarget.value);
-      }}
-    />
+    <RenameInput {node} {session} />
   {:else}
     <span class="title" class:untitled={node.title === ''}>{node.title === '' ? (node.url ?? '') : node.title}</span>
     {#if domain !== ''}<span class="domain">{domain}</span>{/if}
@@ -159,32 +130,7 @@
       </span>
     {/if}
 
-    <span class="actions">
-      {#if !isFolder}
-        <button tabindex="-1" title={t('edit.open')} aria-label={t('edit.open')} onclick={act(() => onopen(node))}>
-          <Icon name="external" size={14} />
-        </button>
-        <button tabindex="-1" title={t('edit.copyUrl')} aria-label={t('edit.copyUrl')} onclick={act(() => oncopy(node))}>
-          <Icon name="copy" size={14} />
-        </button>
-      {/if}
-      {#if session.canSort(node)}
-        <button tabindex="-1" title={t('edit.sort')} aria-label={t('edit.sort')} onclick={act(() => onsort(node))}>
-          <Icon name="sort" size={14} motion="bob" />
-        </button>
-      {/if}
-      {#if editable}
-        <button tabindex="-1" title={t('edit.rename')} aria-label={t('edit.rename')} onclick={act(() => (session.renamingId = node.id))}>
-          <Icon name="edit" size={14} />
-        </button>
-        <button tabindex="-1" title={t('edit.moveTo')} aria-label={t('edit.moveTo')} onclick={act(() => (session.movingNode = node))}>
-          <Icon name="move" size={14} motion="bob" />
-        </button>
-        <button tabindex="-1" class="delete" title={t('edit.delete')} aria-label={t('edit.delete')} onclick={act(() => (session.pendingDelete = node))}>
-          <Icon name="trash" size={14} motion="tilt" />
-        </button>
-      {/if}
-    </span>
+    <RowActions {node} {session} {editable} {onopen} {oncopy} {onsort} />
   {/if}
 </div>
 
@@ -271,7 +217,11 @@
     color: var(--accent);
   }
 
+  /* The title keeps its room; the domain gives way first (at 375 px the title
+     shrank to "D…" while the domain beside it stayed whole — v1.1.0 review). */
   .title {
+    flex: 0 1 auto;
+    min-width: 3ch;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -293,6 +243,13 @@
     white-space: nowrap;
   }
 
+  /* Basis 0: the domain only ever takes the room the title leaves, so it is
+     gone before the title loses a single character. */
+  .domain {
+    flex: 1 1 0;
+    min-width: 0;
+  }
+
   .count {
     flex: none;
     padding: 0 5px;
@@ -307,47 +264,13 @@
     cursor: help;
   }
 
-  .rename {
-    font: inherit;
-    flex: 1;
-    min-width: 0;
-    background: var(--bg);
-    color: var(--fg);
-    border: 1px solid var(--accent);
-    border-radius: var(--radius-sm);
-    padding: 1px var(--sp-2);
-  }
-
-  .actions {
-    margin-left: auto;
-    display: flex;
-    gap: 2px;
+  /* The buttons live in RowActions; showing them is the row's business. */
+  .row :global(.actions) {
     visibility: hidden;
   }
 
-  .row:hover .actions,
-  .focused .actions {
+  .row:hover :global(.actions),
+  .focused :global(.actions) {
     visibility: visible;
-  }
-
-  .actions button {
-    display: inline-flex;
-    align-items: center;
-    padding: 3px;
-    background: none;
-    border: 1px solid transparent;
-    border-radius: var(--radius-sm);
-    color: var(--fg-muted);
-    cursor: pointer;
-  }
-
-  .actions button:hover {
-    color: var(--accent);
-    border-color: var(--border);
-    background: var(--bg);
-  }
-
-  .actions .delete:hover {
-    color: var(--danger);
   }
 </style>

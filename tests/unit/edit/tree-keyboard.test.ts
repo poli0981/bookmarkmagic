@@ -97,6 +97,13 @@ describe('resolveKey — the WAI-ARIA expand/collapse pattern', () => {
   });
 });
 
+describe('resolveKey — an empty folder that is "expanded" (v1.1.0 review)', () => {
+  it('→ does nothing instead of jumping to the next row', () => {
+    // "Expand all" puts empty folders in `expanded` too.
+    expect(resolveKey('ArrowRight', 'other', rowsWith('bar', 'other'))).toEqual({ kind: 'none' });
+  });
+});
+
 describe('resolveKey — actions', () => {
   const rows = rowsWith('bar');
 

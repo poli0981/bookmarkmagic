@@ -12,6 +12,8 @@
    *  - "Move to…" was a positioned `<div>` that keyboard focus never entered.
    */
   import type { Snippet } from 'svelte';
+  import { t } from '../i18n/index.svelte';
+  import Icon from './icons/Icon.svelte';
 
   interface Props {
     open: boolean;
@@ -21,6 +23,12 @@
     initialFocus?: string;
     danger?: boolean;
     wide?: boolean;
+    /**
+     * Point `aria-describedby` at the body, so a screen reader reads it with
+     * the title — the counts in a confirmation live there. Off for bodies
+     * that are a control (Move to…'s folder list is no description).
+     */
+    describe?: boolean;
     oncancel: () => void;
     children: Snippet;
     actions?: Snippet;
@@ -32,6 +40,7 @@
     initialFocus,
     danger = false,
     wide = false,
+    describe = false,
     oncancel,
     children,
     actions,
@@ -39,6 +48,7 @@
 
   // Several dialogs share a page; each needs its own heading id.
   const titleId = $props.id();
+  const bodyId = `${titleId}-body`;
   let dialog: HTMLDialogElement | undefined = $state();
   let returnTo: HTMLElement | null = null;
   /** True while WE are closing it, so the native `close` event is not a cancel. */
@@ -81,20 +91,25 @@
   class:danger
   class:wide
   aria-labelledby={titleId}
+  aria-describedby={describe ? bodyId : undefined}
   onclose={onClose}
   onclick={onBackdrop}
 >
   <header>
     <h2 id={titleId}>{title}</h2>
+    <!-- Named "Dismiss", not after the dialog: read as "Delete this item?",
+         a button that cancels said the opposite of what it does. -->
     <button
       type="button"
       class="dismiss"
       data-dismiss
-      aria-label={title}
-      onclick={() => dialog?.close()}>×</button
+      aria-label={t('common.dismiss')}
+      onclick={() => dialog?.close()}
     >
+      <Icon name="close" size={16} />
+    </button>
   </header>
-  <div class="body">
+  <div class="body" id={bodyId}>
     {@render children()}
   </div>
   {#if actions !== undefined}
@@ -149,14 +164,13 @@
   }
 
   .dismiss {
-    font: inherit;
-    font-size: var(--fs-3);
-    line-height: 1;
+    display: inline-flex;
     background: none;
     border: none;
+    border-radius: var(--radius-sm);
     color: var(--fg-muted);
     cursor: pointer;
-    padding: 0 var(--sp-1);
+    padding: 2px;
   }
 
   .dismiss:hover {

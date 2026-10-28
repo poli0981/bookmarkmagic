@@ -73,6 +73,16 @@ export function canMoveInto(
 /** Where on a row a drag is released: the upper edge, the middle, the lower edge. */
 export type DropZone = 'before' | 'into' | 'after';
 
+/**
+ * The zone under the pointer, from how far down the row it is (0 = top edge,
+ * 1 = bottom edge): the upper quarter is "before", the lower quarter "after",
+ * and the middle "into" — for a folder; a bookmark splits at half.
+ */
+export function zoneFor(fraction: number, isFolder: boolean): DropZone {
+  if (isFolder && fraction > 0.25 && fraction < 0.75) return 'into';
+  return fraction < 0.5 ? 'before' : 'after';
+}
+
 export interface DropPlan {
   parentId: string;
   /**

@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { displayTitle } from '../edit/edit-node';
   import type { MoveTarget } from '../edit/move-target';
   import type { EditNode } from '../edit/patch-tree';
   import { t } from '../i18n/index.svelte';
@@ -30,12 +31,12 @@
 <!-- Keyboard parity for drag & drop (docs/06 §3.3): every move reachable
      without a mouse, from a real modal that focus enters and Esc leaves. -->
 <Modal open={node !== undefined} title={t('edit.moveTo')} wide {oncancel}>
-  <p class="lead">{t('edit.moveToBody', { title: node?.title ?? '' })}</p>
+  <p class="lead">{t('edit.moveToBody', { title: displayTitle(node, t('edit.untitled')) })}</p>
   <input
     class="filter"
     type="search"
-    placeholder={t('edit.search')}
-    aria-label={t('edit.search')}
+    placeholder={t('edit.filterFolders')}
+    aria-label={t('edit.filterFolders')}
     bind:value={filter}
   />
   <!-- The list exists only while the dialog is open: a closed <dialog> still

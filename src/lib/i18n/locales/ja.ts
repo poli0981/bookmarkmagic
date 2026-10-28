@@ -68,6 +68,7 @@ export default {
     tree: 'ブックマークのツリー',
     loading: 'ブックマークを読み込んでいます…',
     search: 'ブックマークを検索',
+    filterFolders: 'フォルダを絞り込む',
     newFolder: '新しいフォルダ',
     newFolderTitle: '新しいフォルダ',
     findDuplicates: '重複を探す',
@@ -86,7 +87,11 @@ export default {
     untitled: '（無題）',
     empty: 'ブックマークがありません。インポートして始めてください。',
     noMatches: '一致するものがありません。',
-    showMore: 'さらに {n} 行を表示・未表示 {total} 行',
+    showMore: {
+      one: 'さらに {n} 行を表示・未表示 {total} 行',
+      other: 'さらに {n} 行を表示・未表示 {total} 行',
+    },
+    showEarlier: { one: '前の {n} 行を表示', other: '前の {n} 行を表示' },
     deleteTitle: 'この項目を削除しますか？',
     deleteBody: '「{title}」を削除しますか？元に戻せません。',
     deleteFolderBody: {
@@ -94,7 +99,8 @@ export default {
       other: '「{title}」と、その中の {n} 件を削除しますか？元に戻せません。',
     },
     duplicates: '重複',
-    duplicatesFound: '重複リンク {groups} 件・余分なコピー {extra} 件',
+    duplicateLinks: { one: '重複リンク {n} 件', other: '重複リンク {n} 件' },
+    extraCopies: { one: '余分なコピー {n} 件', other: '余分なコピー {n} 件' },
     noDuplicates: '重複するリンクは見つかりませんでした。',
     keepFirst: {
       one: '各グループの最初を残し、{n} 件を削除',
@@ -160,6 +166,7 @@ export default {
     diagnosticsNote:
       'このタブの動作を記録した短いローカルログです。エラーコードと件数だけで、タイトルやアドレスは含みません。貼り付けない限り、パソコンの外には出ません。',
     diagnosticsCopied: '診断情報をコピーしました',
+    diagnosticsCopyFailed: '診断情報をコピーできませんでした。',
     tagline:
       'ブラウザ間でブックマークをインポート・エクスポート・編集 — オフライン、アカウント不要、クラウド不要。データが端末から出ることはありません。',
     version: 'バージョン {version}',

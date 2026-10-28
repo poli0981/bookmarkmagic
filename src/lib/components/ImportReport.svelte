@@ -5,8 +5,12 @@
    * a failure used to give a number and no location (uM11).
    */
   import { num, t, tPlural } from '../i18n/index.svelte';
-  import type { ImportState, WriteSite } from '../stores/import-session.svelte';
+  import { type ImportState, resetImport, type WriteSite } from '../stores/import-session.svelte';
+  import { navigate } from '../stores/route.svelte';
+  import Button from './Button.svelte';
   import Callout from './Callout.svelte';
+  import ErrorCallout from './ErrorCallout.svelte';
+  import { focusWhenShown } from './focus-heading';
 
   type Finished = Extract<ImportState, { kind: 'done' | 'cancelled' | 'error' }>;
 
@@ -32,6 +36,11 @@
   }
 </script>
 
+<section class="panel">
+<h2 class="eyebrow" tabindex="-1" {@attach focusWhenShown}>05 · {t('import.stepResult')}</h2>
+{#if state.kind === 'error'}
+  <ErrorCallout messageKey={state.messageKey} detail={state.detail} />
+{/if}
 {#if state.kind === 'done'}
   <Callout tone="success">
     <strong>
@@ -76,8 +85,33 @@
 {#if wroteSomething}
   <p class="muted">{t('import.dateNotice')}</p>
 {/if}
+<div class="actions">
+  {#if state.kind === 'done'}
+    <Button variant="primary" icon="edit" onclick={() => navigate('edit')}>{t('import.openEdit')}</Button>
+  {/if}
+  <Button onclick={resetImport}>{t('import.another')}</Button>
+</div>
+</section>
 
 <style>
+  .panel {
+    display: flex;
+    flex-direction: column;
+    gap: var(--sp-3);
+    min-width: 0;
+  }
+
+  h2 {
+    margin: 0;
+  }
+
+  .actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--sp-2);
+    margin-top: var(--sp-2);
+  }
+
   .facts {
     margin: var(--sp-3) 0 0;
     padding-left: var(--sp-4);

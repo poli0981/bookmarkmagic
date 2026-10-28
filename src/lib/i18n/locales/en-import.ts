@@ -22,6 +22,7 @@ export const importTab = {
   stepSource: 'Source',
   stepOptions: 'Options',
   stepWriting: 'Writing',
+  stepResult: 'Result',
   format: {
     'netscape-html': 'HTML',
     'bm-json': 'BookmarkMagic JSON',

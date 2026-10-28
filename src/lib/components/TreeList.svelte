@@ -8,13 +8,24 @@
    * `aria-setsize`/`aria-posinset`. The keydown handler sits on this focusable
    * `<ul>`; one on a non-focusable wrapper would never fire.
    *
-   * Rendering is bounded (docs/05 §9): rows mount in chunks of 500, a "Show
-   * more" button adds the next chunk, and moving the focus past the end mounts
-   * enough to show it. 1.0.x rendered every visible row in one pass, so "Expand
-   * all" on a large profile froze the tab.
+   * Rendering is bounded (docs/05 §9): a window of 500 rows that always holds
+   * the focused one, with "Show earlier" / "Show more" around it. 1.0.x
+   * rendered every visible row in one pass, so "Expand all" on a large profile
+   * froze the tab; 1.1.0's first cut grew a prefix from row 0, so End did the
+   * same (`edit/row-window.ts`).
    */
+  import { untrack } from 'svelte';
   import type { EditNode } from '../edit/patch-tree';
-  import { num, t } from '../i18n/index.svelte';
+  import {
+    follow,
+    INITIAL_WINDOW,
+    mounted,
+    type RowWindow,
+    showEarlier,
+    showLater,
+    WINDOW,
+  } from '../edit/row-window';
+  import { num, t, tPlural } from '../i18n/index.svelte';
   import type { EditSession } from '../stores/edit-session.svelte';
   import TreeRow from './TreeRow.svelte';
 
@@ -29,21 +40,30 @@
 
   let { session, element = $bindable(), onkeydown, onopen, oncopy, onsort }: Props = $props();
 
-  const CHUNK = 500;
-  let limit = $state(CHUNK);
+  let win = $state<RowWindow>(INITIAL_WINDOW);
 
   const rows = $derived(session.rows);
-  const shown = $derived(rows.length > limit ? rows.slice(0, limit) : rows);
-  const hidden = $derived(rows.length - shown.length);
-
-  // The active descendant must exist in the DOM, or the screen reader and the
+  const focusIndex = $derived(rows.findIndex((row) => row.node.id === session.focusedId));
+  // Derived, not written back by an effect: the active descendant must be in
+  // the DOM in the same render that focuses it, or the screen reader and the
   // scroll-into-view both lose it.
+  const range = $derived(mounted(follow(win, focusIndex, rows.length), rows.length));
+  const shown = $derived(rows.slice(range.from, range.to));
+  const later = $derived(rows.length - range.to);
+
+  // A focused row that left the screen (collapsed, moved, filtered out,
+  // deleted elsewhere) hands focus to its nearest visible folder, and a
+  // rename whose row is hidden is dropped.
   $effect(() => {
-    const id = session.focusedId;
-    if (id === undefined) return;
-    const index = rows.findIndex((row) => row.node.id === id);
-    if (index >= limit) limit = Math.ceil((index + 1) / CHUNK) * CHUNK;
+    void rows;
+    void session.focusedId;
+    void session.renamingId;
+    untrack(() => session.repairFocus());
   });
+
+  function grow(next: (current: RowWindow, total: number) => RowWindow): void {
+    win = next(follow(win, focusIndex, rows.length), rows.length);
+  }
 
   /** Tabbing in with nothing focused focuses the first row, so arrows work at once (uL6). */
   function onFocus(): void {
@@ -52,6 +72,11 @@
 </script>
 
 <div class="frame">
+  {#if range.from > 0}
+    <button class="more" onclick={() => grow(showEarlier)}>
+      {tPlural('edit.showEarlier', Math.min(range.from, WINDOW))}
+    </button>
+  {/if}
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <ul
     bind:this={element}
@@ -86,9 +111,9 @@
     </p>
   {/if}
 
-  {#if hidden > 0}
-    <button class="more" onclick={() => (limit += CHUNK)}>
-      {t('edit.showMore', { n: num(Math.min(hidden, CHUNK)), total: num(hidden) })}
+  {#if later > 0}
+    <button class="more" onclick={() => grow(showLater)}>
+      {tPlural('edit.showMore', Math.min(later, WINDOW), { total: num(later) })}
     </button>
   {/if}
 </div>
@@ -132,7 +157,7 @@
     font-size: var(--fs-0);
     padding: var(--sp-2);
     border: none;
-    border-top: 1px solid var(--border);
+    border-block: 1px solid var(--border);
     background: var(--bg-raised);
     color: var(--accent);
     cursor: pointer;

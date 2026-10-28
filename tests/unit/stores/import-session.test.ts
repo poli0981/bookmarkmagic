@@ -154,3 +154,18 @@ describe('write control', () => {
     expect(second.aborted).toBe(false);
   });
 });
+
+describe('identity (v1.1.0 review)', () => {
+  it('hands back the very objects it was given — the preview badges key a WeakMap by them', () => {
+    const node = { title: 'Docs', url: 'https://docs.example.org/' };
+    const result = {
+      roots: [node],
+      stats: { bookmarks: 1, folders: 0, maxDepth: 1 },
+      warnings: [],
+    };
+    setImportState({ kind: 'parsed', filename: 'f.html', result, duplicates: 0 });
+    const state = getImportState();
+    // Through a deep proxy this was a different object, and `status.get(node)` missed.
+    expect(state.kind === 'parsed' && state.result.roots[0]).toBe(node);
+  });
+});

@@ -18,7 +18,7 @@
 </script>
 
 <!-- Focus starts on Cancel: Enter on a destructive dialog must not confirm. -->
-<Modal {open} {title} {danger} {oncancel} initialFocus="[data-cancel]">
+<Modal {open} {title} {danger} {oncancel} describe initialFocus="[data-cancel]">
   <p>{body}</p>
   {#snippet actions()}
     <Button data-cancel onclick={oncancel}>{cancelLabel}</Button>

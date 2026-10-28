@@ -196,9 +196,12 @@
       animation: draw 480ms var(--ease) 120ms both;
     }
 
+    /* Twice as the page opens, then still: anything that moves on its own for
+       more than five seconds needs a pause control (WCAG 2.2.2), and a logo
+       is not worth one. */
     .pulse .spark {
       transform-origin: 12px 10px;
-      animation: pulse 2.4s var(--ease) infinite;
+      animation: pulse 2.4s var(--ease) 2;
     }
 
     @keyframes bob {

@@ -26,9 +26,51 @@ interface ManagerContext {
  */
 export const MANAGER_CHANNEL = 'bookmarkmagic-manager';
 
-export interface NavigateMessage {
+interface NavigateMessage {
   kind: 'navigate';
   route: ManagerRoute;
+  /** The Manager tab the popup is about to focus; every other one ignores it. */
+  tabId?: number;
+}
+
+const ROUTES: ReadonlySet<string> = new Set(['#import', '#export', '#edit', '#settings', '#about']);
+
+function isNavigateMessage(data: unknown): data is NavigateMessage {
+  if (typeof data !== 'object' || data === null) return false;
+  // SAFETY: a non-null object, and every field read is checked below.
+  const { kind, route, tabId } = data as Record<string, unknown>;
+  return (
+    kind === 'navigate' &&
+    typeof route === 'string' &&
+    ROUTES.has(route) &&
+    (tabId === undefined || typeof tabId === 'number')
+  );
+}
+
+/**
+ * In the Manager: act on the popup's "go to this route". A message addressed
+ * to another Manager tab is ignored — with two open, the popup's choice used to
+ * switch every one of them, not just the one it focused (v1.1.0 review).
+ * `tabs.getCurrent` needs no permission and is not used for anything else.
+ *
+ * @returns the unsubscribe.
+ */
+export function onNavigateRequest(handle: (route: ManagerRoute) => void): () => void {
+  const channel = new BroadcastChannel(MANAGER_CHANNEL);
+  const own = browser.tabs
+    .getCurrent()
+    .then((tab) => tab?.id)
+    .catch(() => undefined);
+  channel.onmessage = (event: MessageEvent<unknown>) => {
+    const data = event.data;
+    if (!isNavigateMessage(data)) return;
+    void own.then((tabId) => {
+      // Unknown on either side → the 1.1.0-first-cut behaviour: everyone moves.
+      if (data.tabId !== undefined && tabId !== undefined && data.tabId !== tabId) return;
+      handle(data.route);
+    });
+  };
+  return () => channel.close();
 }
 
 /**
@@ -45,7 +87,11 @@ export async function openManager(route: ManagerRoute = '#import'): Promise<void
   if (existing?.tabId !== undefined) {
     // Posted before focusing: the popup closes as soon as the tab takes focus.
     const channel = new BroadcastChannel(MANAGER_CHANNEL);
-    channel.postMessage({ kind: 'navigate', route } satisfies NavigateMessage);
+    channel.postMessage({
+      kind: 'navigate',
+      route,
+      tabId: existing.tabId,
+    } satisfies NavigateMessage);
     channel.close();
     await browser.tabs.update(existing.tabId, { active: true });
     if (existing.windowId !== undefined) {

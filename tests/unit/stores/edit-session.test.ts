@@ -131,23 +131,153 @@ describe('EditSession — rename, delete, new folder', () => {
     expect(fake.countCalls('update')).toBe(1);
   });
 
-  it('moves focus to the next row after a delete', async () => {
+  it('moves focus to the next row after a delete from the tree', async () => {
     const [a, b] = ['a', 'b'].map((t) => fake.seed('1', { title: t, url: `https://${t}/` }));
     await session.load();
-    session.pendingDelete = session.roots[0]?.children?.[0];
-    expect(await session.confirmDelete()).toBe(b);
+    session.focusedId = a;
+    const node = session.roots[0]?.children?.[0];
+    if (node === undefined) throw new Error('no row');
+    session.requestDelete(node, true);
+    expect(await session.confirmDelete()).toBe(true);
     expect(session.focusedId).toBe(b);
     expect(fake.childTitles('1')).toEqual(['b']);
-    expect(a).toBeDefined();
   });
 
-  it('clears a search that would hide the folder it just created', async () => {
+  it('leaves focus alone when the delete came from the duplicate panel (v1.1.0 review)', async () => {
+    const [a, b] = ['a', 'b'].map((t) => fake.seed('1', { title: t, url: `https://${t}/` }));
+    await session.load();
+    session.focusedId = a;
+    const copy = session.roots[0]?.children?.find((n) => n.id === b);
+    if (copy === undefined) throw new Error('no row');
+    session.requestDelete(copy, false);
+    expect(await session.confirmDelete()).toBe(false);
+    expect(session.focusedId).toBe(a);
+    expect(fake.childTitles('1')).toEqual(['a']);
+  });
+
+  it('clears a search that would hide the folder it just created, and shows its row', async () => {
     await session.load();
     session.query = 'zzz';
     session.debounced = 'zzz';
     await session.newFolder('New folder');
     expect(session.filtering).toBe(false);
     expect(session.renamingId).toBe(session.focusedId);
+    expect(session.rows.some((row) => row.node.id === session.renamingId)).toBe(true);
+  });
+
+  it('keeps a new folder visible when the search that opened its parent clears (v1.1.0 review)', async () => {
+    const dev = fake.seed('1', { title: 'Dev' });
+    const ref = fake.seed(dev, { title: 'Reference' });
+    fake.seed(ref, { title: 'Spec', url: 'https://spec.example/' });
+    await session.load();
+    // The component's effect, by hand: the search opens Bar > Dev for "Reference".
+    session.debounced = 'Reference';
+    session.syncSearchExpansion(session.search.expand, true);
+    session.focusedId = ref;
+    await session.newFolder('New folder');
+    session.syncSearchExpansion(session.search.expand, session.filtering);
+    session.repairFocus();
+    const created = session.renamingId;
+    expect(created).toBeDefined();
+    expect(session.rows.some((row) => row.node.id === created)).toBe(true);
+    expect(session.focusedId).toBe(created);
+  });
+});
+
+describe('EditSession — focus stays on a rendered row (v1.1.0 review)', () => {
+  it('moves focus to the nearest visible folder when its row is collapsed away', async () => {
+    const dev = fake.seed('1', { title: 'Dev' });
+    const gh = fake.seed(dev, { title: 'GitHub', url: 'https://github.com/' });
+    await session.load();
+    session.toggle(dev);
+    session.focusedId = gh;
+    session.repairFocus();
+    expect(session.focusedId).toBe(gh);
+    session.collapseAll();
+    session.repairFocus();
+    expect(session.focusedId).toBe('1');
+  });
+
+  it('climbs from a row deleted elsewhere, using the tree as it was', async () => {
+    const dev = fake.seed('1', { title: 'Dev' });
+    const gh = fake.seed(dev, { title: 'GitHub', url: 'https://github.com/' });
+    await session.load();
+    session.toggle(dev);
+    session.focusedId = gh;
+    session.repairFocus();
+    session.applyLiveEvents([{ kind: 'removed', id: gh }]);
+    session.repairFocus();
+    expect(session.focusedId).toBe(dev);
+  });
+
+  it('drops a rename whose row is no longer on screen', async () => {
+    const dev = fake.seed('1', { title: 'Dev' });
+    const gh = fake.seed(dev, { title: 'GitHub', url: 'https://github.com/' });
+    await session.load();
+    session.toggle(dev);
+    session.renamingId = gh;
+    session.toggle(dev);
+    session.repairFocus();
+    expect(session.renamingId).toBeUndefined();
+  });
+});
+
+describe('EditSession — a search remembers what the user closed (v1.1.0 review)', () => {
+  it('keeps a folder closed through a tree change during the search', async () => {
+    const dev = fake.seed('1', { title: 'Dev' });
+    fake.seed(dev, { title: 'Docs', url: 'https://docs.example/' });
+    await session.load();
+    session.debounced = 'Docs';
+    session.syncSearchExpansion(session.search.expand, true);
+    expect(session.expanded.has(dev)).toBe(true);
+    session.toggle(dev);
+    // A rename elsewhere re-runs the search and the component's effect.
+    session.applyLiveEvents([{ kind: 'changed', id: '2', changes: { title: 'Other' } }]);
+    session.syncSearchExpansion(session.search.expand, true);
+    expect(session.expanded.has(dev)).toBe(false);
+  });
+});
+
+describe('EditSession — one bulk command at a time (v1.1.0 review)', () => {
+  it('refuses every other write while a sort runs, and only the sort clears busy', async () => {
+    for (const title of ['d', 'c', 'b', 'a']) fake.seed('2', { title, url: `https://${title}/` });
+    const x = fake.seed('1', { title: 'x', url: 'https://x/' });
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const move = fake.move;
+    fake.move = async (...args) => {
+      await gate;
+      await move(...args);
+    };
+    session = new EditSession(api(fake), () => 'en');
+    await session.load();
+    const other = session.roots[1];
+    if (other === undefined) throw new Error('no Other root');
+    session.requestSort(other);
+    const sorting = session.confirmSort();
+    expect(session.busy).toBe(true);
+
+    // A second sort, a rename, a delete and a new folder all do nothing.
+    expect(session.requestSort(other)).toBe(false);
+    session.pendingSort = { folder: other, moves: [] };
+    await session.confirmSort();
+    expect(session.busy).toBe(true);
+    const row = session.roots[0]?.children?.find((n) => n.id === x);
+    if (row === undefined) throw new Error('no row');
+    session.startRename(row);
+    session.requestDelete(row, true);
+    await session.newFolder('New');
+    expect(session.renamingId).toBeUndefined();
+    expect(session.pendingDelete).toBeUndefined();
+    expect(fake.countCalls('create')).toBe(0);
+
+    release();
+    await sorting;
+    expect(session.busy).toBe(false);
+    expect(session.actionError).toBeUndefined();
+    expect(fake.childTitles('2')).toEqual(['a', 'b', 'c', 'd']);
   });
 });
 
