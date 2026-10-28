@@ -12,17 +12,16 @@
 > Signed tag `v1.0.0`, GitHub Release with a checksum-verified zip. Verified
 > working on real Chrome and Brave.
 >
-> **v1.0.1 was tagged, released and submitted to the store on 2026-08-03** —
-> ⚠️ **in review, not yet approved.** Users are still on 1.0.0 until it clears.
-> Do not describe 1.0.1 as published anywhere until the listing says so; this
-> suite spent a week claiming "in review" *after* approval, and claiming the
-> reverse would be the worse half of the same mistake.
+> **v1.0.1 is PUBLISHED.** Tagged, released and submitted 2026-08-03; the
+> listing was observed showing **version 1.0.1** (`Updated: August 3, 2026`,
+> 5 users) on 2026-10-28. ⚠️ The exact approval date was never recorded — the
+> owner can read it from the dashboard. Installed users are on 1.0.1.
 >
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
 > bump, a CHANGELOG entry and an update submission (`13 §1b`). Sequencing lives
 > in `/CLAUDE.md`; what is still open is in §10 below.
-> **Doc suite version:** 1.6 (2026-08-03 — v1.0.1 submitted)
+> **Doc suite version:** 1.7 (2026-10-28 — v1.0.1 published; v1.1.0 in progress)
 
 ---
 
@@ -191,14 +190,11 @@ Derived identifiers (canonical across docs and code):
     tested.** `13 §1` step 8 became due at approval and no result is recorded.
     It is the only check that the artifact users actually receive matches what
     was tested. Now folded into `11 §5` as a standing pre/post-submission item.
-11. **v1.0.1 is in review — nothing records the outcome yet.** When it clears:
-    add the "published" row to `15`'s progress table, note the date under the
-    `1.0.1` CHANGELOG heading the way `1.0.0` carries one, and run `13 §1b`
-    step 10 (dashboard shows the new version → install on a clean profile →
-    re-run the upgrade check against the *published* build). If it is instead
-    **rejected**, `13 §7` is the procedure — and the rejection and its
-    resolution belong in `15`'s decision log, since that is the only memory this
-    project has of what reviewers actually object to.
+11. ✔ **v1.0.1 cleared review** — the listing showed 1.0.1 when checked on
+    2026-10-28, and the "published" row is in `15`'s progress table. ⚠️ Still
+    open: the exact approval date, and `13 §1b` step 10 against the published
+    build (install on a clean profile, re-run the upgrade check) — no result is
+    recorded for either.
 
 ## 11. Reading order
 
