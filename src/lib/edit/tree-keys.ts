@@ -17,8 +17,6 @@ import { resolveKey } from './tree-keyboard';
 export interface TreeKeyEffects {
   open: (node: EditNode) => void;
   copy: (node: EditNode) => void;
-  /** The focus moved: bring its row into view. */
-  scroll: () => void;
 }
 
 export function onTreeKey(
@@ -46,8 +44,8 @@ export function onTreeKey(
 
   switch (action.kind) {
     case 'focus':
+      // TreeList scrolls the row into view once it is mounted.
       session.focusedId = action.id;
-      effects.scroll();
       break;
     case 'expand':
     case 'collapse':
@@ -57,7 +55,7 @@ export function onTreeKey(
       if (node !== undefined) session.startRename(node);
       break;
     case 'delete':
-      if (node !== undefined) session.requestDelete(node, true);
+      if (node !== undefined) session.requestDelete(node, 'tree');
       break;
     case 'move':
       if (node !== undefined) session.startMove(node);

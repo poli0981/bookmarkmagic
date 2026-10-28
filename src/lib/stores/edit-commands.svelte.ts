@@ -55,6 +55,9 @@ export interface BulkProgress {
 /** A failed command, shown above the tree rather than replacing it. */
 export type ActionError = DescribedError & { partial?: BulkProgress };
 
+/** Where a delete was asked for: the tree (Del, a row's button) or the duplicate panel. */
+export type DeleteOrigin = 'tree' | 'panel';
+
 const BROWSER_API: EditApi = {
   getRootChildren,
   getChildren,
@@ -74,8 +77,8 @@ export class EditCommands extends EditView {
   actionError = $state<ActionError | undefined>();
   /** A bulk command is running; every other write waits for it. */
   busy = $state(false);
-  /** Whether the pending delete was asked for from the tree (key or row button). */
-  private deleteFromTree = false;
+  /** Where the pending delete was asked for. */
+  private deleteOrigin: DeleteOrigin = 'tree';
 
   protected readonly api: EditApi;
   protected readonly locale: () => string;
@@ -152,24 +155,26 @@ export class EditCommands extends EditView {
     });
   };
 
-  requestDelete = (node: EditNode, fromTree: boolean): void => {
+  requestDelete = (node: EditNode, origin: DeleteOrigin): void => {
     if (this.busy || !this.isEditable(node)) return;
     this.pendingDelete = node;
-    this.deleteFromTree = fromTree;
+    this.deleteOrigin = origin;
   };
 
   /**
-   * Delete what `requestDelete` asked about. Focus moves to the next row only
-   * when the deleted row had it, and the result — whether keyboard focus
-   * belongs back in the tree — is true only when the delete started there:
-   * from the duplicate panel it pulled focus out of the panel and moved the
-   * tree's selection (v1.1.0 review).
+   * Delete what `requestDelete` asked about. The tree's focus moves to the
+   * next row only when the deleted row had it — a copy deleted from the
+   * duplicate panel used to move the tree's selection (v1.1.0 review).
+   *
+   * @returns where the delete was asked for, once it went through, so the
+   *   caller can put keyboard focus back there: the button that opened the
+   *   dialog went with what it deleted, and focus fell to `<body>`.
    */
-  confirmDelete = async (): Promise<boolean> => {
+  confirmDelete = async (): Promise<DeleteOrigin | undefined> => {
     const node = this.pendingDelete;
-    const fromTree = this.deleteFromTree;
+    const origin = this.deleteOrigin;
     this.pendingDelete = undefined;
-    if (node === undefined || this.busy || !this.isEditable(node)) return false;
+    if (node === undefined || this.busy || !this.isEditable(node)) return undefined;
     const hadFocus = node.id === this.focusedId;
     const next = hadFocus ? this.neighbourOf(node.id) : undefined;
     const ok = await this.guard(async () => {
@@ -178,7 +183,7 @@ export class EditCommands extends EditView {
       else await this.api.remove(node.id);
     });
     if (ok && hadFocus) this.focusedId = next;
-    return ok && hadFocus && fromTree;
+    return ok ? origin : undefined;
   };
 
   newFolder = async (title: string): Promise<void> => {
@@ -187,9 +192,13 @@ export class EditCommands extends EditView {
     if (parentId === undefined) return;
     await this.guard(async () => {
       const created = toEditNode(await this.api.create({ parentId, title }));
-      // In the tree now, not a frame later from the live event (which then
-      // finds it present and does nothing): the rename box needs its row.
-      this.roots = insertNode(this.roots, parentId, undefined, created);
+      // In the tree now, not a frame later from the live event: the rename
+      // box needs its row. Chrome fires `onCreated` BEFORE `create` resolves,
+      // so the event may have won the race — inserting again put two rows
+      // with one id in the keyed list.
+      if (findNode(this.roots, created.id) === undefined) {
+        this.roots = insertNode(this.roots, parentId, undefined, created);
+      }
       // A search would hide it, and clearing that search closes the folders
       // it opened — so every folder above it is opened as the user's own.
       if (this.filtering) this.clearSearch();

@@ -103,7 +103,7 @@ const REQUIRED_FILES = [
  * enforces governs it.
  */
 const NETWORK_IN_BUNDLE =
-  /\b(?:fetch|XMLHttpRequest|WebSocket|WebTransport|EventSource|sendBeacon|RTCPeerConnection|importScripts)\b/;
+  /\b(?:fetch|XMLHttpRequest|WebSocket|WebTransport|EventSource|sendBeacon|(?:webkit|moz)?RTCPeerConnection|importScripts)\b/;
 
 /** `src`/`href` values in a built page. Vite writes them double-quoted. */
 const PAGE_REFS = /\b(?:src|href)="([^"]*)"/g;

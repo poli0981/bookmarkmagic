@@ -137,6 +137,21 @@ function buildIndex() {
 function serve() {
   const csp = productionCsp();
   let files = buildIndex();
+  /**
+   * A rebuild while the harness runs renames the hashed chunks, so a miss
+   * re-lists once. `wxt build` empties the directory first; listing it then
+   * throws, and an uncaught throw in the handler ended the whole process.
+   * @param {string} urlPath @returns {string | undefined}
+   */
+  const lookup = (urlPath) => {
+    if (files.has(urlPath)) return files.get(urlPath);
+    try {
+      files = buildIndex();
+    } catch {
+      return undefined;
+    }
+    return files.get(urlPath);
+  };
   const server = createServer((req, res) => {
     const url = new URL(req.url ?? '/', `http://${HOST}:${PORT}`);
     if (url.pathname === '/__shim.js') {
@@ -151,15 +166,20 @@ function serve() {
       res.writeHead(400).end('bad request');
       return;
     }
-    // A rebuild while the harness runs renames the hashed chunks: re-list once.
-    if (!files.has(decoded)) files = buildIndex();
-    const path = files.get(decoded);
+    const path = lookup(decoded);
     if (path === undefined) {
       res.writeHead(404).end('not found');
       return;
     }
     const type = TYPES[extname(path)] ?? 'application/octet-stream';
-    let body = readFileSync(path);
+    let body;
+    try {
+      body = readFileSync(path);
+    } catch {
+      // Listed, then deleted: a build is rewriting .output under us.
+      res.writeHead(503).end('build in progress');
+      return;
+    }
     if (type.startsWith('text/html')) {
       const tags = `<meta http-equiv="Content-Security-Policy" content="${csp}"><script src="/__shim.js"></script>`;
       body = Buffer.from(body.toString('utf8').replace('<head>', `<head>${tags}`));

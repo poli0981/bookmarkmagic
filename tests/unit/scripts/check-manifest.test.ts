@@ -137,6 +137,7 @@ describe('check-manifest.mjs', () => {
     ['XMLHttpRequest', 'chunks/x.js', 'new XMLHttpRequest'],
     ['sendBeacon', 'assets/deep/y.js', 'navigator.sendBeacon(u)'],
     ['RTCPeerConnection', 'chunks/x.js', 'new RTCPeerConnection({iceServers:[]})'],
+    ['webkitRTCPeerConnection', 'chunks/x.js', 'new webkitRTCPeerConnection({iceServers:[]})'],
     ['importScripts', 'chunks/x.js', 'importScripts("x.js")'],
   ])('fails on %s anywhere in the shipped JavaScript', (api, file, code) => {
     const { status, output } = check(build(MANIFEST, { [file]: code }));

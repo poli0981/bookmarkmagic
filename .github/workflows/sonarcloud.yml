@@ -53,10 +53,15 @@ jobs:
       # lcov for Sonar; the docs/11 §1 thresholds still gate core here too.
       - run: npm run coverage
 
+      # The lcov report, and the generated .wxt/ that tsconfig.json extends (it
+      # defines the `@/` alias), so the scan can resolve our own modules.
       - uses: actions/upload-artifact@v7
         with:
           name: lcov
-          path: coverage/lcov.info
+          path: |
+            coverage/lcov.info
+            .wxt/
+          include-hidden-files: true
           retention-days: 1
           if-no-files-found: error
 
@@ -77,7 +82,7 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           name: lcov
-          path: coverage
+          path: .
 
       # No npm here: the runner's own Node reads one field of a JSON file.
       - name: Read the package version

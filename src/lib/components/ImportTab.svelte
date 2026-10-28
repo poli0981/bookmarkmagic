@@ -204,7 +204,7 @@
 {:else if session.kind === 'done' || session.kind === 'cancelled' || session.kind === 'error'}
   <ImportReport state={session} />
 {:else}
-  <ImportProgress state={session} />
+  <ImportProgress phase={session} />
 {/if}
 </div>
 

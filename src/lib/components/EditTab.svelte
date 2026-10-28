@@ -4,7 +4,7 @@
    * and commands live in `stores/edit-session.svelte.ts`, live events in
    * `edit/live-sync.ts`.
    */
-  import { onMount, untrack } from 'svelte';
+  import { onMount, tick, untrack } from 'svelte';
   import { subscribe } from '../browser/bookmarks';
   import { copyToClipboard } from '../browser/clipboard';
   import { openBookmarkUrl } from '../browser/open-url';
@@ -20,12 +20,14 @@
   import DuplicatePanel from './DuplicatePanel.svelte';
   import EditToolbar from './EditToolbar.svelte';
   import ErrorCallout from './ErrorCallout.svelte';
+  import { focusIfLost } from './focus-heading';
   import MoveToDialog from './MoveToDialog.svelte';
   import TreeList from './TreeList.svelte';
 
   const session = new EditSession(undefined, getLocale);
   let searchInput = $state<HTMLInputElement | undefined>();
   let treeEl = $state<HTMLElement | undefined>();
+  let panelEl = $state<HTMLElement | undefined>();
 
   onMount(() => {
     void session.load();
@@ -113,20 +115,7 @@
   }
 
   function onKeydown(event: KeyboardEvent): void {
-    onTreeKey(event, session, {
-      open: (node) => void open(node),
-      copy: (node) => void copy(node),
-      scroll: scrollFocusedIntoView,
-    });
-  }
-
-  /** Keep the focused row on screen — the tree is a fixed-height scroller. */
-  function scrollFocusedIntoView(): void {
-    const id = session.focusedId;
-    if (treeEl === undefined || id === undefined) return;
-    queueMicrotask(() => {
-      treeEl?.querySelector(`[data-node-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
-    });
+    onTreeKey(event, session, { open: (node) => void open(node), copy: (node) => void copy(node) });
   }
 
   /** ⌘/Ctrl-F focuses the search box, whatever the case of the F (docs/06 §3.3). */
@@ -137,9 +126,22 @@
     searchInput?.select();
   }
 
-  /** Focus follows a delete to the next row, not into the void (uM4). */
+  /**
+   * Focus goes back where the delete was asked for (uM4). The dialog cannot
+   * hand it back to the button that opened it — that button went with what it
+   * deleted — so a panel delete lands on the next copy's button, else on the
+   * panel's close button.
+   */
   async function confirmDelete(): Promise<void> {
-    if (await session.confirmDelete()) treeEl?.focus();
+    const origin = await session.confirmDelete();
+    await tick();
+    if (origin === 'tree') treeEl?.focus();
+    else if (origin === 'panel') {
+      focusIfLost(
+        panelEl?.querySelector<HTMLElement>('[data-copy-delete]') ??
+          panelEl?.querySelector<HTMLElement>('[data-panel-close]'),
+      );
+    }
   }
 </script>
 
@@ -180,11 +182,12 @@
 
     {#if session.showDuplicates}
       <DuplicatePanel
+        bind:element={panelEl}
         groups={session.duplicateGroups}
         roots={session.roots}
         busy={session.busy}
         onclose={() => (session.showDuplicates = false)}
-        ondelete={(node) => session.requestDelete(node, false)}
+        ondelete={(node) => session.requestDelete(node, 'panel')}
         onkeepFirst={() => (session.pendingKeepFirst = true)}
       />
     {/if}
