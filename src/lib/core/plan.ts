@@ -44,16 +44,20 @@ export interface BuildPlanOptions {
 
 function countNodes(
   segments: readonly PlanSegment[],
-): Pick<ImportPlan['stats'], 'toCreate' | 'bookmarkCount' | 'folderCount'> {
+): Pick<ImportPlan['stats'], 'toCreate' | 'bookmarkCount' | 'folderCount' | 'writeDepth'> {
   let toCreate = 0;
   let bookmarkCount = 0;
+  let writeDepth = 0;
   for (const segment of segments) {
-    for (const { node } of walkTree(segment.nodes)) {
+    // A segment writes under its root or under a reused folder `trail` deep.
+    const base = segment.trail?.length ?? 0;
+    for (const { node, depth } of walkTree(segment.nodes)) {
       toCreate++;
       if (!isFolder(node)) bookmarkCount++;
+      if (base + depth > writeDepth) writeDepth = base + depth;
     }
   }
-  return { toCreate, bookmarkCount, folderCount: toCreate - bookmarkCount };
+  return { toCreate, bookmarkCount, folderCount: toCreate - bookmarkCount, writeDepth };
 }
 
 /** A root as Replace will find it: emptied, so nothing in it can match. */

@@ -20,6 +20,7 @@ export class BmAborted extends Error {
 export const BM_BACKUP_ERROR_CODES = [
   'BACKUP_SERIALIZE_FAILED',
   'BACKUP_EXCEEDS_LIMITS',
+  'BACKUP_STALE',
   'BACKUP_CANCELLED',
   'BACKUP_WRITE_FAILED',
 ] as const;

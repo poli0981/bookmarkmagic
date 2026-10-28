@@ -12,6 +12,7 @@ let session: EditSession;
 function api(f: FakeBookmarks) {
   return {
     getRootChildren: async () => (await f.getTree())[0]?.children ?? [],
+    getChildren: async (id: string) => f.children(id),
     create: f.create,
     update: f.update,
     move: f.move,
@@ -30,7 +31,8 @@ describe('EditSession — loading', () => {
     const dev = fake.seed('1', { title: 'Dev' });
     await session.load();
     expect(session.loading).toBe(false);
-    expect([...session.expanded].sort()).toEqual(['1', '2', '3']);
+    // Root 3 is absent: like desktop Chrome, the fake hides an empty Mobile root.
+    expect([...session.expanded].sort()).toEqual(['1', '2']);
 
     session.toggle(dev);
     session.focusedId = dev;
@@ -55,6 +57,22 @@ describe('EditSession — sort A→Z', () => {
     expect(fake.childTitles('2')).toEqual(['Folder', 'a', 'b', 'C']);
     expect(session.roots[1]?.children?.map((n) => n.title)).toEqual(['Folder', 'a', 'b', 'C']);
     expect(session.busy).toBe(false);
+  });
+
+  it('re-plans from the folder as it is at confirm time', async () => {
+    // F holds [b, a]; while the dialog is open, "a" is moved out to G.
+    const g = fake.seed('2', { title: 'G' });
+    const f = fake.seed('2', { title: 'F' });
+    fake.seed(f, { title: 'b', url: 'https://b/' });
+    const a = fake.seed(f, { title: 'a', url: 'https://a/' });
+    await session.load();
+    const folder = session.roots[1]?.children?.find((n) => n.id === f);
+    if (folder === undefined) throw new Error('no F');
+    session.requestSort(folder);
+    await fake.move(a, { parentId: g });
+    await session.confirmSort();
+    expect(fake.childTitles(f)).toEqual(['b']);
+    expect(fake.childTitles(g)).toEqual(['a']);
   });
 
   it('declines a folder that is already sorted', async () => {

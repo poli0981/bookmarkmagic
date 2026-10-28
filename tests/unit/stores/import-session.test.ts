@@ -70,6 +70,7 @@ describe('isWriting', () => {
             bookmarkCount: 0,
             folderCount: 0,
             reusedFolders: 0,
+            writeDepth: 0,
             skippedExisting: 0,
             skippedInFile: 0,
           },

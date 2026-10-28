@@ -69,6 +69,8 @@ export const errors = {
   BACKUP_SERIALIZE_FAILED: 'Không thể chuẩn bị bản sao lưu, nên không có gì bị thay đổi.',
   BACKUP_EXCEEDS_LIMITS:
     'Bookmark hiện tại của bạn nhiều hơn mức BookmarkMagic có thể đọc lại từ một bản sao lưu, nên thao tác Thay thế đã dừng trước khi xóa bất cứ thứ gì. Hãy dùng Gộp hoặc nhập vào thư mục mới.',
+  BACKUP_STALE:
+    'Bookmark của bạn liên tục thay đổi trong lúc đang lưu bản sao lưu an toàn — một cửa sổ, tab khác hoặc đồng bộ đang sửa chúng — nên chưa có gì bị xóa. Hãy thử lại sau giây lát.',
   BACKUP_CANCELLED: 'Bạn đã hủy bản sao lưu, nên không có gì bị xóa.',
   BACKUP_WRITE_FAILED: 'Không thể lưu bản sao lưu, nên không có gì bị xóa.',
   BROWSER: 'Trình duyệt đã từ chối một thao tác bookmark.',

@@ -78,6 +78,8 @@ export const errors = {
   BACKUP_SERIALIZE_FAILED: 'The safety backup could not be prepared, so nothing was changed.',
   BACKUP_EXCEEDS_LIMITS:
     'Your current bookmarks are more than BookmarkMagic could read back from a backup, so Replace stopped before deleting anything. Merge, or import into a new folder, instead.',
+  BACKUP_STALE:
+    'Your bookmarks kept changing while the safety backup was being saved — another window, tab or sync was editing them — so nothing was deleted. Try again in a moment.',
   BACKUP_CANCELLED: 'You cancelled the safety backup, so nothing was deleted.',
   BACKUP_WRITE_FAILED: 'The safety backup could not be saved, so nothing was deleted.',
   BROWSER: 'The browser refused a bookmark operation.',

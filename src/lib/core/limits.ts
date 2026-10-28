@@ -17,6 +17,17 @@ export const MAX_NODES = 100_000;
 export const MAX_DEPTH = 200;
 
 /**
+ * How deep an import may nest folders INSIDE the browser, counted below a root.
+ *
+ * Lower than the parse cap on purpose: Chrome keeps its bookmarks in a JSON
+ * file it reads back with a 200-level nesting limit, and every folder costs two
+ * levels (the object and its `children` array). A tree past about 98 folders
+ * deep is saved, then refused on the next start — which would lose far more
+ * than the import. 90 leaves margin; real trees rarely pass 20.
+ */
+export const MAX_WRITE_DEPTH = 90;
+
+/**
  * Legal document version. Bump ONLY for material changes to the documents in
  * `legal/`; the first-run gate reappears for every user when this increases
  * (docs/14 §2).

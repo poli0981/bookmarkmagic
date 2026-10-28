@@ -18,16 +18,39 @@ export type LiveEvent =
   | { kind: 'changed'; id: string; changes: { title?: string; url?: string } }
   | { kind: 'moved'; id: string; parentId: string; index: number };
 
-/** Apply a batch of events in order. */
+/** Every id in a tree, iteratively (the live tree has no depth cap). */
+function idsOf(roots: readonly EditNode[]): Set<string> {
+  const ids = new Set<string>();
+  const stack = [...roots];
+  for (let node = stack.pop(); node !== undefined; node = stack.pop()) {
+    ids.add(node.id);
+    for (const child of node.children ?? []) stack.push(child);
+  }
+  return ids;
+}
+
+/**
+ * Apply a batch of events in order.
+ *
+ * A "created" for an id the tree already holds is dropped. Events queued
+ * before a re-read land after it, and inserting again put a second copy of the
+ * same bookmark in the view — which the duplicate finder then offered to
+ * delete as a "duplicate" of itself, removing the only copy.
+ */
 export function applyEvents(roots: EditNode[], events: readonly LiveEvent[]): EditNode[] {
   let next = roots;
+  let ids: Set<string> | undefined;
   for (const event of events) {
     switch (event.kind) {
       case 'created':
+        ids ??= idsOf(next);
+        if (ids.has(event.node.id)) break;
         next = insertNode(next, event.parentId, event.index, event.node);
+        ids.add(event.node.id);
         break;
       case 'removed':
         next = removeNode(next, event.id);
+        ids = undefined;
         break;
       case 'changed':
         next = changeNode(next, event.id, event.changes);

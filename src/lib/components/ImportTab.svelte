@@ -1,6 +1,6 @@
 <script lang="ts">
   import { describeError } from '../browser/describe-error';
-  import { timestampSuffix } from '../browser/download';
+  import { backupFilename as suggestBackupName } from '../browser/download';
   import { BmAborted } from '../browser/errors';
   import { num, t, tPlural } from '../i18n/index.svelte';
   import { prepareImport, previewPlan, runImport } from '../import/run-import';
@@ -85,7 +85,7 @@
     if (current === undefined) return;
     const signal = beginWrite();
     const now = new Date();
-    const backupFilename = `bookmarkmagic-backup-${timestampSuffix(now)}.json`;
+    const backupFilename = suggestBackupName(now);
     const folder = t('import.folderName', { date: formatFolderDate(now) });
     const where: WriteSite = { mode: options.mode, folder: options.mode === 'new-folder' ? folder : '' };
     /** The name the backup was saved under, once it is on disk. Nothing may point at it before. */
