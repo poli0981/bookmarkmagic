@@ -1,7 +1,9 @@
 # 05 — Algorithms
 
 All in `src/lib/core/` (pure, unit-tested) except the write queue
-(`src/lib/browser/write-queue.ts`, tested against a mocked API).
+(`src/lib/browser/write-queue.ts`, tested against a mocked API) and the #edit
+algorithms of §10–§11 (`src/lib/edit/` — pure and unit-tested too, but outside
+core's coverage gate, `11 §1`).
 
 ## 1. Netscape HTML parsing — `parse/netscape-html.ts`
 
@@ -96,13 +98,20 @@ bare-origin key from `protocol + host`, which discards `user:pass@`.
 
 ```
 normalizeUrl(raw):
-  u = new URL(raw)                    // throws → return raw.trim() as-is key
-  u.protocol, u.hostname → lowercase
-  strip default ports (http:80, https:443)
+  u = new URL(raw.trim())             // throws → return raw.trim() as-is key
+                                      // the parser already lowercases scheme + host
+                                      // and drops default ports (http:80, https:443)
+  if u.search == '' → u.search = ''   // a BARE ? or # is the same link without it:
+  if u.hash == ''   → u.hash = ''     //   assigning '' removes the delimiter
   if u.pathname == '/' and no search/hash → key without trailing slash
   keep search & hash verbatim         // conservative: ?q= and #section are meaningful
-  return u.toString()
+  return u.href
 ```
+
+The two empty-delimiter lines are a v1.1.0 fix. Reading `search`/`hash` cannot
+tell a bare `?` from none, so `https://a.example/?` passed the bare-origin test
+and the slash-trim cut its `?` instead of the slash — the key never matched
+`https://a.example/`, and dedupe missed the pair.
 
 Explicitly **not** done: stripping `utm_*`, stripping `www.`, unifying
 http/https — too opinionated for a dedupe default. (Roadmap: optional
@@ -111,7 +120,7 @@ http/https — too opinionated for a dedupe default. (Roadmap: optional
 ## 3. Dedupe — `dedupe.ts`
 
 ```
-buildUrlIndex(tree)  → Map<normKey, count>        // O(n), from current browser tree
+buildUrlIndex(tree)  → Set<normKey>              // O(n), iterative, from current browser tree
 dedupeAgainst(nodes, index):
   DFS copy of import tree
   drop bookmark if index.has(key)      → skippedExisting++
@@ -126,16 +135,22 @@ file" are different facts and the user sees both separately in the report
 (`02 §4` `stats`). Keep them apart end to end — a single `skippedDuplicates`
 made the report, the checkbox label and the StatsCard disagree.
 
-**Replace mode: pass an empty index.** The browser tree is deleted before the
+**Replace mode: no dedupe at all.** The browser tree is deleted before the
 write (`§6`), so nothing can already exist. Building the plan against the live
 index would skip every bookmark of a user re-importing their own backup and
-leave them with nothing. In-file collapsing still applies. The UI enforces the
-same thing by disabling the checkbox (`03 §1`, `06 §3.1`).
+leave them with nothing. Since v1.1.0 in-file collapsing is off too —
+`buildImportPlan` skips `dedupeAgainst` entirely when `mode === 'replace'`, so
+two copies of a link in a backup are two bookmarks after the restore (1.0.x
+still collapsed them). The UI enforces the same thing by disabling the checkbox
+(`03 §1`, `06 §3.1`).
 
 Duplicate finder (#edit) reuses the same normalized-URL keying, but over the
-**live** tree — `Map<normKey, chrome.bookmarks.BookmarkTreeNode[]>`, so each
-entry carries the `id` that per-item delete needs. Groups with length > 1,
-ordered by group size desc.
+**live** tree — `findDuplicateGroups` over the #edit nodes, so each entry
+carries the `id` that per-item delete needs. Groups with length > 1, ordered by
+group size desc. Since v1.1.0 it runs **only while the panel or its
+confirmation is showing** (1.0.x rescanned the whole tree on every live event,
+panel open or not), and policy-managed copies are left out — the browser
+refuses to delete them, so offering it was a lie.
 
 ## 4. Timestamp normalization — `timestamps.ts`
 
@@ -232,14 +247,16 @@ writeTree(plan, { signal, onProgress }):
     for node of nodes:
       if signal.aborted → throw BmAborted(done)
       created = await bookmarks.create({ parentId, title, url? })
-      done++; if done % 50 == 0 or done == total → onProgress({done,total,currentPath})
+      done++; if done == 1 or done % 50 == 0 or done == total → onProgress({done,total,currentPath})
       if node.children → await dfs(node.children, created.id, trail + node.title)
   for (const seg of plan.segments)             // 1 (new-folder), or one per live folder written to
     await dfs(seg.nodes, seg.parentId, seg.trail ?? [])
 ```
 
 `done` and `total` are declared outside the loop, so progress, abort and the
-final report stay whole-import scoped rather than resetting per segment.
+final report stay whole-import scoped rather than resetting per segment. The
+first create reports too (since v1.1.0): on a slow profile 50 creates can take
+seconds, and a bar stuck at 0% reads as a hang.
 
 `create()` accepts only `{ parentId, index?, title, url? }` — `dateAdded` is
 output-only, so **imported nodes are stamped with the current time**. Parsed
@@ -287,7 +304,109 @@ is fine ≤ 100k nodes. No fuzzy search in v1 (zero-dep rule).
 
 ## 9. Tree rendering scale strategy
 
-Folders render collapsed by default (depth ≥ 2) and children mount lazily on
-expand — the DOM never holds the full 100k tree. If a single folder with
->5 000 direct children is expanded, render in chunks of 500 with a
-"Show more" sentinel. This avoids a virtual-list dependency in v1.
+**Bounded, not virtualized.** Every tree surface mounts at most 500 rows at a
+time and adds 500 more per "Show more" ("Show n more rows · m not shown").
+There is no virtual list — no dependency for one, and none hand-written — and a
+row, once mounted, stays mounted.
+1.0.x documented chunking for very wide folders and never built it: #edit
+rendered every visible row in one pass, so "Expand all" on a large profile
+froze the tab.
+
+- **#edit** (`TreeList.svelte`). `visibleRows` (`edit/tree-keyboard.ts`)
+  flattens the tree into the rows actually showing — roots open on first load,
+  every other folder closed until opened — and computes each row's
+  `aria-posinset`/`aria-setsize` on the way. The list mounts the first 500.
+  When focus moves past the mounted range (↓, End, type-ahead), the limit grows
+  to the chunk holding the focused row: `aria-activedescendant` and
+  scroll-into-view both need that row in the DOM.
+- **Import preview and export picker** (`TreePreviewNode`, `FolderPickNode`):
+  nested lists. The top level starts open and everything deeper closed; a
+  folder's children mount only once it is opened, then 500 at a time with a
+  per-folder "Show more". The picker lists folders only.
+- **What is not done.** `visibleRows` re-walks every visible node on each change
+  — O(visible) per keystroke or toggle, acceptable at the 100k cap. The 500 is a
+  step, not a ceiling: "Expand all" then End mounts every row up to the last.
+  Windowing — mounting only what is on screen — would close that; it was the
+  plan, and is in the `15` backlog instead (decision log, 2026-10-29).
+
+## 10. Reordering — `edit/sort.ts`, `edit/move-target.ts`
+
+Both write through `chrome.bookmarks.move`, whose index has one trap: **within
+one parent, a move to the right counts the target index as if the node were
+still in place**, while `onMoved` — and `patch-tree`'s `moveNode` — count after
+its removal. Moving `a` after `c` in `[a, b, c]` is `move(a, { index: 3 })`, and
+`onMoved` then reports index 2. A move to the left needs no adjustment.
+
+**Sort A→Z** (`planSort`), planned before anything moves so the confirmation
+can state the number:
+
+```
+sortedOrder(children, locale):
+  collator = Intl.Collator(locale, { numeric: true, sensitivity: 'base' })
+  stable sort: folders before bookmarks, then collator.compare(key), then current position
+  key(node) = node.title — or the URL, for a bookmark whose title is blank (as Chrome shows it)
+
+planSort(children, locale):
+  target = sortedOrder(children, locale); current = [...children]; moves = []
+  for index, wanted of target:
+    if current[index] is wanted → continue          // already in place: never moved
+    take wanted out of current (it is always to the right of index), put it at index
+    moves.push({ id: wanted.id, index })
+  return moves
+```
+
+- `numeric` puts "Item 2" before "Item 10"; `sensitivity: 'base'` ignores case
+  and accents; the locale is the UI language. Ties keep their current order.
+- Each move fills the next position from further right — a **leftward** move,
+  the case where Chrome's index needs no adjustment — so the indices are valid
+  applied in order. `sort.test.ts` applies the moves to 300 random folders with
+  Chrome's index rule and checks the result equals `sortedOrder`.
+- A sorted folder plans zero moves (the UI says so instead of asking). The
+  commands that run the plan are in `03 §3`.
+
+**Drop planning** (`planDrop`), shared by every drag; `canMoveInto` is the one
+legality rule DnD and "Move to…" both use:
+
+```
+planDrop(roots, movingId, targetId, zone):            // zone: before | into | after
+  'into'  → canMoveInto(target) ? { parentId: target } : none      // appended
+  parent = target.parentId; none if illegal (canMoveInto(parent) false) or target is the node
+  at  = target's index among parent's children
+  api = zone == 'before' ? at : at + 1                 // chrome.bookmarks.move's index
+  from = moving's index if it already lives in parent, else -1
+  if from != -1 and api in { from, from + 1 } → none   // dropped right beside itself
+  local = (from != -1 and from < api) ? api - 1 : api  // onMoved's / moveNode's index
+  return { parentId: parent, position: { api, local } }
+
+canMoveInto(movingId, targetId):
+  target is a folder, not policy-managed, not the node, not inside the node's subtree
+```
+
+The optimistic patch uses `local` and the API call `api`. Permanent roots take
+drops *into* only: their parent is the synthetic root, which is never a legal
+destination. Asserted in `move-target.test.ts` (both index spaces, cross-folder,
+into a bookmark refused, beside itself, beside a root) and, against the
+in-memory fake, in `edit-session.test.ts`.
+
+## 11. Live-sync batching — `edit/live-sync.ts`
+
+```
+createBatcher({ onFlush, onBurst, limit = 500, schedule = requestAnimationFrame }):
+  push(event):  if not overflowed:
+                  queue.push(event)
+                  if queue.length > limit → overflowed = true; queue = []
+                arm()                                   // at most one flush scheduled
+  resync():     overflowed = true; queue = []; arm()    // reorder, end of Chrome's import
+  flush():      overflowed → onBurst()                  // re-read the tree once
+                else queue non-empty → onFlush(queue)   // applyEvents, arrival order
+  dispose():    cancel the scheduled flush, drop the queue
+```
+
+- `applyEvents` folds `created`/`removed`/`changed`/`moved` into the tree with
+  `patch-tree`'s immutable helpers: one new tree per frame, not one per event.
+- Past the limit, one re-read (`getTree`) replaces what would be thousands of
+  patches, and is exact by construction; the next frame batches normally again.
+  The re-read keeps expansion and focus where the nodes still exist (`03 §3`).
+- The scheduler is injected, so `live-sync.test.ts` fires frames by hand: one
+  batch per frame, a burst past the limit becomes one `onBurst` and no patch,
+  `resync` re-reads, `dispose` cancels what is pending.

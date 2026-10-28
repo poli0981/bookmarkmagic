@@ -3,7 +3,9 @@
 ## 1. Privacy guarantees (product-level, non-negotiable)
 
 1. **Zero data collection.** No analytics, no telemetry, no crash reporting,
-   no update pings. There is no server.
+   no update pings. There is no server. The local diagnostics log (§7) is not
+   an exception: it lives in the page's memory and leaves it only when the user
+   copies it and pastes it somewhere themselves.
 2. **Zero network activity at runtime.** Enforced in three layers, all in
    `08 §3`: the production CSP (`connect-src 'none'` — the browser itself
    refuses), `check:manifest`'s scan of the shipped bundle, and the source gate
@@ -22,9 +24,9 @@
 | # | Threat | Vector | Mitigation |
 |---|---|---|---|
 | T1 | **Malicious import file — markup injection** | Crafted `<script>`/`onerror` payloads in a .html bookmark file | `DOMParser('text/html')` produces an **inert** document (scripts never execute). We read `textContent`/`getAttribute` only. Rendering uses Svelte text interpolation — **`{@html}` is banned repo-wide**. |
-| T2 | Malicious file — resource exhaustion (huge/deep/zip-bomb-style) | 500 MB file, 1M nodes, 10k-deep nesting | Pre-parse size cap 25 MB; node cap 100 000 — for HTML counted on the raw text before `DOMParser` builds anything (since v1.1.0; before, 1.7 M entries were materialised first); depth cap 200 — typed errors, parse aborts early. Lazy tree rendering (§05 §9) bounds DOM size. |
-| T3 | Dangerous URLs in imported bookmarks (`javascript:`, `data:`) | Clicking them in #edit | Never rendered as `<a href>`; "Open" uses `tabs.create`, which refuses `javascript:`. UI marks non-http(s)/ftp/file/about/chrome schemes with a ⚠ badge; they are display-only. Imported URLs are stored verbatim (user's data, not ours to censor) — the browser's own bookmark UI applies its own rules. |
-| T4 | Data loss from destructive import | User picks "Replace all" casually | Non-skippable auto safety-backup (BM JSON download) *before* deletion; danger-styled confirm with exact counts; default mode is non-destructive new-folder. |
+| T2 | Malicious file — resource exhaustion (huge/deep/zip-bomb-style) | 500 MB file, 1M nodes, 10k-deep nesting | Pre-parse size cap 25 MB; node cap 100 000 — for HTML counted on the raw text before `DOMParser` builds anything (since v1.1.0; before, 1.7 M entries were materialised first); depth cap 200 — typed errors, parse aborts early. Replace's safety backup is held to the same caps before a byte is written (`BACKUP_EXCEEDS_LIMITS`, `core/caps.ts`), so a profile too large to restore is never deleted on the strength of a backup the parser would refuse. Bounded rendering (`05 §9`) caps what mounts at once. |
+| T3 | Dangerous URLs in imported bookmarks (`javascript:`, `data:`) | Clicking them in #edit | Never rendered as `<a href>`; "Open" passes only `http:`/`https:` to `tabs.create` (`browser/open-url.ts` — our allowlist, not the browser's refusal, is the control). UI marks every other scheme with a ⚠ badge; those are display-only. Imported URLs are stored verbatim (user's data, not ours to censor) — the browser's own bookmark UI applies its own rules. |
+| T4 | Data loss from destructive import | User picks "Replace all" casually; two Manager tabs write at once | Non-skippable auto safety-backup (BM JSON download) *before* deletion, refused outright when the import could not read it back; danger-styled confirm with exact counts; default mode is non-destructive new-folder; one bookmark writer across tabs (`03 §5`). |
 | T5 | Supply-chain compromise | Malicious transitive dep | **Zero runtime deps**; dev deps pinned via lockfile; Dependabot with a 7-day cooldown + `min-release-age=7`; `npm audit --omit=dev` in CI; Biome installed exact-pinned. See §3.1. |
 | T6 | Store-listing impersonation / trademark issues | — | Unique name + linked GitHub; report via CWS if cloned. |
 | T7 | XSS via filenames/titles echoed into UI (result cards, toasts) | Weird characters in file name | Same as T1 — text interpolation only; filenames additionally sanitized for the *download* name (`[\\/:*?"<>|]` → `_`). |
@@ -62,6 +64,27 @@ mechanical was watching:
   the "mark dangerous schemes in the UI" half was not, so a `javascript:`
   bookmark titled "Your bank" rendered exactly like a safe one and its Open
   button silently did nothing.
+
+### v1.1.0 — what changed against the model
+
+- **T4's confirmation did not exist until v1.1.0.** The row has always promised
+  a "danger-styled confirm with exact counts"; 1.0.x had only a danger-styled
+  button. Replace now opens a `ConfirmDialog` — focus on Cancel — stating how
+  many bookmarks and folders will be deleted (everything inside the writable
+  roots, from the preview read) and how many will be written (a preview plan
+  with the chosen mode and dedupe), `06 §3.1`. Checked by hand (`11 §5`); the
+  counts come from tested pieces (`prepareImport`, `buildImportPlan`).
+- **T2 met T4 in the backup.** A profile past the node, depth or size cap got a
+  backup that the parser then refused — after the tree had been deleted. The
+  backup is now compact BM JSON, checked against the import's own caps before
+  anything is written, downloaded or deleted (`03 §1` step 6b;
+  `safety-backup.test.ts`, `caps.test.ts`).
+- **A second tab was an unmodelled writer.** Two Manager tabs replacing at once
+  would each back up, then delete what the other was writing. The import, Sort
+  A→Z and keep-first now hold a Web Lock, and a second writer is refused before
+  it touches anything (`03 §5`, `write-lock.test.ts`).
+- **Diagnostics are new data, kept local** — what may and may not be recorded
+  is §7.
 
 ## 3. Secure coding rules (enforced)
 
@@ -136,8 +159,9 @@ a **minor-version** event at minimum.
 - **Supported: the latest version published on the Chrome Web Store, only.** No
   back-porting — Chrome auto-updates every installed copy once a release passes
   review, so there is no population left behind to back-port for.
-- Report privately via GitHub Security Advisories, or `contact@poli0981.dev` for
-  reporters without a GitHub account. Never a public issue.
+- Report privately via GitHub Security Advisories, or `security@poli0981.dev`
+  for reporters without a GitHub account (`contact@` is retired since v1.1.0;
+  each purpose has its own address). Never a public issue.
 - Acknowledgement 72 h; fix **prepared** within 14 days for High/Critical. Time
   to *users* is that plus store review, which is outside our control — the
   policy says so rather than implying a delivery guarantee we cannot make.
@@ -158,3 +182,37 @@ came out with every title intact. Anything received by email is kept only as lon
 reproduce and fix, then deleted; `legal/PRIVACY.md` states the same to users.
 This is the receiving-side counterpart to §3's rule that error messages never
 echo more than a 120-character excerpt of file content.
+
+## 7. Local diagnostics — `browser/diagnostics.ts`
+
+A bug report needs more than "it failed", and §1 rules out sending anything.
+So since v1.1.0 each page keeps its last **200** events in a ring buffer in
+module memory, and About → **Copy diagnostics** puts them on the clipboard as
+JSON — on an explicit click, write-only, like Copy link (T8). The user decides
+whether to paste it anywhere.
+
+**Recorded:** import phases — `parsed` (with the detected format and node
+count), `planned:<mode>`, `backup-proven`, `cleared`, `written`; every failure
+the UI shows, by its i18n code and the error's class name, logged inside
+`describeError` — the one place failures are described; bulk edits (`sort`,
+`keep-first`) with their counts; storage read and decode failures, by a fixed
+issue name; uncaught errors and unhandled rejections, by error **name**
+(`installCrashHooks`, in the popup and the Manager).
+
+**Never recorded:** titles, addresses, file names, folder paths; a failure's
+`detail` text, which can quote a URL or a line of the file; error messages and
+stacks; stored values; wall-clock time — entries carry milliseconds since the
+page loaded.
+
+- `DiagEvent` is a closed union with no field for a title, an address or a
+  path — adding one is a type change under review, not a call site — and every
+  string field it has is filled from a fixed identifier: a phase name, an i18n
+  code, an error's `name`. The copied report adds only the extension version, the language and
+  theme *preferences*, and Chrome's major version from the user agent.
+- Never written to `storage`, never sent (the CSP would refuse it anyway,
+  `08 §3`), gone when the tab closes. The log is per page: the popup installs
+  the crash hooks too, but has no Copy button, so nothing can read its log.
+- `tests/unit/browser/diagnostics.test.ts`: the 200-entry cap and order, the
+  report's exact keys, a failure logged by code with its URL-bearing detail
+  absent, crash hooks by name with the message absent.
+- `legal/PRIVACY.md` describes the same log to users; the two must agree.

@@ -103,9 +103,9 @@ itself. **Needs Chrome 136 or later.**
   rows highlighted. Pressing Esc while renaming no longer saves the new name.
 - The edit tree no longer collapses or loses your place after a failed edit,
   and focus moves to the next row after a delete.
-- The About tab and the third-party notices now name the two small MIT-licensed
-  pieces the build has always compiled in (the Svelte runtime and WXT's
-  browser shim), instead of saying there were none.
+- The About tab and the third-party notices now name the small MIT-licensed
+  pieces the build has always compiled in (the Svelte runtime with its `clsx`
+  helper, and WXT's browser shim), instead of saying there were none.
 
 ## [1.0.1] — 2026-08-03
 

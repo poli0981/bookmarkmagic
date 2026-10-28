@@ -17,11 +17,16 @@
 > 5 users) on 2026-10-28. ⚠️ The exact approval date was never recorded — the
 > owner can read it from the dashboard. Installed users are on 1.0.1.
 >
+> **v1.1.0 is in preparation** on `release/1.1.0`: versioned, with its
+> CHANGELOG section dated 2026-10-29, but not yet tagged, released or
+> submitted. Until it clears review, installed users stay on 1.0.1. It raises
+> the floor to Chrome 136 (`08 §7`); permissions are unchanged.
+>
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
 > bump, a CHANGELOG entry and an update submission (`13 §1b`). Sequencing lives
 > in `/CLAUDE.md`; what is still open is in §10 below.
-> **Doc suite version:** 1.7 (2026-10-28 — v1.0.1 published; v1.1.0 in progress)
+> **Doc suite version:** 1.8 (2026-10-29 — specs reconciled with `release/1.1.0`)
 
 ---
 
@@ -51,7 +56,7 @@ One extension page with three capabilities:
 |---|---|
 | **Import** | Validate a bookmark file → preview the tree + stats → choose merge mode + dedupe → write into the browser with progress reporting. |
 | **Export** | Pick scope (all / specific folders) → pick format → download a file compatible with every major browser. |
-| **Edit**   | Full tree manager: search, rename, move (drag & drop), delete, create folders, find duplicates. |
+| **Edit**   | Full tree manager: search, rename, move and reorder (drag & drop), sort A→Z, delete, create folders, find duplicates. |
 
 ## 4. Product principles
 
@@ -85,6 +90,24 @@ One extension page with three capabilities:
 - i18n: EN (default), VI, JA. Dark/light theme.
 - First-run Legal Gate (EULA, GPL-3.0, Disclaimer, Privacy Policy → GitHub links).
 - About tab: version, GitHub repo, third-party list ("None"), donate links.
+
+**v1.1.0 adds** (the list above stays as v1.0 shipped it — `15` cites it as
+v1.0's scope):
+
+- Import: Chrome's profile `Bookmarks` file and Firefox JSON backups, both
+  recognised by content, not extension (`04 §2a/§2b`). Backups restore into
+  the right roots instead of nesting them (`03 §1`).
+- Merge that merges: folders the user already has are reused level by level,
+  and new items are appended to them (`03 §1`, `05 §5`).
+- Replace asks first, with exact counts, and refuses a backup it could not
+  read back (`09` T4); one writer across Manager tabs (`03 §5`).
+- Tree editor: Sort A→Z per folder, drag to reorder (before / after / into),
+  a real "Move to…" dialog, bounded rendering (`03 §3`, `05 §9–§11`).
+- About: the third-party statement names the two MIT pieces the build compiles
+  in instead of "None"; Copy diagnostics, a local log for bug reports
+  (`09 §7`).
+- A redesigned UI with a self-drawn icon set, all motion behind
+  `prefers-reduced-motion` (`06`).
 
 ## 7. Non-goals (v1.0)
 
@@ -147,8 +170,11 @@ Derived identifiers (canonical across docs and code):
    `13 §2` specifies, and there is no 440×280 promo tile of any size. Owner:
    either record where the submitted assets live, or correct `13 §2`.
 4. ✔ Donate URLs resolved from `.github/FUNDING.yml` (`14 §5`).
-   ✔ Contact email filled in and confirmed live: `contact@poli0981.dev`
-   (`legal/PRIVACY.md`), alongside the GitHub Issues link.
+   ✔ Contact addresses: since v1.1.0, one alias per purpose (`privacy@` in
+   `legal/PRIVACY.md`, `security@`, `legal@`, `dmca@`, `copyright@`,
+   `takedown@`, `code@` — README "Contact"); `contact@` is retired. ⚠️ Owner:
+   if the CWS dashboard's developer contact still says `contact@`, change it
+   to `privacy@` or `code@` there.
 5. ✔ Chrome Web Store: developer account paid, item created, submitted
    2026-07-26 and **approved — the listing is public and has users**. Listing
    copy and the Privacy tab answers came from `13 §3` and `08 §5`. The store URL

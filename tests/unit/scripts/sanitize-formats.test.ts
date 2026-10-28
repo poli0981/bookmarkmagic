@@ -269,3 +269,52 @@ describe('sanitizer — CLI safety', () => {
     expect(stderr).toContain(`${Buffer.byteLength(stdout)} bytes out`);
   });
 });
+
+describe('sanitizer — leaks found by the v1.1.0 review', () => {
+  it('rewrites a CSV row whose unquoted comma shifted every later field', () => {
+    // The exact row that makes the extension report CSV_ROW_MISMATCH — the
+    // file most likely to be sanitized — put the address in `add_date`.
+    const csv =
+      'folder_path,title,url,add_date\n' +
+      'Work,Smith, Jane - payslip March,file:///C:/Users/jsmith/Documents/Payroll/payslip.pdf,1700000000\n' +
+      'Work,ok,https://ok.example.org/,1700000001,call Jane Doe re visa 555-0199\n';
+    const { status, out } = sanitizeText('misaligned.csv', csv);
+    expect(status).toBe(0);
+    for (const secret of [
+      'jsmith',
+      'Payroll',
+      'payslip',
+      'Jane',
+      'visa',
+      'Smith',
+      'ok.example.org',
+    ]) {
+      expect(out).not.toContain(secret);
+    }
+    // Dates survive, and so does every row's field count — the bug itself.
+    expect(out).toContain('1700000000');
+    expect(out.split('\n').map((line) => line.split(',').length)).toEqual([4, 5, 5, 1]);
+  });
+
+  it('rewrites attributes no rule knows, like Firefox POST_DATA', () => {
+    const html =
+      '<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p>\n' +
+      '<DT><A HREF="https://intranet.example.org/s?q=%s" ADD_DATE="1700000000" POST_DATA="q=%s&amp;user=jane.doe&amp;employee_id=E48213">HR</A>\n' +
+      '<DT><A HREF="https://bank.example.org/" DATA-NOTE="Jane Doe joint account 4421">x</A>\n' +
+      '</DL><p>\n';
+    const { status, out } = sanitizeText('postdata.html', html);
+    expect(status).toBe(0);
+    for (const secret of ['jane', 'E48213', 'joint', '4421']) expect(out).not.toContain(secret);
+    expect(out).toContain('ADD_DATE="1700000000"');
+  });
+
+  it('refuses without repeating what leaked, and says not to paste it', () => {
+    const html =
+      '<!DOCTYPE NETSCAPE-Bookmark-file-1>\n<DL><p>\n<DT><A HREF="https://a.example.org/">Title</A>\n' +
+      '<P>Nguyen private payroll</P>\n</DL><p>\n';
+    const { status, stderr } = run([tempFile('leaky.html', html), '--stdout']);
+    expect(status).toBe(1);
+    for (const secret of ['Nguyen', 'private', 'payroll']) expect(stderr).not.toContain(secret);
+    expect(stderr).toMatch(/do not paste/i);
+  });
+});

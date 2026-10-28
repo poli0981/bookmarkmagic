@@ -64,3 +64,43 @@ export function findLeakedWords(html) {
   }
   return [...leaked];
 }
+
+/**
+ * Everything the mappers emit in place of a value, as patterns. What is left of
+ * a value once these are removed was not written by this tool.
+ */
+const PLACEHOLDERS = [
+  // A mapped address, query and `#frag` included — `&amp;` too, so its `;`
+  // must not end the match.
+  /\b[a-z][a-z0-9+.-]*:\/\/[a-z]\d*\.example(?::\d+)?[^\s"',]*/gi,
+  // Firefox's fixed root GUIDs, which the mapper keeps on purpose.
+  /\b(?:root|menu|toolbar|unfiled|mobile|tags)_{2,}/g,
+  /\b[a-z][a-z0-9+.-]*:sanitized-\d+/gi,
+  /\bnot-a-url-\d+/g,
+  /\b(?:Title|Description) \d+/g,
+  /\b(?:kw|tag|attr|g)\d+\b/g,
+  /\b0{8}-0{4}-4000-8000-\d{12}\b/g,
+  /data:image\/png;base64,[A-Za-z0-9+/=]+/g,
+  /&(?:#\d+|#x[0-9a-f]+|[a-z]+);/gi,
+];
+
+/**
+ * Words left in VALUES — CSV fields, attribute values, JSON strings — once every
+ * placeholder shape is removed. The value-level twin of `findLeakedWords`: a
+ * misaligned CSV row put a payslip path and a phone note in columns the CSV
+ * rules never looked at, and the host-only check let both through.
+ *
+ * @param {Iterable<string>} values sanitized values
+ * @returns {string[]} distinct offending words, empty when clean
+ */
+export function findLeakedValueWords(values) {
+  const leaked = new Set();
+  for (const value of values) {
+    let rest = value;
+    for (const re of PLACEHOLDERS) rest = rest.replace(re, ' ');
+    for (const [word] of rest.matchAll(/\p{L}{3,}/gu)) {
+      if (!ALLOWED_WORDS.has(word.toLowerCase())) leaked.add(word);
+    }
+  }
+  return [...leaked];
+}

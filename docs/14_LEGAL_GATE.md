@@ -84,8 +84,8 @@ DISCLAIMER now describes Replace as it really behaves (confirmation with exact
 counts, refusal when no restorable backup is possible). PRIVACY now describes
 the in-memory diagnostics log, the Chrome Web Store's own role, what happens
 when a user opens a bookmark (the browser's request, not the Extension's), and
-what the build compiles in. THIRD_PARTY_NOTICES now lists the Svelte runtime
-and WXT's browser shim, which the build always compiled in. **Not a bump:**
+what the build compiles in. THIRD_PARTY_NOTICES now lists the Svelte runtime,
+its `clsx` helper and WXT's browser shim, which the build always compiled in. **Not a bump:**
 every change clarifies or corrects a description of what was already true, or
 removes an obligation; none adds one or a data flow.
 
@@ -107,15 +107,17 @@ same value in `package.json#license` (`01 §5`).
 | Surface | Shows |
 |---|---|
 | First-run gate | Summary + 4 links + accept |
-| About tab | 4 links + accepted date/version + "Third-party code" (the Svelte runtime and WXT's browser shim, MIT, as compiled in) + Copy diagnostics |
+| About tab | 4 links + accepted date/version + "Third-party code" (the Svelte runtime with clsx, and WXT's browser shim — MIT, as compiled in) + Copy diagnostics |
 | Store listing | GitHub link; privacy-policy URL in Privacy tab |
 | README | License badge, links to `legal/` |
 
 ## 5. Third-party & donations note
 
-- **Zero runtime dependencies are installed**, but the build compiles two
-  MIT-licensed pieces into the package: the Svelte runtime and
-  `@wxt-dev/browser`'s one-line shim. Through v1.0.x the About tab said "None"
+- **Zero runtime dependencies are installed**, but the build compiles a few
+  MIT-licensed pieces into the package: the Svelte runtime, `clsx` (which the
+  Svelte runtime imports) and WXT's one-line `browser` shim (`wxt` +
+  `@wxt-dev/browser`). `wxt.config.ts` fails the build when any other package
+  would ship (`CREDITED_PACKAGES`). Through v1.0.x the About tab said "None"
   and THIRD_PARTY_NOTICES said "no third-party code" — both wrong, corrected in
   v1.1.0. The notices ship as `THIRD_PARTY_NOTICES.txt` (from `src/public/`),
   which `check:manifest` requires in every build; `legal/THIRD_PARTY_NOTICES.md`

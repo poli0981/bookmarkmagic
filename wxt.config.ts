@@ -49,9 +49,62 @@ const EXTENSION_PAGE_CSP = [
   "base-uri 'none'",
 ].join('; ');
 
+/**
+ * Every npm package the build compiles into the extension, each credited in
+ * `legal/THIRD_PARTY_NOTICES.md` and the shipped `THIRD_PARTY_NOTICES.txt`
+ * (docs/14 §5). `tests/unit/third-party.test.ts` checks both files name each
+ * one. Until v1.1.0 the notices said "none" while Svelte's runtime, its `clsx`
+ * dependency and WXT's browser shim all shipped — nothing could notice.
+ */
+const CREDITED_PACKAGES = ['svelte', 'clsx', '@wxt-dev/browser', 'wxt'];
+
+/** The npm package a module id lives in, or undefined for our own code. */
+function packageOf(id: string): string | undefined {
+  const at = id.lastIndexOf('node_modules');
+  if (at === -1) return undefined;
+  const parts = id.slice(at + 'node_modules'.length + 1).split(/[/]/);
+  return parts[0]?.startsWith('@') === true ? `${parts[0]}/${parts[1] ?? ''}` : parts[0];
+}
+
+/** The slice of Rollup's output-bundle shape the gate reads. */
+interface BundleLike {
+  [file: string]: { type: string; modules?: Record<string, { renderedLength: number }> };
+}
+
+/**
+ * Fail the build when code from an uncredited package ships. Only modules that
+ * actually render count — a package imported and then tree-shaken away is not
+ * in the extension and needs no notice.
+ */
+const thirdPartyGate = {
+  name: 'bookmarkmagic:third-party-gate',
+  apply: 'build' as const,
+  generateBundle(
+    this: { error: (message: string) => never },
+    _options: unknown,
+    bundle: BundleLike,
+  ) {
+    const shipped = new Set<string>();
+    for (const output of Object.values(bundle)) {
+      for (const [id, module] of Object.entries(output.modules ?? {})) {
+        const name = packageOf(id);
+        if (name !== undefined && module.renderedLength > 0) shipped.add(name);
+      }
+    }
+    const uncredited = [...shipped].filter((name) => !CREDITED_PACKAGES.includes(name));
+    if (uncredited.length > 0) {
+      this.error(
+        `third-party code ships without a notice: ${uncredited.join(', ')} — add it to ` +
+          'CREDITED_PACKAGES, legal/THIRD_PARTY_NOTICES.md and src/public/THIRD_PARTY_NOTICES.txt',
+      );
+    }
+  },
+};
+
 export default defineConfig({
   srcDir: 'src',
   vite: () => ({
+    plugins: [thirdPartyGate],
     build: {
       target: `chrome${CHROME_FLOOR}`,
       // Vite's modulepreload polyfill is a network call (it fetches each chunk

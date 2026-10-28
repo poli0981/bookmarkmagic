@@ -61,16 +61,21 @@ bookmarkmagic/
 ├── src/
 │   ├── public/
 │   │   ├── icon/                # 16/32/48/128 png
-│   │   └── _locales/{en,vi,ja}/messages.json   # manifest-level strings only
+│   │   ├── _locales/{en,vi,ja}/messages.json   # manifest-level strings only
+│   │   └── THIRD_PARTY_NOTICES.txt  # MIT notices for what the build compiles in (14 §5)
 │   ├── entrypoints/
 │   │   ├── popup/               # index.html + App.svelte + main.ts
 │   │   └── manager/             # index.html + App.svelte + main.ts (unlisted page)
 │   ├── lib/
 │   │   ├── core/                # PURE — see below
 │   │   │   ├── model.ts             # BookmarkNode, ImportPlan, Stats types
+│   │   │   ├── parse-file.ts        # parseBookmarkFile: sniff, parse once, route (04 intro)
 │   │   │   ├── parse/
+│   │   │   │   ├── shared.ts            # WarningBag, NodeBudget, bookmarkTitle, RootTitles
 │   │   │   │   ├── netscape-html.ts
 │   │   │   │   ├── bm-json.ts
+│   │   │   │   ├── chrome-json.ts       # Chrome profile `Bookmarks` file (04 §2a)
+│   │   │   │   ├── firefox-json.ts      # Firefox JSON backup (04 §2b)
 │   │   │   │   └── csv.ts
 │   │   │   ├── serialize/
 │   │   │   │   ├── netscape-html.ts
@@ -81,7 +86,12 @@ bookmarkmagic/
 │   │   │   ├── timestamps.ts
 │   │   │   ├── dedupe.ts
 │   │   │   ├── diff.ts
-│   │   │   ├── detect-format.ts
+│   │   │   ├── detect-format.ts     # sniffFormat + jsonFormatOf
+│   │   │   ├── href.ts              # classifyHref: what an address is worth importing
+│   │   │   ├── csv-dialect.ts       # columns, delimiters, formula guard
+│   │   │   ├── route.ts             # top-level root routing / unwrapping (03 §1)
+│   │   │   ├── merge.ts             # Merge folder reuse (05 §5)
+│   │   │   ├── caps.ts              # would the import read this back? (03 §1 step 6b)
 │   │   │   ├── plan.ts              # buildImportPlan → segments (§4)
 │   │   │   ├── search.ts            # #edit filter + ancestor expansion
 │   │   │   ├── select.ts            # tri-state export selection → subtree
@@ -95,10 +105,15 @@ bookmarkmagic/
 │   │   │   ├── app-info.ts          # manifest version — the ONE source (06 §3.5)
 │   │   │   ├── errors.ts            # BmBrowserError / BmBackupError / BmAborted (§7)
 │   │   │   ├── open-url.ts          # http(s) allowlist before tabs.create (09 T3)
-│   │   │   └── open-manager.ts      # getContexts() focus-or-create
+│   │   │   ├── open-manager.ts      # getContexts() focus-or-create + route broadcast (§6)
+│   │   │   ├── write-lock.ts        # one writer across Manager tabs (03 §5)
+│   │   │   ├── diagnostics.ts       # in-memory, allowlisted event log (09 §7)
+│   │   │   ├── describe-error.ts    # error → i18n key + detail (§7)
+│   │   │   └── clipboard.ts         # write-only clipboard (09 T8)
 │   │   ├── import/run-import.ts     # the import pipeline (03 §1)
 │   │   ├── export/run-export.ts     # the export pipeline (03 §2)
-│   │   ├── edit/                    # edit-node, patch-tree, move-target, tree-keyboard (03 §3)
+│   │   ├── edit/                    # edit-node, patch-tree, move-target (incl. planDrop),
+│   │   │                            # tree-keyboard, sort, live-sync, search-expansion (03 §3)
 │   │   ├── settings/options.ts      # the six Settings choice tables (06 §3.4)
 │   │   ├── links.ts                 # repo / legal / donate URLs (14 §4, §5)
 │   │   ├── stores/                  # Svelte 5 runes state (.svelte.ts)
@@ -106,13 +121,14 @@ bookmarkmagic/
 │   │   │   ├── legal.svelte.ts      # acceptedVersion
 │   │   │   ├── toast.svelte.ts      # transient status queue + its timers (06 §4)
 │   │   │   ├── route.svelte.ts      # location.hash + hashchange wrapper (§5)
-│   │   │   └── import-session.svelte.ts
+│   │   │   ├── import-session.svelte.ts
+│   │   │   └── edit-session.svelte.ts   # the #edit tab's state + commands (03 §3)
 │   │   ├── i18n/                    # runtime UI i18n (see 07_I18N.md)
 │   │   │   ├── index.svelte.ts
 │   │   │   ├── format.ts            # pure Intl number/date helpers (07 §3)
 │   │   │   ├── resolve-locale.ts
-│   │   │   └── locales/{en,vi,ja}.ts
-│   │   └── components/              # shared Svelte components (see 06_UI.md)
+│   │   │   └── locales/{en,vi,ja}{,-notices,-import}.ts   # split by namespace (07 §2)
+│   │   └── components/              # Svelte components (see 06_UI.md); icons/Icon.svelte
 │   └── styles/
 │       ├── tokens.css               # CSS custom properties, themes
 │       └── base.css
@@ -240,9 +256,16 @@ submission (`08 §8`).
 2. Found → `browser.tabs.update(tabId, { active: true })` +
    `browser.windows.update(windowId, { focused: true })` (no `tabs`
    permission needed for these calls).
+   Before focusing, it posts `{ kind: 'navigate', route }` on the
+   `bookmarkmagic-manager` `BroadcastChannel` (same-origin, in-browser, no
+   permission). The Manager validates the route and switches to it — unless an
+   import is writing, when it refuses with the same "busy" toast the tab bar
+   uses (`03 §5`). 1.0.x only focused the tab, so "Export…" in the popup landed
+   wherever the Manager had been left.
 3. Not found → `browser.tabs.create({ url: browser.runtime.getURL('/manager.html') + hash })`.
 
-Popup may pass an intent (`#import` / `#export` / `#edit`) via the hash.
+Popup may pass an intent (`#import` / `#export` / `#edit` / `#settings`) via
+the hash for a new tab, or via the broadcast for an open one.
 
 ## 7. Error handling strategy
 

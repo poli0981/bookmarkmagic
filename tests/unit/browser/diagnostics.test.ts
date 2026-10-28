@@ -10,7 +10,7 @@ afterEach(() => {
   clearDiagnostics();
 });
 
-/** Local-only diagnostics — docs/09 §5. */
+/** Local-only diagnostics — docs/09 §7. */
 describe('diagnostics', () => {
   it('keeps the newest 200 events, oldest first, with page-relative times only', () => {
     for (let i = 0; i < 250; i++) record({ kind: 'edit', action: 'sort', count: i });

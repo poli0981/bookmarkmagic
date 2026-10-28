@@ -1,5 +1,5 @@
 /**
- * Local-only diagnostics — docs/09 §5, legal/PRIVACY.md.
+ * Local-only diagnostics — docs/09 §7, legal/PRIVACY.md.
  *
  * Purpose: when something goes wrong, a bug report needs more than "it failed"
  *   — which phase, which error code, in what order. This is a small ring

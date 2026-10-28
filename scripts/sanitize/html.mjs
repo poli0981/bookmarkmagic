@@ -20,31 +20,70 @@ import {
 const BLANK_ICON =
   'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
 
-/** Attributes handled explicitly; the generic URL sweep must not touch them. */
-const HANDLED_ATTRS = new Set(['href', 'icon']);
+/** Attributes handled explicitly; the generic sweep must not touch them. */
+const HANDLED_ATTRS = new Set(['href', 'icon', 'shortcuturl', 'tags']);
 
 /**
- * Scrub any *other* attribute whose value is an address. Firefox alone writes
- * `ICON_URI`, and `FEEDURL` and friends exist in the wild; enumerating them was
- * already wrong once, so this sweeps by value shape. `file:` counts: an
- * `ICON_URI="file:///C:/Users/<name>/…"` has no host, and used to pass.
+ * Attributes whose values are structure — dates, root markers, the charset
+ * line — and are kept as written. Exported for the leak check.
+ */
+export const STRUCTURAL_ATTRS = new Set([
+  'add_date',
+  'last_modified',
+  'last_visit',
+  'personal_toolbar_folder',
+  'unfiled_bookmarks_folder',
+  'mobile_bookmarks_folder',
+  'last_charset',
+  'folded',
+  'http-equiv',
+  'content',
+  'charset',
+]);
+
+/**
+ * Every OTHER attribute, default-deny: an address is mapped as one, a number
+ * or boolean is kept, anything else becomes `attrN`. The old sweep touched
+ * only address-shaped values, so Firefox's `POST_DATA="…&user=jane.doe"` on a
+ * keyword bookmark — and any exporter's `DATA-NOTE` — went out verbatim.
+ * `file:` counts as an address: `ICON_URI="file:///C:/Users/<name>/…"`.
  *
  * @param {string} text
  * @param {Mapper} mapUrl
  * @returns {Span[]}
  */
-function urlAttrSpans(text, mapUrl) {
+function otherAttrSpans(text, mapUrl) {
   /** @type {Span[]} */
   const spans = [];
   const rewrite = attrRewriter(mapUrl);
+  let others = 0;
   for (const m of text.matchAll(ANY_ATTR)) {
     const name = (m[1] ?? '').toLowerCase();
     const value = m[2] ?? m[3] ?? m[4] ?? '';
-    if (HANDLED_ATTRS.has(name) || value === '' || !isAddressLike(value)) continue;
+    if (HANDLED_ATTRS.has(name) || STRUCTURAL_ATTRS.has(name) || value === '') continue;
+    if (/^(?:-?\d+(?:\.\d+)?|true|false)$/i.test(value)) continue;
     const at = m.indices?.[2] ?? m.indices?.[3] ?? m.indices?.[4];
-    if (at !== undefined) spans.push({ start: at[0], end: at[1], value: rewrite(value) });
+    if (at === undefined) continue;
+    const mapped = isAddressLike(value) ? rewrite(value) : `attr${++others}`;
+    spans.push({ start: at[0], end: at[1], value: mapped });
   }
   return spans;
+}
+
+/**
+ * Every attribute value outside the structural set — what the leak check reads.
+ *
+ * @param {string} html
+ * @returns {string[]}
+ */
+export function attributeValues(html) {
+  /** @type {string[]} */
+  const values = [];
+  for (const m of html.matchAll(ANY_ATTR)) {
+    if (STRUCTURAL_ATTRS.has((m[1] ?? '').toLowerCase())) continue;
+    values.push(m[2] ?? m[3] ?? m[4] ?? '');
+  }
+  return values;
 }
 
 /** The next element that ends a description: `<DT>`, `<DD>`, `<DL>` or a close. */
@@ -97,7 +136,7 @@ export function sanitizeHtml(text, mapUrl, mapTitle) {
     // HREF and ICON, at any quoting — attribute name case is left as found.
     ...attrSpans(text, /^href$/, attrRewriter(mapUrl)),
     ...attrSpans(text, /^icon$/, () => BLANK_ICON),
-    ...urlAttrSpans(text, mapUrl),
+    ...otherAttrSpans(text, mapUrl),
     // Firefox keywords and tags are user-authored text, so they are personal
     // too. Tag count is preserved because it is the only part a parser sees.
     ...attrSpans(text, /^shortcuturl$/, () => `kw${++keywords}`),

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // @ts-check
 /**
- * Screenshot harness — docs/13 §5, docs/11 §5.
+ * Screenshot harness — docs/13 §2, docs/11 §5.
  *
  * Serves the BUILT extension (`.output/chrome-mv3`) over localhost with a fake
  * `chrome` object and neutral sample bookmarks, so every page can be looked at
@@ -17,13 +17,16 @@
  * the hash: http://localhost:4318/manager.html?theme=dark&lang=vi#edit
  *
  * `--shoot` drives a locally installed Chrome (CHROME_PATH, or the usual
- * install paths) in headless mode: every route × theme × language at 1280×800
- * into `capture/`, plus the store set into `store/screenshots/`. Dev tool only:
- * nothing here ships, and it never touches the network beyond localhost.
+ * install paths) headless, on a throwaway profile — never the user's own:
+ * every route × theme × language at 1280×800 into `.output/qa-screens/` (for
+ * review, git-ignored), the README set into `capture/`, and the store set into
+ * `store/screenshots/`. Dev tool only: nothing here ships, and it never touches
+ * the network beyond localhost.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, rmSync } from 'node:fs';
 import { createServer } from 'node:http';
+import { tmpdir } from 'node:os';
 import { extname, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -140,10 +143,15 @@ function findChrome() {
   return candidates.find((path) => path !== undefined && existsSync(path));
 }
 
-/** @param {string} chrome @param {string} url @param {string} file @param {string} size */
-function shoot(chrome, url, file, size) {
+/**
+ * @param {string} chrome @param {string} profile @param {string} url
+ * @param {string} file @param {string} size
+ */
+function shoot(chrome, profile, url, file, size) {
   execFileSync(chrome, [
     '--headless=new',
+    `--user-data-dir=${profile}`,
+    '--no-first-run',
     '--disable-gpu',
     '--hide-scrollbars',
     `--window-size=${size}`,
@@ -165,24 +173,53 @@ if (!existsSync(join(OUT, 'manifest.json'))) {
       process.exitCode = 1;
       server.close();
     } else {
+      const qa = join(OUT, '..', 'qa-screens');
       const capture = join(ROOT, 'capture');
       const store = join(ROOT, 'store', 'screenshots');
-      mkdirSync(capture, { recursive: true });
-      mkdirSync(store, { recursive: true });
-      for (const lang of ['en', 'vi', 'ja']) {
-        for (const theme of ['light', 'dark']) {
-          for (const route of ['import', 'export', 'edit', 'settings', 'about']) {
-            const url = `http://localhost:${PORT}/manager.html?theme=${theme}&lang=${lang}#${route}`;
-            shoot(chrome, url, join(capture, `${route}-${theme}-${lang}.png`), '1280,800');
+      for (const dir of [qa, capture, store]) mkdirSync(dir, { recursive: true });
+      const profile = mkdtempSync(join(tmpdir(), 'bookmarkmagic-harness-'));
+      const page = (/** @type {string} */ query, /** @type {string} */ route) =>
+        `http://localhost:${PORT}/manager.html?${query}#${route}`;
+      const ROUTES = ['import', 'export', 'edit', 'settings', 'about'];
+      try {
+        for (const lang of ['en', 'vi', 'ja']) {
+          for (const theme of ['light', 'dark']) {
+            for (const route of ROUTES) {
+              const file = join(qa, `${route}-${theme}-${lang}.png`);
+              shoot(chrome, profile, page(`theme=${theme}&lang=${lang}`, route), file, '1280,800');
+            }
           }
         }
+        for (const route of ROUTES) {
+          shoot(
+            chrome,
+            profile,
+            page('theme=light&lang=en', route),
+            join(capture, `${route}.png`),
+            '1280,800',
+          );
+        }
+        for (const route of ['edit', 'export', 'import']) {
+          shoot(
+            chrome,
+            profile,
+            page('theme=dark&lang=en', route),
+            join(store, `${route}.png`),
+            '1280,800',
+          );
+        }
+        shoot(
+          chrome,
+          profile,
+          `http://localhost:${PORT}/popup.html?theme=light&lang=en`,
+          join(capture, 'popup.png'),
+          '360,420',
+        );
+      } finally {
+        rmSync(profile, { recursive: true, force: true });
+        server.close();
       }
-      for (const route of ['import', 'edit', 'export']) {
-        const url = `http://localhost:${PORT}/manager.html?theme=light&lang=en#${route}`;
-        shoot(chrome, url, join(store, `${route}.png`), '1280,800');
-      }
-      console.log(`harness: screenshots in ${capture} and ${store}`);
-      server.close();
+      console.log(`harness: screenshots in ${qa}, ${capture} and ${store}`);
     }
   }
 }

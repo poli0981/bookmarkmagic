@@ -40,9 +40,9 @@ location you control.
 ## Third parties
 
 No data is shared with anyone, because no data is collected. The Extension
-installs no runtime dependencies; the two small MIT-licensed pieces its build
-compiles in (the Svelte runtime and WXT's browser shim — see
-THIRD_PARTY_NOTICES.md) contain no network code.
+installs no runtime dependencies; the few small MIT-licensed pieces its build
+compiles in (the Svelte runtime with its clsx helper, and WXT's browser shim —
+see THIRD_PARTY_NOTICES.md) contain no network code.
 
 Two things happen outside the Extension and are worth knowing:
 
