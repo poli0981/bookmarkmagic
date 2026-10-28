@@ -64,12 +64,20 @@ jobs:
         working-directory: .output
         run: sha256sum *-chrome.zip > SHA256SUMS.txt
 
+      # Staged in a plain directory: upload-artifact skips hidden paths by
+      # default, and `.output` is one. Left there, the upload found nothing and
+      # the first v1.1.0 tag run failed before any Release existed — the split
+      # into build and publish jobs had never run on a tag until then.
+      - name: Stage the release files
+        run: |
+          set -euo pipefail
+          mkdir dist
+          cp .output/*-chrome.zip .output/SHA256SUMS.txt dist/
+
       - uses: actions/upload-artifact@v7
         with:
           name: release-${{ github.ref_name }}
-          path: |
-            .output/*-chrome.zip
-            .output/SHA256SUMS.txt
+          path: dist/
           if-no-files-found: error
           retention-days: 90
 

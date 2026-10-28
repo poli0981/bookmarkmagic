@@ -118,7 +118,7 @@ Four jobs, least privilege first (split 2026-10-28):
 
 | Job | Token | Does |
 |---|---|---|
-| `build` "Gate + package" | `contents: read` | install, **every CI gate again** (a tag skips the branch triggers, and must never ship what a PR would have blocked), `zip`, `check:manifest`, the tag ↔ manifest version check, `SHA256SUMS.txt`; uploads both files as the artifact `release-<tag>` |
+| `build` "Gate + package" | `contents: read` | install, **every CI gate again** (a tag skips the branch triggers, and must never ship what a PR would have blocked), `zip`, `check:manifest`, the tag ↔ manifest version check, `SHA256SUMS.txt`; copies both files into a plain `dist/` and uploads that as the artifact `release-<tag>` — `upload-artifact` skips hidden paths such as `.output/` by default, which failed the first v1.1.0 tag run before any Release existed |
 | `publish` "GitHub Release" | `contents: write` | downloads the artifact, `sha256sum -c` it, creates the Release with `--verify-tag` (or re-uploads to an existing one). Installs nothing and runs no repository code — the only job that ever holds a write token |
 | `store` "Publish to Chrome Web Store" | `contents: read` | only when the repo variable `CWS_AUTOPUBLISH` is `'true'`: `./node_modules/.bin/wxt submit` with the Release asset — the local binary, never `npx wxt`, which may fetch an unpinned package into an environment holding the four `CHROME_*` secrets (SonarCloud S6505/S8543) |
 | `announce` | `contents: read` | Discord, only when `DISCORD_ANNOUNCE` is `'true'` |
