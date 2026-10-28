@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { millisToSeconds, normalizeEpochSeconds } from '@/lib/core/timestamps';
+import {
+  chromeTimeToSeconds,
+  microsToSeconds,
+  millisToSeconds,
+  normalizeEpochSeconds,
+} from '@/lib/core/timestamps';
 
 describe('normalizeEpochSeconds — magnitude table (docs/05 §4)', () => {
   it('keeps seconds', () => {
@@ -63,5 +68,62 @@ describe('millisToSeconds — the chrome.bookmarks adapter conversion', () => {
     expect(millisToSeconds(undefined)).toBeUndefined();
     expect(millisToSeconds(0)).toBeUndefined();
     expect(millisToSeconds(-1)).toBeUndefined();
+  });
+});
+
+describe('normalizeEpochSeconds — never stores a zero date', () => {
+  it('treats a value that rounds to 0 as absent, not as 0', () => {
+    expect(normalizeEpochSeconds(0.4)).toEqual({ seconds: undefined, invalid: false });
+    expect(normalizeEpochSeconds('0.2')).toEqual({ seconds: undefined, invalid: false });
+  });
+});
+
+describe('chromeTimeToSeconds — profile Bookmarks file dates (docs/04 §2a)', () => {
+  it('converts µs since 1601 held as a decimal string beyond 2^53', () => {
+    // 13344473600000000 µs since 1601 = 1700000000 s since 1970.
+    expect(chromeTimeToSeconds('13344473600000000')).toEqual({
+      seconds: 1700000000,
+      invalid: false,
+    });
+    expect(Number('13344473600000000') > Number.MAX_SAFE_INTEGER).toBe(true);
+  });
+
+  it("truncates, like Chrome's own HTML writer", () => {
+    expect(chromeTimeToSeconds('13344473600999999').seconds).toBe(1700000000);
+  });
+
+  it('reads "0" and absence as no date, silently', () => {
+    for (const raw of ['0', '', undefined, null, 0]) {
+      expect(chromeTimeToSeconds(raw)).toEqual({ seconds: undefined, invalid: false });
+    }
+  });
+
+  it('flags garbage and dates outside the representable range', () => {
+    for (const raw of ['abc', '-5', '1.5e16', '12', '11644473600000000', '99999999999999999999']) {
+      expect(chromeTimeToSeconds(raw).invalid, raw).toBe(true);
+    }
+  });
+
+  it('tolerates a bare number where a string was expected', () => {
+    // Past 2^53, so JSON.parse has already rounded it — by microseconds only.
+    expect(chromeTimeToSeconds(13344473600000000).seconds).toBe(1700000000);
+    expect(chromeTimeToSeconds(-1).invalid).toBe(true);
+  });
+});
+
+describe('microsToSeconds — Firefox PRTime (docs/04 §2b)', () => {
+  it('converts by unit, not by magnitude', () => {
+    // 86400 s after the epoch is 8.64e10 µs — the magnitude buckets would read
+    // that as SECONDS (it is under 1e11) and land in the year 4707.
+    expect(microsToSeconds(86_400e6)).toEqual({ seconds: 86400, invalid: false });
+    expect(microsToSeconds(1_700_000_000_999_999).seconds).toBe(1700000000);
+  });
+
+  it('reads 0 and absence as no date, and rejects nonsense', () => {
+    expect(microsToSeconds(0)).toEqual({ seconds: undefined, invalid: false });
+    expect(microsToSeconds(undefined)).toEqual({ seconds: undefined, invalid: false });
+    expect(microsToSeconds(-1).invalid).toBe(true);
+    expect(microsToSeconds('1700000000000000').invalid).toBe(true);
+    expect(microsToSeconds(1e20).invalid).toBe(true);
   });
 });

@@ -1,4 +1,5 @@
 import type { Dict } from './en';
+import { errors, warnings } from './ja-notices';
 
 /**
  * Japanese — です/ます form, katakana loanwords (docs/07 §4).
@@ -208,55 +209,6 @@ export default {
       '同意を保存できなかったため、何も記録されていません。このブラウザで拡張機能のストレージが許可されているか確認してから、もう一度お試しください。',
     blocked: 'インポート・エクスポート・編集タブを使うには規約に同意してください。',
   },
-  warnings: {
-    NO_BOOKMARKS: {
-      one: 'このファイルにブックマークは含まれていません。',
-      other: 'このファイルにブックマークは含まれていません。',
-    },
-    DESCRIPTIONS_DROPPED: {
-      one: '説明 {n} 件を破棄しました。ブックマークのモデルに該当する項目がありません。',
-      other: '説明 {n} 件を破棄しました。ブックマークのモデルに該当する項目がありません。',
-    },
-    FAVICONS_IGNORED: {
-      one: 'ファビコン {n} 件を無視しました。ブックマーク API はファビコンを設定できません。',
-      other: 'ファビコン {n} 件を無視しました。ブックマーク API はファビコンを設定できません。',
-    },
-    INVALID_DATE: {
-      one: '読み取れない日付 {n} 件を空欄にしました。',
-      other: '読み取れない日付 {n} 件を空欄にしました。',
-    },
-    MISSING_URL: {
-      one: 'アドレスのない項目 {n} 件をスキップしました。',
-      other: 'アドレスのない項目 {n} 件をスキップしました。',
-    },
-    NEWER_VERSION: {
-      one: 'このファイルは新しいバージョンで作成されています。可能な範囲で読み込みます。',
-      other: 'このファイルは新しいバージョンで作成されています。可能な範囲で読み込みます。',
-    },
-    EMPTY_TITLE: {
-      one: 'タイトルのないブックマークが {n} 件あり、代わりにアドレスを表示します。',
-      other: 'タイトルのないブックマークが {n} 件あり、代わりにアドレスを表示します。',
-    },
-  },
-  errors: {
-    NOT_NETSCAPE: 'ブックマークの HTML ファイルではないようです。',
-    NOT_BM_JSON: 'この JSON ファイルは BookmarkMagic が作成したものではありません。',
-    MALFORMED_JSON: 'このファイルは有効な JSON ではありません。',
-    INVALID_NODE: 'BookmarkMagic が読み取れない項目が含まれています。',
-    BAD_CSV_HEADER: 'CSV のヘッダー行がないか、列の順序が正しくありません。',
-    CSV_ROW_MISMATCH: 'CSV の行の列数が正しくありません。',
-    UNKNOWN_FORMAT: 'ファイルを認識できません。ブックマークの HTML、JSON、CSV が必要です。',
-    FILE_TOO_LARGE: 'このファイルは大きすぎてインポートできません。',
-    TOO_MANY_NODES: 'このファイルには安全にインポートできる数を超えるブックマークがあります。',
-    TOO_DEEP: 'このファイルはフォルダの入れ子が深すぎます。',
-    BACKUP_SERIALIZE_FAILED: 'バックアップを準備できなかったため、何も変更していません。',
-    BACKUP_CANCELLED: 'バックアップがキャンセルされたため、何も削除していません。',
-    BACKUP_WRITE_FAILED: 'バックアップを保存できなかったため、何も削除していません。',
-    BROWSER: 'ブラウザがブックマークの操作を拒否しました。',
-    NO_WRITABLE_ROOTS:
-      'このブラウザプロファイルには、BookmarkMagic が書き込みを許可されているブックマークフォルダがありません。組織によって管理されているブックマークは変更できません。',
-    PARTIAL_WRITE: 'インポートの途中で、ブラウザがブックマークの受け付けを停止しました。',
-    PARTIAL_CLEAR: 'ブックマークを置き換えている途中で、ブラウザが停止しました。',
-    UNKNOWN: '問題が発生しました。',
-  },
+  warnings,
+  errors,
 } satisfies Dict;

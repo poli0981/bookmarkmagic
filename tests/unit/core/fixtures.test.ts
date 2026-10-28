@@ -133,6 +133,34 @@ describe('fixture specifics', () => {
     expect(once[0]?.children?.[1]?.title).toBe('Tom & Jerry <3 "quoted"');
     expect(parseNetscapeHtml(serializeNetscapeHtml(once)).roots).toEqual(once);
   });
+
+  it('weird: a loose bookmark before the wrapper list keeps the whole list', () => {
+    // v1.0.x returned only "Loose first": the wrapper <DL> nested inside it.
+    const { roots, warnings } = parseNetscapeHtml(read('weird/loose-first.html'));
+    expect(roots.map((r) => r.title)).toEqual(['Loose first', 'Folder', 'After']);
+    expect(roots[1]?.children?.map((r) => r.title)).toEqual(['Inside']);
+    expect(warnings).toEqual([]);
+  });
+
+  it('weird: an unclosed <b> in a title does not hide every later entry', () => {
+    const { roots, stats, warnings } = parseNetscapeHtml(read('weird/unclosed-format-tag.html'));
+    expect(roots.map((r) => r.title)).toEqual(['C++ tips', 'Next', 'Folder', 'Last']);
+    expect(roots[2]?.children?.map((r) => r.title)).toEqual(['Inner', 'Inner two']);
+    expect(stats).toEqual({ bookmarks: 5, folders: 1, maxDepth: 2 });
+    expect(warnings).toEqual([]);
+  });
+
+  it('weird: addresses Chrome would reject are skipped up front and counted', () => {
+    const { roots, warnings } = parseNetscapeHtml(read('weird/invalid-urls.html'));
+    expect(roots.map((r) => r.title)).toEqual(['Valid', 'Bookmarklet']);
+    expect(warnings).toEqual(
+      expect.arrayContaining([
+        { code: 'INVALID_URL', count: 3 },
+        { code: 'PLACE_QUERIES_SKIPPED', count: 1 },
+        { code: 'MISSING_URL', count: 1 },
+      ]),
+    );
+  });
 });
 
 describe('malformed fixtures', () => {

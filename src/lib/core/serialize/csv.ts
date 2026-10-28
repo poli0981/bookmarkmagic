@@ -3,21 +3,20 @@
  *
  * Purpose: a spreadsheet-friendly flattened projection of the tree.
  * Inputs: a tree, plus the delimiter chosen in Settings.
- * Guarantees: RFC 4180-style quoting, CRLF records, and a UTF-8 BOM so Excel
- *   detects the encoding on double-click.
+ * Guarantees: RFC 4180-style quoting, CRLF records, a UTF-8 BOM so Excel
+ *   detects the encoding on double-click, and no cell a spreadsheet would run
+ *   as a formula.
  *
  * Deviations from RFC 4180 are deliberate and documented (docs/04 §3): the
  * header row is required, `;` is offered as a delimiter for locales whose
- * Excel list separator is not a comma, and the BOM is an Excel accommodation.
+ * Excel list separator is not a comma, the BOM is an Excel accommodation, and
+ * formula-looking text cells get a leading `'` that our reader removes again.
  */
+import { CSV_BOM, CSV_COLUMNS, type CsvDelimiter, neutralizeFormula } from '../csv-dialect';
 import { joinPath } from '../csv-path';
-import { type BookmarkNode, isFolder } from '../model';
-import { CSV_COLUMNS } from '../parse/csv';
+import { type BookmarkNode, isBookmark } from '../model';
 
-export const CSV_BOM = '﻿';
 const CRLF = '\r\n';
-
-export type CsvDelimiter = ',' | ';';
 
 export interface CsvOptions {
   delimiter?: CsvDelimiter;
@@ -38,15 +37,15 @@ function quote(value: string, delimiter: string): string {
 
 function collectRows(nodes: readonly BookmarkNode[], trail: string[], rows: string[][]): void {
   for (const node of nodes) {
-    if (isFolder(node)) {
+    if (!isBookmark(node)) {
       // Empty folders produce no row and are therefore lost — docs/04 §3.
       collectRows(node.children ?? [], [...trail, node.title], rows);
       continue;
     }
     rows.push([
-      joinPath(trail),
-      node.title,
-      node.url as string,
+      neutralizeFormula(joinPath(trail)),
+      neutralizeFormula(node.title),
+      node.url,
       node.addDate === undefined ? '' : String(node.addDate),
     ]);
   }

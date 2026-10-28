@@ -246,14 +246,20 @@ Popup may pass an intent (`#import` / `#export` / `#edit`) via the hash.
   | `INVALID_NODE` | Structural check fails (missing/non-string `title`, non-string `url`, `children` on a bookmark) |
   | `BAD_CSV_HEADER` | Header row missing or columns not in the fixed order |
   | `CSV_ROW_MISMATCH` | Row field count ≠ header field count |
+  | `CSV_UNCLOSED_QUOTE` | A quoted CSV field never closes; `line` is where it opened (since v1.1.0) |
   | `UNKNOWN_FORMAT` | `detect-format.ts` matched nothing |
   | `FILE_TOO_LARGE` | Size > `MAX_FILE_BYTES` |
   | `TOO_MANY_NODES` | Node count > `MAX_NODES` |
   | `TOO_DEEP` | Nesting depth > `MAX_DEPTH` |
 
-  Non-fatal anomalies are `ParseWarning`s, never errors — including
-  `NO_BOOKMARKS` (valid doctype, zero `<DL>`), dropped `<DD>` descriptions,
-  ignored `ICON` attributes, and invalid timestamps.
+  Non-fatal anomalies are `ParseWarning`s, never errors. The set is closed too
+  (`PARSE_WARNING_CODES` in `core/model.ts`; `dictionaries.test.ts` requires a
+  plural message for each in every locale): `NO_BOOKMARKS`,
+  `DESCRIPTIONS_DROPPED`, `FAVICONS_IGNORED`, `INVALID_DATE`, `MISSING_URL`,
+  `NEWER_VERSION`, `EMPTY_TITLE`, and since v1.1.0 `INVALID_URL` (an address
+  `chrome.bookmarks.create` would reject), `PLACE_QUERIES_SKIPPED` (Firefox smart
+  bookmarks), `EXTRA_ROOTS_SKIPPED` (vendor roots in a browser JSON file) and
+  `UNREADABLE_ENTRIES` (a `<DT>` with no readable `<A>` or `<H3>`).
 - `browser/` adds `BmBackupError { code }` for the forced safety backup
   (`03 §1` step 6b) and `BmAborted { done }` for a cancelled write.
 - `browser/` maps `chrome.runtime.lastError` / promise rejections into typed

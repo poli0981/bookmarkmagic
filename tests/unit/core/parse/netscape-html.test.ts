@@ -123,11 +123,14 @@ describe('parseNetscapeHtml — tolerated shapes', () => {
     expect(warnings.find((w) => w.code === 'MISSING_URL')?.count).toBe(2);
   });
 
-  it('falls back to the href when a bookmark has no text', () => {
+  it('keeps an empty title empty, and counts it (docs/05 §1)', () => {
+    // It used to become the address, which turned a favicon-only Bookmarks Bar
+    // into a row of full URLs after one export/import cycle.
     const noTitle = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <DL><p><DT><A HREF="https://untitled.example/"></A></DL><p>`;
     const { roots, warnings } = parseNetscapeHtml(noTitle);
-    expect(roots[0]?.title).toBe('https://untitled.example/');
+    expect(roots[0]?.title).toBe('');
+    expect(roots[0]?.url).toBe('https://untitled.example/');
     expect(warnings.map((w) => w.code)).toContain('EMPTY_TITLE');
   });
 
@@ -137,7 +140,10 @@ describe('parseNetscapeHtml — tolerated shapes', () => {
     <DT>just text
     <DT><A HREF="https://ok.example/">OK</A>
 </DL><p>`;
-    expect(parseNetscapeHtml(junk).roots).toHaveLength(1);
+    const { roots, warnings } = parseNetscapeHtml(junk);
+    expect(roots).toHaveLength(1);
+    // Ignored, but no longer silently: a DT that yields nothing is counted.
+    expect(warnings).toContainEqual({ code: 'UNREADABLE_ENTRIES', count: 1 });
   });
 
   it('aggregates favicon warnings into a single entry', () => {

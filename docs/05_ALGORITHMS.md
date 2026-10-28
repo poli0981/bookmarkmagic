@@ -9,35 +9,58 @@ All in `src/lib/core/` (pure, unit-tested) except the write queue
 
 ```
 parseNetscapeHtml(text):
+  if count of '<dt' in text > MAX_NODES → BmParseError('TOO_MANY_NODES')   // before any DOM
   doc = new DOMParser().parseFromString(text, 'text/html')
   hasDoctype = /NETSCAPE-Bookmark-file-1/i.test(text.slice(0, 512))
   hasEntries = doc has any <DL>, or body has a direct <DT> child
   if !hasEntries and !hasDoctype → BmParseError('NOT_NETSCAPE')
   if !hasEntries → return { roots: [], stats: emptyStats, warnings: [{ code: 'NO_BOOKMARKS' }] }
   roots = collectRoots(doc.body)
+  if roots is empty → roots = walk every outermost <DL> anywhere   // wrapped in <div>/<table>
 
 collectRoots(body):                        // NOT "the outermost DL" — see 04 §1.2
-  consumed = { nextDlFor(dt) for each direct <DT> child of body }
+  consumed = { nextDlFor(dt) for each direct FOLDER <DT> child of body }
   roots = []
   for el of body.children in document order:
-    if el is DT       → roots.push(readEntry(el, depth 1))
+    if el is DT       → roots.push(...readEntry(el, depth 1))
     if el is DL and el not in consumed → roots.push(...walkDl(el, 1))
   return roots
 
+own(dt, tag):                              // dt > b > a after an unclosed <b>
+  return dt's direct <tag> child, else the first descendant <tag> whose closest DT is dt
+
 walkDl(dl, depth):
-  if depth > MAX_DEPTH → BmParseError('TOO_DEEP')
-  for dt of dl children where tag == 'DT':
-    h3 = dt.querySelector(':scope > h3')
-    a  = dt.querySelector(':scope > a')
-    if h3:                                  // folder
-      node = { title: h3.textContent, toolbar: h3.hasAttribute('personal_toolbar_folder'), dates… }
-      childDl = nextDlFor(dt)
-      node.children = childDl ? walkDl(childDl, depth + 1) : []
-    else if a:                              // bookmark
-      node = { title: a.textContent || a.href, url: a.getAttribute('href'), dates… }
-      if !node.url → warning, skip
-    push node; nodeCount++; if nodeCount > MAX_NODES → BmParseError('TOO_MANY_NODES')
+  for entry of dl's <DT>/<DD>, looking THROUGH wrapper elements (dl > b > dt):
+    DD → warning DESCRIPTIONS_DROPPED
+    DT → if depth > MAX_DEPTH → BmParseError('TOO_DEEP'); out.push(...readEntry(dt, depth))
+
+readEntry(dt, depth):                      // returns 0..n nodes
+  h3 = own(dt, 'h3')
+  if h3:                                   // folder
+    node = { title: h3.textContent, toolbar/root markers by VALUE (04 §1.1), dates… }
+    childDl = nextDlFor(dt); node.children = childDl ? walkDl(childDl, depth + 1) : []
+    return [node]
+  a = own(dt, 'a')
+  if !a → warning UNREADABLE_ENTRIES; return []
+  bookmark = classify(a.href): missing/invalid/place: → warning, none   // see below
+             else { title: a.textContent (kept, even empty → EMPTY_TITLE), url, dates… }
+  swallowed = own(dt, 'dl')                 // a loose bookmark swallowed the next list
+  return [bookmark?, ...(swallowed ? walkDl(swallowed, depth) : [])]
+  every node counts against MAX_NODES → BmParseError('TOO_MANY_NODES')
 ```
+
+**Address classification (`core/href.ts`, every reader).** Blank →
+`MISSING_URL`. `URL.canParse` false → `INVALID_URL`: `chrome.bookmarks.create`
+rejects those with "Invalid URL." mid-write, and an extension page's
+`URL.canParse` runs the same Chromium URL library. `place:` → skipped with
+`PLACE_QUERIES_SKIPPED` in browser-written formats (Netscape HTML, Chrome, Firefox
+JSON), **kept** in BM JSON and CSV, which are restore formats. Everything else —
+`javascript:` and `data:` included — is stored verbatim (`09` T3).
+
+**Titles are kept exactly as written** (since v1.1.0) — empty included, counted as
+`EMPTY_TITLE`. The old `textContent || href` fallback replaced deliberately
+cleared titles (a favicon-only bar) with full URLs. All readers share this rule
+through `parse/shared.ts`.
 
 **`walkDl(null)` must be unreachable** — a valid-doctype file with zero `<DL>`
 is tolerated per `04 §1.2`, so the guard above returns an empty `ParseResult`
@@ -59,7 +82,8 @@ rather than letting a raw `TypeError` escape `core/` (`02 §7`).
 
 Use `textContent` (never innerHTML) → titles are inert.
 
-**Complexity:** O(n) nodes, single pass. 100k nodes parse well under 1s.
+**Complexity:** O(n) nodes, single pass. Timing: see `11 §6` (the only measured
+figure is a jsdom one).
 
 ## 2. URL normalization — `normalize-url.ts`
 

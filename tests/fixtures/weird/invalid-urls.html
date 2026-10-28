@@ -1,0 +1,17 @@
+<!DOCTYPE NETSCAPE-Bookmark-file-1>
+<!-- Hand-made: addresses chrome.bookmarks.create rejects ("Invalid URL."),
+     a Firefox smart bookmark, a bookmarklet and a blank address. v1.0.x let the
+     invalid ones through to the write, which failed part-way — after a Replace
+     had already cleared the tree. -->
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=UTF-8">
+<TITLE>Bookmarks</TITLE>
+<H1>Bookmarks</H1>
+<DL><p>
+    <DT><A HREF="https://ok.example/" ADD_DATE="1700000000">Valid</A>
+    <DT><A HREF="www.zq9x.test/no-scheme" ADD_DATE="1700000001">No scheme</A>
+    <DT><A HREF="https://zq9 x.test/" ADD_DATE="1700000002">Space in host</A>
+    <DT><A HREF="http://[::1" ADD_DATE="1700000003">Broken IPv6</A>
+    <DT><A HREF="place:sort=8&amp;maxResults=10" ADD_DATE="1700000004">Most Visited</A>
+    <DT><A HREF="javascript:void(0)" ADD_DATE="1700000005">Bookmarklet</A>
+    <DT><A HREF="" ADD_DATE="1700000006">Empty</A>
+</DL><p>

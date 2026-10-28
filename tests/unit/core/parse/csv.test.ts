@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { CSV_BOM, type CsvDelimiter } from '@/lib/core/csv-dialect';
 import { joinPath, splitPath } from '@/lib/core/csv-path';
 import { BmParseError } from '@/lib/core/model';
 import { parseCsv, parseCsvRows } from '@/lib/core/parse/csv';
-import { CSV_BOM, type CsvDelimiter, serializeCsv } from '@/lib/core/serialize/csv';
+import { serializeCsv } from '@/lib/core/serialize/csv';
 
 const HEADER = 'folder_path,title,url,add_date';
 

@@ -48,10 +48,59 @@ export function normalizeEpochSeconds(raw: string | number | null | undefined): 
   if (value === 0) return ABSENT;
   if (value < 0) return INVALID;
 
-  if (value < MS_FLOOR) return { seconds: Math.round(value), invalid: false };
-  if (value < US_FLOOR) return { seconds: Math.round(value / 1e3), invalid: false };
-  if (value < US_CEIL) return { seconds: Math.round(value / 1e6), invalid: false };
-  return INVALID;
+  let seconds: number;
+  if (value < MS_FLOOR) seconds = Math.round(value);
+  else if (value < US_FLOOR) seconds = Math.round(value / 1e3);
+  else if (value < US_CEIL) seconds = Math.round(value / 1e6);
+  else return INVALID;
+  // 0 < value < 0.5 rounds to 0, and 0 means "no date" everywhere in this
+  // model — storing `addDate: 0` would contradict that.
+  return seconds === 0 ? ABSENT : { seconds, invalid: false };
+}
+
+/** Seconds between the Windows epoch (1601-01-01) and the Unix epoch. */
+const WINDOWS_TO_UNIX_SECONDS = 11_644_473_600;
+
+/**
+ * Chrome's profile `Bookmarks` file stores dates as DECIMAL STRINGS of
+ * microseconds since 1601-01-01 UTC (`base::Time::ToDeltaSinceWindowsEpoch`),
+ * e.g. "13344473600000000". Those exceed 2^53, so the value is cut by string —
+ * dropping the last six digits truncates to whole seconds, exactly as Chrome's
+ * own HTML writer does — before any arithmetic. "0" means unset.
+ *
+ * Fed to `normalizeEpochSeconds` instead, the value would land in the
+ * microsecond bucket and come out near the year 2395.
+ */
+export function chromeTimeToSeconds(raw: unknown): TimestampResult {
+  if (raw === undefined || raw === null || raw === '' || raw === '0' || raw === 0) return ABSENT;
+  let secondsSince1601: number;
+  if (typeof raw === 'string' && /^\d{1,19}$/.test(raw)) {
+    secondsSince1601 = raw.length <= 6 ? 0 : Number(raw.slice(0, -6));
+  } else if (typeof raw === 'number' && Number.isFinite(raw) && raw > 0) {
+    // A hand-edited file may hold a bare number. Any post-1970 value is past
+    // 2^53 and so already rounded by JSON.parse, but only by microseconds.
+    secondsSince1601 = Math.floor(raw / 1e6);
+  } else {
+    return INVALID;
+  }
+  const seconds = secondsSince1601 - WINDOWS_TO_UNIX_SECONDS;
+  if (seconds <= 0 || seconds >= MS_FLOOR) return INVALID;
+  return { seconds, invalid: false };
+}
+
+/**
+ * Firefox backups store PRTime: integer MICROseconds since the Unix epoch. The
+ * unit is known, so this converts explicitly rather than guessing by magnitude
+ * (which would read a 1971 date, about 3e13 µs, as milliseconds). Truncated,
+ * matching Firefox's own HTML export.
+ */
+export function microsToSeconds(raw: unknown): TimestampResult {
+  if (raw === undefined || raw === null || raw === 0) return ABSENT;
+  if (typeof raw !== 'number' || !Number.isFinite(raw) || raw < 0) return INVALID;
+  const seconds = Math.floor(raw / 1e6);
+  if (seconds === 0) return ABSENT;
+  if (seconds >= MS_FLOOR) return INVALID;
+  return { seconds, invalid: false };
 }
 
 /**
