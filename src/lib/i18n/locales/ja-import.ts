@@ -2,7 +2,7 @@ import type { Dict } from './en';
 
 /** Japanese strings for the Import tab — mirrors en-import.ts. */
 export const importTab = {
-  dropHint: 'ブックマークファイルをドロップするかクリックして選択してください · 最大 {size}',
+  dropHint: 'ブックマークファイルをドロップするかクリックして選択してください・最大 {size}',
   dropFormats:
     'ブラウザの HTML エクスポート、CSV、BookmarkMagic と Firefox の JSON バックアップ、Chrome 自身の Bookmarks ファイル（拡張子なし）に対応しています。',
   reading: '{name} を読み込んでいます…',
@@ -65,6 +65,7 @@ export const importTab = {
     one: 'エラーの前に最上位の {n} 件が削除されています。バックアップから復元してください。',
     other: 'エラーの前に最上位の {n} 件が削除されています。バックアップから復元してください。',
   },
+  backupFileType: 'ブックマークのバックアップ',
   backupHint:
     '安全のためのバックアップは {name} として保存されています。その JSON ファイルをインポートすると復元できます。',
   openEdit: '編集タブを開く',

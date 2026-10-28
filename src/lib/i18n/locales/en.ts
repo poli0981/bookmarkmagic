@@ -180,8 +180,9 @@ const dict = {
     issues: 'Report an issue',
     changelog: 'Releases and changelog',
     store: 'Chrome Web Store listing',
-    thirdParty: 'Third-party dependencies: None',
-    thirdPartyNote: 'BookmarkMagic ships no runtime libraries at all.',
+    thirdParty: 'Third-party code',
+    thirdPartyNote:
+      'No runtime dependencies are installed. Two MIT-licensed pieces are compiled into the extension: the Svelte runtime and WXT’s one-line browser shim — see THIRD_PARTY_NOTICES.txt in the package.',
     donate: 'Support development',
     donateNote: 'Entirely optional — BookmarkMagic is free software either way.',
     legal: 'Legal',

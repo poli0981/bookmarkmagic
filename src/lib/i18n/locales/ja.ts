@@ -168,13 +168,14 @@ export default {
     issues: '問題を報告',
     changelog: 'リリースと変更履歴',
     store: 'Chrome ウェブストアのページ',
-    thirdParty: 'サードパーティ依存: なし',
-    thirdPartyNote: 'BookmarkMagic は実行時ライブラリを一切同梱していません。',
+    thirdParty: 'サードパーティのコード',
+    thirdPartyNote:
+      '実行時の依存関係はインストールされません。MIT ライセンスの 2 つのコード（Svelte のランタイムと WXT の 1 行のブラウザ互換層）が拡張機能に組み込まれています。パッケージ内の THIRD_PARTY_NOTICES.txt をご覧ください。',
     donate: '開発を支援する',
     donateNote: '完全に任意です — BookmarkMagic はどちらにせよ自由ソフトウェアです。',
     legal: '法的事項',
-    accepted: '{date} に規約に同意済み · バージョン {version}',
-    acceptedUndated: '規約に同意済み · バージョン {version}',
+    accepted: '{date} に規約に同意済み・バージョン {version}',
+    acceptedUndated: '規約に同意済み・バージョン {version}',
     notAccepted: 'まだ法的規約に同意していません。',
   },
   legal: {

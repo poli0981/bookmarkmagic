@@ -166,8 +166,9 @@ export default {
     issues: 'Báo lỗi',
     changelog: 'Bản phát hành và nhật ký thay đổi',
     store: 'Trang trên Chrome Web Store',
-    thirdParty: 'Thư viện bên thứ ba: Không có',
-    thirdPartyNote: 'BookmarkMagic không đi kèm bất kỳ thư viện chạy nào.',
+    thirdParty: 'Mã của bên thứ ba',
+    thirdPartyNote:
+      'Không cài thêm thư viện nào khi chạy. Hai phần mã theo giấy phép MIT được biên dịch vào tiện ích: bộ chạy của Svelte và lớp tương thích trình duyệt một dòng của WXT — xem THIRD_PARTY_NOTICES.txt trong gói.',
     donate: 'Ủng hộ dự án',
     donateNote: 'Hoàn toàn tự nguyện — BookmarkMagic vẫn là phần mềm tự do.',
     legal: 'Pháp lý',
@@ -189,8 +190,8 @@ export default {
     englishNote: 'Các tài liệu có hiệu lực pháp lý được viết bằng tiếng Anh.',
     accept: 'Tôi đã đọc và chấp nhận các điều khoản trên',
     continue: 'Chấp nhận & tiếp tục',
-    close: 'Đóng thẻ',
-    closeManually: 'Bạn có thể đóng thẻ này ngay bây giờ.',
+    close: 'Đóng tab',
+    closeManually: 'Bạn có thể đóng tab này ngay bây giờ.',
     saveFailed:
       'Không thể lưu việc chấp nhận của bạn, nên chưa có gì được ghi lại. Hãy kiểm tra xem trình duyệt có cho phép tiện ích lưu trữ hay không, rồi thử lại.',
     blocked: 'Hãy chấp nhận điều khoản để dùng các thẻ Nhập, Xuất và Chỉnh sửa.',

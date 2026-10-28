@@ -60,7 +60,7 @@ describe('proveBackup — picker path', () => {
     (globalThis as PickerHost).showSaveFilePicker = vi.fn(async () => {
       throw abort;
     });
-    const pending = openSaveTarget(FILENAME, 'application/json');
+    const pending = openSaveTarget(FILENAME, 'application/json', 'Bookmark backup');
 
     await expect(proveBackup(TREE, NOW, FILENAME, pending, undefined)).rejects.toMatchObject({
       name: 'BmBackupError',
