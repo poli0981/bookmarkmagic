@@ -48,7 +48,11 @@ Common to every job since v1.1.0:
 - `npm ci --ignore-scripts`, then `npx --no-install wxt prepare`. No dependency
   gets to run code at install time (SonarCloud S6505); our own `postinstall` is
   the one script we need, so it runs explicitly, from the local binary, never
-  fetched. A local `npm ci` still runs `postinstall` normally.
+  fetched. A local `npm ci` still runs `postinstall` normally. **One exception
+  we do not control:** the `build` job delegates to the ops reusable, which runs
+  a plain `npm ci`, so install scripts do run there. That job holds a read-only
+  token and no secrets; an ops-repo input to skip install scripts is on the
+  `15` backlog.
 - Reusable workflows get **named** secrets, never `secrets: inherit`: they are
   pinned to the ops repo's moving `main`, so each one receives only what it
   declares.
@@ -182,14 +186,18 @@ Added 2026-10-28, replacing SonarCloud's Automatic Analysis so the project gets
 - **A separate workflow, not a job in `ci.yml`:** a Sonar outage or a
   quality-gate opinion must never turn CI red. The verdict reaches PRs as the
   SonarCloud GitHub App's own check. It is not a required check.
-- Steps: full-history checkout (`fetch-depth: 0`, for new-code detection), the
-  common install, `npm run coverage` (which writes `coverage/lcov.info`), then the
-  scan with `-Dsonar.projectVersion=<package.json version>`, so "new code" means
-  "since the last release".
+- **Two jobs, so the token never shares a runner with dependency code.** A
+  job's secrets are loaded into its runner for the whole job, and any step can
+  read them from the runner process whatever its own `env:` says (the shape of
+  the March 2025 tj-actions compromise). `coverage` does the common install and
+  `npm run coverage` with **no secret**, and uploads `coverage/lcov.info` as a
+  one-day artifact; `scan` installs nothing — full-history checkout
+  (`fetch-depth: 0`, for new-code detection), the artifact, then the scan with
+  `-Dsonar.projectVersion=<package.json version>`, so "new code" means "since
+  the last release".
 - The scan action is **pinned to a commit** (`v8.3.0`): it is the step that
-  holds `SONAR_TOKEN`, and the token is scoped to the two steps that need it.
-  Dependabot and fork PRs get no repository secrets, so the scan is skipped with
-  a notice instead of failing.
+  holds `SONAR_TOKEN`. Dependabot and fork PRs get no repository secrets, so the
+  scan is skipped with a notice instead of failing.
 - Coverage: `vitest.config.ts` measures every `src/**/*.ts` module and reports
   `text` + `lcov`; the CI *gate* is still the core-only glob threshold of
   `11 §1`. `sonar.coverage.exclusions` drops components, entrypoints and

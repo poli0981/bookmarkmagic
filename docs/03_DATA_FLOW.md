@@ -162,7 +162,9 @@ fine at our size cap (strings of a few MB).
 
 State and commands live in `stores/edit-session.svelte.ts` (`EditSession`, one
 per tab mount, with the bookmarks API injected so every command is tested
-against the in-memory fake); `EditTab.svelte` is markup and wiring. Rename,
+against the in-memory fake), built in three layers — `edit-view` (what the tree
+shows), `edit-commands` (single-item writes), `edit-session` (duplicates and the
+two bulk commands); `EditTab.svelte` is markup and wiring. Rename,
 move and delete are applied to the local tree optimistically; bulk commands
 update it after each call the browser accepts; the live events below confirm
 both. A command the browser refuses **re-reads the tree** instead of restoring
@@ -170,13 +172,27 @@ a snapshot — a snapshot would resurrect rows an earlier step of a bulk command
 legitimately deleted — and the re-read keeps whatever is still open and
 focused.
 
+**One bulk command at a time.** While Sort A→Z or "keep first in each group"
+runs (`busy`), every other write — a second bulk command, rename, delete, move,
+drag, new folder — is refused by the session itself, not only greyed out in the
+toolbar; only the command that set `busy` clears it. 1.1.0's first cut guarded
+the toolbar alone, so a row's Sort button started a second sort that failed with
+two false messages and re-enabled the toolbar mid-sort.
+
+**Focus stays on a rendered row.** When the focused row leaves the screen — a
+collapse, a move into a closed folder, a search, a delete in another tab — focus
+moves to its nearest visible folder (`edit/focus-repair.ts`; a row deleted
+elsewhere is climbed with the tree as it was), and a rename whose row is hidden
+is dropped. Without this `aria-activedescendant` pointed at nothing and every
+tree key was ignored.
+
 | Action | Path |
 |---|---|
-| Search | input (debounced 150 ms) → core filter on title+URL → tree shows matches with ancestors expanded |
-| Rename | F2 or the row button → inline input; Enter or blur commits, Esc cancels (a blur after Esc does not commit) → trimmed; blank or unchanged → nothing; else `bookmarks.update(id, { title })` |
+| Search | input (debounced 150 ms) → core filter on title+URL → tree shows matches with ancestors expanded; a folder the user collapses during the search stays collapsed until the search text changes |
+| Rename | F2 or the row button → inline input, focused with its text selected; Enter or blur commits, Esc cancels (a blur after Esc does not commit), and after Enter or Esc focus returns to the tree → trimmed; blank or unchanged → nothing; else `bookmarks.update(id, { title })` |
 | Move | drag & drop onto a row — before, after or into (`planDrop`, `05 §10`) → `bookmarks.move(id, { parentId, index })`, or `{ parentId }` alone into a folder; "Move to…" (row button, menu key / Shift+F10) → modal folder list with a filter → `bookmarks.move(id, { parentId })`, appended |
-| Delete | Del or the row button → confirm dialog (folder shows descendant count) → `removeTree` / `remove`; focus moves to the next row, else the previous |
-| New folder | toolbar button → `bookmarks.create({ parentId, title })` in the focused folder, beside a focused bookmark, else in the first writable root → parent opened, a search that would hide it cleared → inline rename |
+| Delete | Del or the row button → confirm dialog (folder shows descendant count) → `removeTree` / `remove`; when the deleted row had focus, focus moves to the next row, else the previous. A copy deleted from the duplicate panel leaves the tree's focus where it was |
+| New folder | toolbar button → `bookmarks.create({ parentId, title })` in the focused folder, beside a focused bookmark, else in the first writable root → inserted at once (the live event then finds it present), a search that would hide it cleared, and every folder above it opened as the user's own — so clearing the search cannot close them again → inline rename |
 | Sort A→Z | toolbar (the focused folder, or the focused bookmark's folder) or a folder row's button → `planSort` (`05 §10`) → confirm stating how many items move → one awaited `bookmarks.move(id, { parentId, index })` per planned move, yielding every 25, under the write lock (§5). Refused part-way → "moved d of t" and a re-read: there is no undo |
 | Open bookmark | Enter, double-click, or the row's Open button → `tabs.create({ url })` for `http:`/`https:` only (`09` T3); anything else is refused with a toast |
 | Copy link | the row button, or Ctrl/⌘+C on the focused row → `navigator.clipboard.writeText` (`09` T8) |

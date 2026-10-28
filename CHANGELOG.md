@@ -68,8 +68,9 @@ itself. **Needs Chrome 136 or later.**
 - Error messages stay on screen until you dismiss them.
 - The popup opens an already-open manager on the page you clicked, and its
   folder count no longer includes the three built-in root folders.
-- Very large folders show 500 items at a time, with "Show more", so expanding
-  everything no longer freezes the tab.
+- Very large folders and trees show 500 rows at a time, with "Show more" (and
+  "Show earlier" in the edit tree), so expanding everything no longer freezes
+  the tab.
 - Two manager tabs can no longer write bookmarks at the same time — the second
   one is told to wait, and nothing is changed.
 
@@ -110,6 +111,28 @@ itself. **Needs Chrome 136 or later.**
   rows highlighted. Pressing Esc while renaming no longer saves the new name.
 - The edit tree no longer collapses or loses your place after a failed edit,
   and focus moves to the next row after a delete.
+- Renaming from the keyboard works: F2 and New folder put the cursor in the
+  name box, and Enter or Esc returns you to the tree. A folder created while
+  searching no longer disappears and locks the keyboard.
+- The edit tree keeps your place when the row you were on is collapsed, moved
+  or deleted elsewhere — focus goes to the nearest folder still on screen —
+  and a folder you close during a search stays closed.
+- While a sort or a duplicate clean-up runs, the other edit actions wait for
+  it, instead of starting and failing with misleading messages.
+- End and type-ahead on a very large tree no longer freeze the tab.
+- An error message no longer holds back the messages after it.
+- The import preview shows its "new" and "dup" badges again. Keyboard and
+  screen-reader users now land on each step of an import, and hear how it
+  ended.
+- Dialogs name their close button "Dismiss", and screen readers read the
+  confirmation's details with its title.
+- At narrow widths the edit toolbar wraps instead of pushing the page sideways,
+  and titles keep their room before the domain beside them.
+- Wording: an untitled item is named by its address in dialogs, plurals read
+  correctly ("1 extra copy", "Show 1 more row"), and the Japanese text spells
+  ブラウザ and フォルダ one way throughout.
+- The header logo's animation stops after two pulses instead of running
+  forever, and the popup now switches only the Manager tab it brings forward.
 - The About tab and the third-party notices now name the small MIT-licensed
   pieces the build has always compiled in (the Svelte runtime with its `clsx`
   helper, and WXT's browser shim), instead of saying there were none.

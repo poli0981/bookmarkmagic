@@ -165,10 +165,10 @@ Derived identifiers (canonical across docs and code):
    than a placeholder. Regenerate with `npm run icons` after any change.
    ⚠️ **Store assets are unreconciled.** The listing is live, so whatever
    `13 §2` requires was supplied — but nothing in the repo records what, or
-   where the originals live. `capture/` holds five README screenshots at
-   2512×1440 / 2560×1440, which are *not* the five 1280×800 store screenshots
-   `13 §2` specifies, and there is no 440×280 promo tile of any size. Owner:
-   either record where the submitted assets live, or correct `13 §2`.
+   where the originals live. Since 1.1.0 the screenshot harness writes
+   1280×800 candidates to `store/screenshots/` (`13 §2`); there is still no
+   440×280 promo tile of any size. Owner: record where the submitted assets
+   live, or correct `13 §2`.
 4. ✔ Donate URLs resolved from `.github/FUNDING.yml` (`14 §5`).
    ✔ Contact addresses: since v1.1.0, one alias per purpose (`privacy@` in
    `legal/PRIVACY.md`, `security@`, `legal@`, `dmca@`, `copyright@`,

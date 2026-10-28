@@ -304,10 +304,10 @@ is fine ≤ 100k nodes. No fuzzy search in v1 (zero-dep rule).
 
 ## 9. Tree rendering scale strategy
 
-**Bounded, not virtualized.** Every tree surface mounts at most 500 rows at a
-time and adds 500 more per "Show more" ("Show n more rows · m not shown").
-There is no virtual list — no dependency for one, and none hand-written — and a
-row, once mounted, stays mounted.
+**Bounded, not virtualized.** Every tree surface mounts a bounded number of
+rows: 500 to start, 500 more per "Show more" ("Show n more rows · m not
+shown"). There is no virtual list — no dependency for one, and none
+hand-written; #edit mounts a **window** of rows around the focus instead.
 1.0.x documented chunking for very wide folders and never built it: #edit
 rendered every visible row in one pass, so "Expand all" on a large profile
 froze the tab.
@@ -315,19 +315,23 @@ froze the tab.
 - **#edit** (`TreeList.svelte`). `visibleRows` (`edit/tree-keyboard.ts`)
   flattens the tree into the rows actually showing — roots open on first load,
   every other folder closed until opened — and computes each row's
-  `aria-posinset`/`aria-setsize` on the way. The list mounts the first 500.
-  When focus moves past the mounted range (↓, End, type-ahead), the limit grows
-  to the chunk holding the focused row: `aria-activedescendant` and
-  scroll-into-view both need that row in the DOM.
+  `aria-posinset`/`aria-setsize` on the way. The list mounts a window of 500
+  rows (`edit/row-window.ts`) that always holds the focused row:
+  `aria-activedescendant` and scroll-into-view both need it in the DOM. When
+  focus leaves the window (End, type-ahead, Home), a fresh window is centred on
+  it; "Show earlier" and "Show more" grow it by 500 either way. 1.1.0's first
+  cut grew a prefix from row 0 instead, so End on 20 000 rows mounted all of
+  them — 3.9 s, then ~200 ms per arrow key.
 - **Import preview and export picker** (`TreePreviewNode`, `FolderPickNode`):
   nested lists. The top level starts open and everything deeper closed; a
   folder's children mount only once it is opened, then 500 at a time with a
   per-folder "Show more". The picker lists folders only.
-- **What is not done.** `visibleRows` re-walks every visible node on each change
-  — O(visible) per keystroke or toggle, acceptable at the 100k cap. The 500 is a
-  step, not a ceiling: "Expand all" then End mounts every row up to the last.
-  Windowing — mounting only what is on screen — would close that; it was the
-  plan, and is in the `15` backlog instead (decision log, 2026-10-29).
+- **What is not done.** `visibleRows` re-walks every visible node on each tree
+  change — O(visible) per change, acceptable at the 100k cap; a key press only
+  looks the focused row up. Mounting exactly what is on screen (true
+  virtualization) would bring a jump from 500 row mounts down to a screenful;
+  measured in the harness, Home/End on 3 000 rows takes ~0.4 s in a background
+  page and arrows 2–6 ms, so it stays in the `15` backlog.
 
 ## 10. Reordering — `edit/sort.ts`, `edit/move-target.ts`
 

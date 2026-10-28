@@ -112,11 +112,12 @@ clean-install test. Also carried in from the Phase 4 review:
 - ✔ About's "Changelog" link now targets `CHANGELOG.md`, pinned by
   `tests/unit/links.test.ts`;
 - ✔ `EditTab.svelte` split (589 → 459, under the hard limit). It grew back to
-  481, and in v1.1.0 its state and commands moved to
-  `src/lib/stores/edit-session.svelte.ts` — the component is now ~295 lines of
-  wiring and markup. The store itself (364) and `TreeRow.svelte` (353) sit
-  between the 300 target and the 500 hard limit: split them before adding to
-  them;
+  481, and in v1.1.0 its state and commands moved into three stores —
+  `edit-view` (181 lines), `edit-commands` (226), `edit-session` (133) — and
+  its key handling into `src/lib/edit/tree-keys.ts`. As of the 1.1.0 review the
+  component is 259 lines with a 144-line script, `TreeRow.svelte` 276,
+  `ImportTab.svelte` 266 and the Manager's `App.svelte` 237: every file is under
+  the 300 target again. Extract before adding;
 - ✔ contrast tokens fixed, and `tests/unit/styles/contrast.test.ts` now fails
   the build on any text pair under 4.5:1. Two blind spots to know about: it is
   token-level, so it cannot see the `opacity`-on-text bypass it was written to

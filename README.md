@@ -16,13 +16,16 @@ folder trees. English · Tiếng Việt · 日本語.
 
 ## Screenshots
 
-| Edit | Export |
+| Import | Edit |
 |---|---|
-| ![The edit tree, showing bookmarks with their domains](capture/Edit2.png) | ![The export tab: folder picker on the left, format cards on the right](capture/export.png) |
+| ![The import tab's drop zone, listing the formats it reads](capture/import.png) | ![The edit tree: folders with counts, bookmarks with their domains, toolbar with search, new folder, sort and duplicates](capture/edit.png) |
 
-| Settings | About |
+| Export | Settings |
 |---|---|
-| ![Settings: language, theme, and four defaults](capture/Setting.png) | ![About: version, links, third-party statement, donate links and the legal block](capture/About.png) |
+| ![The export tab: folder picker on the left, format cards on the right](capture/export.png) | ![Settings: language, theme, and four defaults](capture/settings.png) |
+
+Taken with neutral sample data by `node scripts/screenshots.mjs --shoot`, never
+from anyone's real profile.
 
 ## What it does
 
@@ -47,10 +50,12 @@ folder trees. English · Tiếng Việt · 日本語.
 This is the whole point of the project, so it is worth being precise.
 
 - **No network access at all.** Not analytics, not telemetry, not update pings.
-  There is no server. The browser enforces it: the extension's content security
-  policy sets `connect-src 'none'`, so Chrome itself refuses any request an
-  extension page tries to make. On top of that, `npm run check:manifest` scans
-  the shipped bundle for network APIs and `npm run guard` scans the source.
+  There is no server, and the code makes no network calls. The browser backs
+  that up: the extension's content security policy makes Chrome refuse fetch,
+  XHR, WebSocket, EventSource and beacon requests, and remote images, fonts,
+  media and frames. On top of that, `npm run check:manifest` scans the shipped
+  bundle for network APIs (WebRTC included, which no CSP directive covers) and
+  `npm run guard` scans the source.
 - **Exactly two permissions**: `bookmarks` and `storage`. No host permissions,
   no content scripts, no background worker. Two gates enforce it: a unit test
   over `wxt.config.ts`, and `npm run check:manifest`, which CI runs against the
