@@ -153,6 +153,11 @@ export default {
     resetDone: 'Đã khôi phục cài đặt mặc định',
   },
   about: {
+    diagnostics: 'Chẩn đoán',
+    copyDiagnostics: 'Sao chép chẩn đoán',
+    diagnosticsNote:
+      'Nhật ký cục bộ ngắn về những gì tab này đã làm — mã lỗi và số lượng, không bao giờ có tiêu đề hay địa chỉ. Nó chỉ rời máy bạn nếu bạn tự dán ở đâu đó.',
+    diagnosticsCopied: 'Đã sao chép chẩn đoán',
     tagline:
       'Nhập, xuất và chỉnh sửa bookmark giữa các trình duyệt — ngoại tuyến, không tài khoản, không đám mây. Dữ liệu của bạn không bao giờ rời khỏi máy.',
     version: 'Phiên bản {version}',

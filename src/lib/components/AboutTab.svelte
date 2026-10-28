@@ -2,7 +2,12 @@
   import { getAppVersion } from '../browser/app-info';
   import { dateTime, t } from '../i18n/index.svelte';
   import { CHANGELOG_URL, DONATE_LINKS, ISSUES_URL, LEGAL_URLS, REPO_URL, STORE_URL } from '../links';
+  import { copyToClipboard } from '../browser/clipboard';
+  import { snapshot } from '../browser/diagnostics';
   import { getAcceptance } from '../stores/legal.svelte';
+  import { getSettings } from '../stores/settings.svelte';
+  import { pushToast } from '../stores/toast.svelte';
+  import Button from './Button.svelte';
   import Icon from './icons/Icon.svelte';
 
   const version = getAppVersion();
@@ -12,6 +17,14 @@
   const acceptedOn = $derived(
     acceptance === undefined ? undefined : dateTime(acceptance.acceptedAt),
   );
+
+  /** Write-only, on an explicit click (docs/09 T8): the user pastes it into an issue. */
+  async function copyDiagnostics(): Promise<void> {
+    const settings = getSettings();
+    const report = snapshot({ version, locale: settings.locale, theme: settings.theme });
+    const copied = await copyToClipboard(report);
+    pushToast(t(copied ? 'about.diagnosticsCopied' : 'edit.copyFailed'), copied ? 'success' : 'danger');
+  }
 </script>
 
 <section aria-label={t('common.about')}>
@@ -72,6 +85,14 @@
       })}
     {/if}
   </p>
+
+  <h2 class="eyebrow">{t('about.diagnostics')}</h2>
+  <p class="muted">{t('about.diagnosticsNote')}</p>
+  <div>
+    <Button size="sm" icon="copy" onclick={() => void copyDiagnostics()}>
+      {t('about.copyDiagnostics')}
+    </Button>
+  </div>
 </section>
 
 <style>

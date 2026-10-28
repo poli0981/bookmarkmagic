@@ -155,6 +155,11 @@ export default {
     resetDone: '設定を既定値に戻しました',
   },
   about: {
+    diagnostics: '診断',
+    copyDiagnostics: '診断情報をコピー',
+    diagnosticsNote:
+      'このタブの動作を記録した短いローカルログです。エラーコードと件数だけで、タイトルやアドレスは含みません。貼り付けない限り、パソコンの外には出ません。',
+    diagnosticsCopied: '診断情報をコピーしました',
     tagline:
       'ブラウザ間でブックマークをインポート・エクスポート・編集 — オフライン、アカウント不要、クラウド不要。データが端末から出ることはありません。',
     version: 'バージョン {version}',

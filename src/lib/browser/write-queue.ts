@@ -15,7 +15,7 @@ import type { BookmarkNode, ImportPlan } from '../core/model';
 import { create as createNode, type LiveNode } from './bookmarks';
 import { BmAborted, BmPartialWrite } from './errors';
 
-/** Emitted every PROGRESS_EVERY creates and once at the end. */
+/** Emitted after the first create, every PROGRESS_EVERY creates, and once at the end. */
 export interface WriteProgress {
   done: number;
   total: number;
@@ -102,7 +102,9 @@ export async function writeTree(
 
       done++;
       sinceYield++;
-      if (done % PROGRESS_EVERY === 0 || done === total) report(trail.join(' / '));
+      // The first create reports too: on a slow profile, 50 creates can take
+      // seconds, and a bar stuck at 0% reads as a hang (uL9).
+      if (done === 1 || done % PROGRESS_EVERY === 0 || done === total) report(trail.join(' / '));
       if (sinceYield >= YIELD_EVERY) {
         sinceYield = 0;
         await yieldToEventLoop();

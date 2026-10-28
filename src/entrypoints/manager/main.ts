@@ -1,8 +1,13 @@
 import { mount } from 'svelte';
+import { installCrashHooks } from '@/lib/browser/diagnostics';
 import { loadLegal } from '@/lib/stores/legal.svelte';
 import { loadSettings } from '@/lib/stores/settings.svelte';
 import '@/styles/base.css';
 import App from './App.svelte';
+
+// Uncaught errors reach the local diagnostics log (by name only) instead of
+// vanishing into a console nobody opens.
+installCrashHooks(window);
 
 // SAFETY: the element is declared in this entrypoint's own index.html, so it
 // always exists by the time this module runs.

@@ -37,3 +37,16 @@ export function getGeneratorVersion(): string {
   const version = getAppVersion();
   return version === '' ? 'unknown' : version;
 }
+
+/**
+ * The browser's UI language tag, e.g. "vi" or "ja-JP" — `'en'` when it cannot
+ * be read. Here rather than in the settings store, so `stores/` reaches the
+ * browser only through `browser/` (docs/02 §3, uM15).
+ */
+export function getUiLanguage(): string {
+  try {
+    return browser.i18n.getUILanguage();
+  } catch {
+    return 'en';
+  }
+}
