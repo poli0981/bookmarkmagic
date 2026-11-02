@@ -37,15 +37,15 @@
     "verify:full": "npm run verify && npm run coverage && npm run build && npm run check:manifest"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.2",
+    "@biomejs/biome": "2.6.3",
     "@sveltejs/vite-plugin-svelte": "^7.3.1",
     "@types/node": "^26.6.5",
     "@typescript/native": "npm:typescript@~7.0.2",
     "@vitest/coverage-v8": "^5.0.5",
     "@wxt-dev/module-svelte": "^2.0.5",
     "jsdom": "^30.1.3",
-    "knip": "^6.42.1",
-    "svelte": "^5.57.2",
+    "knip": "^6.43.0",
+    "svelte": "^5.57.3",
     "svelte-check": "^4.7.7",
     "typescript": "npm:@typescript/typescript6@~6.0.2",
     "vitest": "^5.0.5",
