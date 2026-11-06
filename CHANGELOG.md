@@ -5,13 +5,42 @@ All notable changes to BookmarkMagic are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-Per `docs/12 §4`: **patch** = fixes and translations · **minor** = features, and
-any change to the permission list or the store privacy tab · **major** =
-breaking format or schema changes (a BM JSON version bump).
+Per `docs/12 §4`: **patch** = fixes and translation fixes · **minor** =
+features, a new UI language, and any change to the permission list or the
+store privacy tab · **major** = breaking format or schema changes (a BM JSON
+version bump).
 
 ## [Unreleased]
 
 Nothing yet.
+
+## [1.2.0] — 2026-11-06
+
+Two new languages. Permissions are unchanged (`bookmarks` and `storage`), and
+there is nothing to do — Chrome updates itself.
+
+### Added
+
+- **简体中文 (Simplified Chinese)** and **Română (Romanian)**, in the extension
+  and in its name and description in `chrome://extensions`. Pick one under
+  Settings → Language, or leave it on Automatic.
+- Romanian counts read the way Romanian does: "1 marcaj", "5 marcaje",
+  "20 de marcaje".
+- Sort A→Z follows the language you use: pinyin order in Chinese, and `ș`/`ț`
+  as letters of their own in Romanian.
+
+### Changed
+
+- **If your browser is set to Simplified Chinese or Romanian and the language
+  setting is Automatic** (the default), BookmarkMagic switches from English to
+  that language after this update. A browser in Traditional Chinese stays in
+  English; 简体中文 can still be chosen by hand.
+
+### Notes
+
+- Both translations are best-effort, written from Chrome's own wording in each
+  language but not yet read by a native speaker. If something reads wrong,
+  the translation form on GitHub takes a sentence — no code needed.
 
 ## [1.1.0] — 2026-10-29
 
@@ -215,7 +244,8 @@ from 2026-08-03.
 - Parsing is bounded: 25 MB per file, 100 000 nodes, 200 levels of nesting.
 - No network access of any kind at runtime, enforced by a grep gate in CI.
 
-[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.1.0...HEAD
+[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.2.0...HEAD
+[1.2.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/poli0981/bookmarkmagic/releases/tag/v1.0.0
