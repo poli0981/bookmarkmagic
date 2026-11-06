@@ -3,7 +3,7 @@ import { basename, join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { getAppVersion } from '@/lib/browser/app-info';
 import { setLocale, t } from '@/lib/i18n/index.svelte';
-import type { Locale } from '@/lib/i18n/resolve-locale';
+import { LOCALES } from '@/lib/i18n/resolve-locale';
 import {
   CHANGELOG_URL,
   DONATE_LINKS,
@@ -13,7 +13,6 @@ import {
   STORE_URL,
 } from '@/lib/links';
 
-const LOCALES: Locale[] = ['en', 'vi', 'ja'];
 /** Vitest runs with cwd at the project root, which is where `legal/` lives. */
 const REPO_ROOT = process.cwd();
 
@@ -46,7 +45,7 @@ describe('outbound links', () => {
     }
   });
 
-  it('labels every legal link in all three locales', () => {
+  it('labels every legal link in every locale', () => {
     const missing: string[] = [];
     for (const locale of LOCALES) {
       setLocale(locale);

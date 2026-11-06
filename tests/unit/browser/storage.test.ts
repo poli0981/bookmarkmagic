@@ -9,6 +9,7 @@ import {
   writeLegal,
   writeSettings,
 } from '@/lib/browser/storage';
+import { LOCALES } from '@/lib/i18n/resolve-locale';
 
 // fakeBrowser DOES implement storage.local — and, verified before this suite
 // was written, storage.onChanged too. No hand-rolled mock is needed here
@@ -39,6 +40,13 @@ describe('settings', () => {
     } as const;
     await writeSettings({ ...settings });
     expect(await readSettings()).toEqual(settings);
+  });
+
+  it.each(['auto', ...LOCALES])('keeps a saved locale of %s', async (locale) => {
+    // The allow-list is the gate a new locale must pass: a locale the switcher
+    // offers but coerceSettings rejects resets to Automatic on every reload.
+    await fakeBrowser.storage.local.set({ settings: { locale } });
+    expect((await readSettings()).locale).toBe(locale);
   });
 
   it('falls back per field when a stored value is not a legal option', async () => {

@@ -1,6 +1,7 @@
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { LOCALES, type Locale } from '@/lib/i18n/resolve-locale';
 
 /**
  * The permission list is the product's most load-bearing public claim: it is in
@@ -19,6 +20,26 @@ const RAW = readFileSync(join(process.cwd(), 'wxt.config.ts'), 'utf8');
  * the very thing it is checking.
  */
 const CONFIG = RAW.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
+
+/**
+ * Runtime locale id → Chrome's `_locales/` directory name (docs/07 §1). The one
+ * place the two spellings meet: Chrome wants `zh_CN`, BCP 47 says `zh-CN`.
+ */
+const CHROME_LOCALE_DIRS: Record<Locale, string> = {
+  en: 'en',
+  vi: 'vi',
+  ja: 'ja',
+};
+
+const LOCALES_DIR = join(process.cwd(), 'src/public/_locales');
+
+type Messages = Partial<Record<'appName' | 'appDesc', { message?: string }>>;
+
+function readMessages(dir: string): Messages {
+  // SAFETY: test-only read of a file this repo writes; a wrong shape fails the
+  // assertions that follow rather than passing silently.
+  return JSON.parse(readFileSync(join(LOCALES_DIR, dir, 'messages.json'), 'utf8')) as Messages;
+}
 
 /** Anything that widens the extension's reach beyond bookmarks + storage. */
 const FORBIDDEN_KEYS = [
@@ -125,13 +146,23 @@ describe('manifest', () => {
     expect(CONFIG).not.toMatch(/manifest_version\s*:\s*2/);
   });
 
-  it('still points default_locale at the three shipped dictionaries', () => {
+  it('still points default_locale at en, and ships a _locales entry per UI locale', () => {
     expect(CONFIG).toMatch(/default_locale:\s*'en'/);
-    for (const locale of ['en', 'vi', 'ja']) {
-      const path = join(process.cwd(), 'src/public/_locales', locale, 'messages.json');
-      const messages: unknown = JSON.parse(readFileSync(path, 'utf8'));
-      expect(messages, `${locale}/messages.json`).toHaveProperty('appName');
-      expect(messages, `${locale}/messages.json`).toHaveProperty('appDesc');
+    for (const locale of LOCALES) {
+      const dir = CHROME_LOCALE_DIRS[locale];
+      const messages = readMessages(dir);
+      expect(messages.appName?.message, `${dir}/messages.json appName`).toBe('BookmarkMagic');
+      // The manifest description limit; Chrome refuses a longer one.
+      expect(messages.appDesc?.message?.length, `${dir}/messages.json appDesc`).toBeLessThanOrEqual(
+        132,
+      );
     }
+  });
+
+  it('ships no _locales directory that no UI locale owns', () => {
+    // A stray directory would make Chrome — and the store's "Languages" line —
+    // claim a language the UI does not speak (docs/07 §1).
+    const shipped = readdirSync(LOCALES_DIR).sort();
+    expect(shipped).toEqual(LOCALES.map((locale) => CHROME_LOCALE_DIRS[locale]).sort());
   });
 });

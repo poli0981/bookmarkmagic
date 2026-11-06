@@ -1,5 +1,11 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { formatCount, formatDateTime, localeTag, selectPluralForm } from '@/lib/i18n/format';
+import {
+  formatCount,
+  formatDateTime,
+  localeTag,
+  requiredPluralForms,
+  selectPluralForm,
+} from '@/lib/i18n/format';
 import { dateTime, getLocale, num, setLocale, tPlural } from '@/lib/i18n/index.svelte';
 
 afterEach(() => {
@@ -74,6 +80,15 @@ describe('selectPluralForm', () => {
     for (const count of [0, 1, 2, 100]) {
       expect(selectPluralForm(count, 'vi-VN')).toBe('other');
       expect(selectPluralForm(count, 'ja-JP')).toBe('other');
+    }
+  });
+});
+
+describe('requiredPluralForms', () => {
+  it('asks every locale for one and other, and nothing more where few is unused', () => {
+    // docs/07 §5: one-form locales still carry both keys.
+    for (const tag of ['en-US', 'vi-VN', 'ja-JP'] as const) {
+      expect(requiredPluralForms(tag)).toEqual(['one', 'other']);
     }
   });
 });

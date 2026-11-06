@@ -10,7 +10,7 @@
 import { browser } from 'wxt/browser';
 import type { CsvDelimiter } from '../core/csv-dialect';
 import type { MarkdownStyle } from '../core/serialize/markdown';
-import type { Locale } from '../i18n/resolve-locale';
+import { LOCALES, type Locale } from '../i18n/resolve-locale';
 import { record } from './diagnostics';
 
 export type ThemePreference = 'system' | 'light' | 'dark';
@@ -55,7 +55,7 @@ function coerceSettings(raw: unknown): Settings {
     allowed.includes(raw[key] as Settings[K]) ? (raw[key] as Settings[K]) : DEFAULT_SETTINGS[key];
 
   return {
-    locale: pick('locale', ['auto', 'en', 'vi', 'ja']),
+    locale: pick('locale', ['auto', ...LOCALES]),
     theme: pick('theme', ['system', 'light', 'dark']),
     defaultExportFormat: pick('defaultExportFormat', [
       'netscape-html',
