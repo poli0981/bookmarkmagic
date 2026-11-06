@@ -15,7 +15,7 @@ the user accepts, once, with links to canonical documents on GitHub.
   `<LegalGate>` overlay.
 - **Blocks:** `#import`, `#export`, `#edit`. **`#settings` and `#about` stay
   reachable** — `#about` so users can read the linked documents before
-  accepting, `#settings` so a VI/JA user can switch language and theme first
+  accepting, `#settings` so a non-English user can switch language and theme first
   (which is why `<LegalGate>` needs no language switcher of its own). Popup is
   never blocked (it only launches the Manager). Same list in `03 §4` and the
   `11 §5` QA checklist.

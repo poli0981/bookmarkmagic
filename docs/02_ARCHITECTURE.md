@@ -61,7 +61,7 @@ bookmarkmagic/
 ├── src/
 │   ├── public/
 │   │   ├── icon/                # 16/32/48/128 png
-│   │   ├── _locales/{en,vi,ja}/messages.json   # manifest-level strings only
+│   │   ├── _locales/{en,vi,ja,zh_CN,ro}/messages.json   # manifest-level strings only (07 §1)
 │   │   └── THIRD_PARTY_NOTICES.txt  # MIT notices for what the build compiles in (14 §5)
 │   ├── entrypoints/
 │   │   ├── popup/               # index.html + App.svelte + main.ts
@@ -131,7 +131,7 @@ bookmarkmagic/
 │   │   │   ├── index.svelte.ts
 │   │   │   ├── format.ts            # pure Intl number/date helpers (07 §3)
 │   │   │   ├── resolve-locale.ts
-│   │   │   └── locales/{en,vi,ja}{,-notices,-import}.ts   # split by namespace (07 §2)
+│   │   │   └── locales/{en,vi,ja,zh-CN,ro}{,-notices,-import}.ts   # split by namespace (07 §2)
 │   │   └── components/              # Svelte components (see 06_UI.md); icons/Icon.svelte,
 │   │                                # focus-heading.ts (the step-heading focus attachment)
 │   └── styles/

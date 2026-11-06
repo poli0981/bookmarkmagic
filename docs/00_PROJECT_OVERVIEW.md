@@ -111,6 +111,11 @@ v1.0's scope):
 - A redesigned UI with a self-drawn icon set, all motion behind
   `prefers-reduced-motion` (`06`).
 
+**v1.2.0 adds** two UI languages, chosen from the CWS dashboard's install and
+usage figures: **Simplified Chinese (`zh-CN`) and Romanian (`ro`)** — in the
+app, in the manifest and in the store listing (`07`). Traditional Chinese is
+not shipped; a Traditional Chinese browser on "Automatic" gets English.
+
 ## 7. Non-goals (v1.0)
 
 - ❌ Cloud sync, accounts, or any server component.
@@ -148,7 +153,7 @@ Derived identifiers (canonical across docs and code):
 
 | Context | Value |
 |---|---|
-| Manifest / store / UI name | `BookmarkMagic` (identical in EN/VI/JA) |
+| Manifest / store / UI name | `BookmarkMagic` (identical in every locale) |
 | Repo slug | `poli0981/bookmarkmagic` ✔ |
 | Own JSON schema | "BM JSON v1", `"format": "bookmarkmagic"` |
 | Code prefix | `Bm*` (`BmParseError`, `BmAborted`) |
@@ -222,13 +227,25 @@ Derived identifiers (canonical across docs and code):
     open: the exact approval date, and `13 §1b` step 10 against the published
     build (install on a clean profile, re-run the upgrade check) — no result is
     recorded for either.
-12. ⚠️ **v1.1.0 to the store.** The GitHub Release exists and is verified
-    (`15`'s progress table). Still human-only: the `11 §5` manual pass on real
-    Chrome — the **1.0.1 → 1.1.0 upgrade over an existing profile** above all —
-    then the hand upload of the Release zip (`13 §1b`), with new screenshots
-    chosen from `store/screenshots/`. Also unverified outside the harness: the
+12. ✔ **v1.1.0 cleared review** — the listing showed 1.1.0 ("Updated October
+    29, 2026", 6 users, 3 languages) when checked on 2026-11-06. ⚠️ Still
+    open, as for 1.0.1: `13 §1b` step 10 against the published build — no
+    result is recorded. Also unverified outside the harness: the
     account-storage roots of a signed-in profile and the hidden empty Mobile
     root (`02 §4`), and the `MAX_WRITE_DEPTH` rationale against a real Chrome.
+
+### v1.2.0 (added 2026-11-06)
+
+13. ⚠️ **ZH-CN and RO native review passes.** Both locales ship best-effort
+    (`07 §4`), written from Chrome's own terminology in each language but read
+    by no native speaker. Each file's header carries `TODO(review-zh)` /
+    `TODO(review-ro)`. The `translation` issue form lists both languages.
+14. ⚠️ **v1.2.0 to the store.** The usual `11 §5` pass plus the **1.1.0 →
+    1.2.0 upgrade over an existing profile**: a saved `vi` must survive, and
+    "Automatic" in a `zh-CN` browser must now show Chinese. Then, in the
+    dashboard, upload the Release zip **and add the 简体中文 and Română listing
+    languages**, pasting `store/listing.zh_CN.md` and `store/listing.ro.md`
+    (`13 §4`).
 
 ## 11. Reading order
 

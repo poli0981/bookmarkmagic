@@ -234,7 +234,7 @@ first — on `http://localhost:4318` with a fake `chrome`: neutral sample
 bookmarks, so no real profile ever appears, and in-memory storage. Every HTML
 page is served with the production CSP as a `<meta>`, so a violation shows in
 the console exactly as it would in the extension. Pages take
-`?theme=light|dark&lang=en|vi|ja&legal=0|1` and the route as the hash —
+`?theme=light|dark&lang=en|vi|ja|zh-CN|ro&legal=0|1` and the route as the hash —
 `manager.html?theme=dark&lang=vi#edit`; `legal=0` shows the gate. `--shoot`
 photographs every route × theme × language at 1280×800 with a local headless
 Chrome (`CHROME_PATH`, or the usual install paths), plus the store set
@@ -257,7 +257,8 @@ storage, nothing written survives a reload, and the popup's tiles open nothing.
 - [ ] **A Firefox JSON backup** (`bookmarks-YYYY-MM-DD.json`, or
       `tests/fixtures/firefox-bookmarks-2026-07-25.json`): format pill "Firefox
       backup"; in new-folder mode its roots arrive under localized names (check
-      VI and JA too); `place:` smart bookmarks are skipped and counted.
+      every non-English locale too); `place:` smart bookmarks are skipped and
+      counted.
 - [ ] **Merge reuses folders:** import a file holding `Bookmarks bar/Dev/…`
       into a profile that already has `Dev` — no second `Dev`; the new items
       land at the end of the existing one, and the report says how many
@@ -297,9 +298,22 @@ storage, nothing written survives a reload, and the popup's tiles open nothing.
       narrow, Tab to a folder, Enter moves the item there; Esc closes it and
       focus returns to the tree. Ctrl+C copies the focused link. Every dialog
       opens with focus inside and returns it on close.
-- [ ] Language switch EN→VI→JA live-updates all tabs; dates/numbers
-      localized; restart persists. Header switcher and the `#settings` row
-      agree at all times (one state, two views).
+- [ ] Language switch EN→VI→JA→简体中文→Română live-updates all tabs;
+      dates/numbers localized; restart persists. Header switcher and the
+      `#settings` row agree at all times (one state, two views).
+- [ ] **Romanian plurals read right** at all three forms: import or select 1,
+      then 2–19, then 20 or more items and read the counts — "1 marcaj",
+      "5 marcaje", "20 de marcaje" — in the import stats, the Start button and
+      the popup tiles.
+- [ ] **Chinese renders as Chinese**: with 简体中文 selected, `<html lang>` is
+      `zh-CN` and characters such as 设置 / 导入 use Simplified Chinese glyphs,
+      not Japanese ones. With the browser in Traditional Chinese (`zh-TW`)
+      and the setting on Automatic, the UI is English, and so is the name in
+      chrome://extensions (`07 §1`).
+- [ ] Romanian and Chinese in the popup (340 px), the tab bar, the status bar
+      and every button: nothing truncated, wrapped mid-word or overlapping.
+      The visual sweep above covers each route at 1280×800. This item covers
+      the widths the sweep does not.
 - [ ] Theme: system/light/dark. In **both** light and dark, read text on every
       surface — page, panels, inputs and the status bar, a selected row or
       card — and check the focus ring, control borders and disabled controls
@@ -340,7 +354,7 @@ storage, nothing written survives a reload, and the popup's tiles open nothing.
       already open. The deep-link is refused by the same guard; confirm it
       behaves as `02 §5` describes rather than appearing to do nothing.
 - [ ] The import report states that imported bookmarks carry today's date — in
-      EN, VI **and** JA.
+      every locale.
 - [ ] chrome://extensions → no errors logged during the whole pass.
 - [ ] Edge (or Brave): smoke test install + import/export.
 
