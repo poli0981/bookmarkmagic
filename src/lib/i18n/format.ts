@@ -10,13 +10,14 @@
 import type { Locale } from './resolve-locale';
 
 /** BCP 47 tags docs/07 §3 pins per locale. */
-export type LocaleTag = 'en-US' | 'vi-VN' | 'ja-JP';
+export type LocaleTag = 'en-US' | 'vi-VN' | 'ja-JP' | 'zh-CN';
 
 /** A `Record`, so a new locale without a tag fails to compile (docs/07 §6). */
 const TAGS: Record<Locale, LocaleTag> = {
   en: 'en-US',
   vi: 'vi-VN',
   ja: 'ja-JP',
+  'zh-CN': 'zh-CN',
 };
 
 // Constructing an Intl formatter is expensive relative to a render, and
@@ -66,7 +67,7 @@ export function localeTag(locale: Locale): LocaleTag {
   return TAGS[locale];
 }
 
-/** Group a count for display — VI uses `.` thousands, EN and JA `,`. */
+/** Group a count for display — VI uses `.` thousands, EN, JA and ZH `,`. */
 export function formatCount(value: number, tag: LocaleTag): string {
   let format = numberFormats.get(tag);
   if (format === undefined) {

@@ -32,6 +32,12 @@ describe('sortedOrder', () => {
     expect(order.map((n) => n.title)).toEqual(['alpha', 'Zeta', 'éclair', 'Item 2', 'item 10']);
   });
 
+  it('collates with the UI locale: pinyin for zh-CN (docs/07 §3)', () => {
+    // 北京 (běi), 广州 (guǎng), 上海 (shàng) — by code point 上 would come first.
+    const order = sortedOrder([b('1', '上海'), b('2', '北京'), b('3', '广州')], 'zh-CN');
+    expect(order.map((n) => n.title)).toEqual(['北京', '广州', '上海']);
+  });
+
   it('keeps ties in their current order, and sorts untitled bookmarks by address', () => {
     const order = sortedOrder(
       [b('1', 'Same'), b('2', '', 'https://a.example/'), b('3', 'same')],

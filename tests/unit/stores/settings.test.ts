@@ -155,13 +155,26 @@ describe('settings store', () => {
     expect(getLocale()).toBe('ja');
   });
 
+  it('resolves "auto" in a Chinese browser by script', async () => {
+    const ui = vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockReturnValue('zh-CN');
+    await updateSettings({ locale: 'auto' });
+    expect(getLocale()).toBe('zh-CN');
+    ui.mockReturnValue('zh-TW');
+    await updateSettings({ locale: 'en' });
+    await updateSettings({ locale: 'auto' });
+    expect(getLocale()).toBe('en');
+  });
+
   it('keeps <html lang> in step with the UI language', async () => {
     // Both entrypoint documents ship lang="en"; without this a screen reader
-    // reads VI/JA text with an English voice and pronunciation rules.
+    // reads translated text with an English voice and pronunciation rules —
+    // and for zh-CN, Chrome draws Japanese glyph forms (docs/07 §2).
     await updateSettings({ locale: 'vi' });
     expect(document.documentElement.lang).toBe('vi');
     await updateSettings({ locale: 'ja' });
     expect(document.documentElement.lang).toBe('ja');
+    await updateSettings({ locale: 'zh-CN' });
+    expect(document.documentElement.lang).toBe('zh-CN');
     vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockReturnValue('en-GB');
     await updateSettings({ locale: 'auto' });
     expect(document.documentElement.lang).toBe('en');

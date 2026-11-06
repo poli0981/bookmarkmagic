@@ -5,6 +5,7 @@ import { type LocaleTag, localeTag, PLURAL_FORMS, requiredPluralForms } from '@/
 import en, { type Dict } from '@/lib/i18n/locales/en';
 import ja from '@/lib/i18n/locales/ja';
 import vi from '@/lib/i18n/locales/vi';
+import zhCN from '@/lib/i18n/locales/zh-CN';
 import { LOCALES, type Locale } from '@/lib/i18n/resolve-locale';
 
 /**
@@ -22,6 +23,7 @@ type Node = { [key: string]: Node | string };
 const LOCALE_DICTS: [name: Locale, dict: Node][] = [
   ['vi', vi as Node],
   ['ja', ja as Node],
+  ['zh-CN', zhCN as Node],
 ];
 
 const ALL: [name: Locale, dict: Node][] = [['en', en as Node], ...LOCALE_DICTS];
