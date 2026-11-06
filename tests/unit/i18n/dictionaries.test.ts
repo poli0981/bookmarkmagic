@@ -24,13 +24,13 @@ type Node = { [key: string]: Node | string };
 
 /** Every non-English locale, with the tag its plural rules come from. */
 const LOCALE_DICTS: [name: Locale, dict: Node][] = [
-  ['vi', vi as Node],
-  ['ja', ja as Node],
-  ['zh-CN', zhCN as Node],
-  ['ro', ro as Node],
+  ['vi', vi],
+  ['ja', ja],
+  ['zh-CN', zhCN],
+  ['ro', ro],
 ];
 
-const ALL: [name: Locale, dict: Node][] = [['en', en as Node], ...LOCALE_DICTS];
+const ALL: [name: Locale, dict: Node][] = [['en', en], ...LOCALE_DICTS];
 
 /** Every leaf as a dotted path → value. */
 function flatten(node: Node, prefix = ''): Map<string, string> {
@@ -61,10 +61,10 @@ function branches(node: Node, prefix = ''): Map<string, string[]> {
 }
 
 const FORM_KEYS = new Set<string>(PLURAL_FORMS);
-const english = flatten(en as Node);
+const english = flatten(en);
 /** English's plural keys: every branch holding `one` and `other`. */
 const PLURAL_PATHS = new Set(
-  [...branches(en as Node)]
+  [...branches(en)]
     .filter(([, keys]) => keys.includes('one') && keys.includes('other'))
     .map(([path]) => path),
 );
@@ -167,7 +167,7 @@ describe('dictionary completeness', () => {
   });
 
   it('gives English exactly the two forms on every plural key', () => {
-    const malformed = [...branches(en as Node)]
+    const malformed = [...branches(en)]
       .filter(([path]) => PLURAL_PATHS.has(path))
       .filter(([, keys]) => [...keys].sort().join('|') !== 'one|other')
       .map(([path]) => path);
@@ -215,7 +215,7 @@ describe('Romanian orthography', () => {
   it('carries the "de" form only where Romanian grammar puts it', () => {
     // `other` (20+) takes "de"; `one` and `few` never do. A swapped pair reads
     // "5 de marcaje" / "20 marcaje" — both wrong, and both type-check.
-    const leaves = flatten(ro as Node);
+    const leaves = flatten(ro);
     const wrong: string[] = [];
     for (const path of PLURAL_PATHS) {
       for (const form of ['one', 'few'] as const) {

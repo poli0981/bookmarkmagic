@@ -29,7 +29,11 @@ const TRADITIONAL_REGIONS = new Set(['tw', 'hk', 'mo']);
  * default locale.
  */
 export function resolveLocale(uiLanguage: string): Locale {
-  const [language = '', ...subtags] = uiLanguage.toLowerCase().split(/[-_]/u);
+  const [language = '', ...rest] = uiLanguage.toLowerCase().split(/[-_]/u);
+  // Stop at the first singleton (`-u-…` extensions, `-x-…` private use): only
+  // the script and region before it say which Chinese this is.
+  const singleton = rest.findIndex((subtag) => subtag.length === 1);
+  const subtags = singleton === -1 ? rest : rest.slice(0, singleton);
   if (language === 'vi') return 'vi';
   if (language === 'ja') return 'ja';
   if (language === 'zh') return isTraditional(subtags) ? 'en' : 'zh-CN';

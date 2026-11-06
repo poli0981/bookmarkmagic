@@ -2,9 +2,10 @@
 
 Translated from `listing.en.md`, keeping its structure. Chrome's own ro terms
 (marcaj, Bara de marcaje, dosar), comma-below ș ț only, „…” quotes, per
-`docs/07 §4`. The description speaks *about* the extension in the third person
-("Importă…"), the way store descriptions read in Romanian; the UI itself uses
-the polite plural ("Importați").
+`docs/07 §4`. The summary is a noun phrase ("Import, export și editare…"):
+a bare verb would read as the informal *tu* command next to the polite "vă".
+Under "CE FACE" the bullets speak *about* the extension in the third person
+("Importă…"); the UI itself uses the polite plural ("Importați").
 
 ⚠️ `TODO(review-ro)` — like the in-app dictionary, this is best-effort until a
 native pass (`docs/00 §10.13`). Review before relying on it for a listing edit.
@@ -14,7 +15,7 @@ native pass (`docs/00 §10.13`). Review before relying on it for a listing edit.
 **Summary** (121 / 132 characters — 11 to spare, check after any edit):
 
 ```
-Importă, exportă și editează marcaje între browsere — offline, fără cont, fără cloud. Datele nu vă părăsesc dispozitivul.
+Import, export și editare de marcaje între browsere — offline, fără cont, fără cloud. Datele nu vă părăsesc dispozitivul.
 ```
 
 **Description:**
@@ -25,7 +26,7 @@ Fără sincronizare în cloud. 100% offline.
 
 CE FACE
 • Importă fișiere de marcaje (HTML, JSON, CSV) — inclusiv fișierul
-  „Bookmarks” al Chrome din dosarul profilului și copiile de rezervă JSON din
+  „Bookmarks” din Chrome, aflat în dosarul profilului și copiile de rezervă JSON din
   Firefox — cu o previzualizare completă înainte de a scrie ceva: numărul de
   marcaje, dosarele și duplicatele, de la început.
 • Alegeți cum se face importul: într-un dosar nou cu dată (varianta sigură,

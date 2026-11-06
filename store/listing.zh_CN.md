@@ -9,10 +9,10 @@ native pass (`docs/00 §10.13`). Review before relying on it for a listing edit.
 
 **Name:** `BookmarkMagic` (brand name — never translated)
 
-**Summary** (46 / 132 characters — CJK counts by character, so this is short):
+**Summary** (47 / 132 characters — CJK counts by character, so this is short):
 
 ```
-在浏览器之间导入、导出和编辑书签——离线运行，无需账户，不用云端。您的数据不会离开您的设备。
+在浏览器之间导入、导出和编辑书签——离线运行，无需账户，无需云端。您的数据绝不会离开您的设备。
 ```
 
 **Description:**

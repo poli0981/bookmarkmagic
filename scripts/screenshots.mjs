@@ -215,21 +215,51 @@ function findChrome() {
  * @param {string} file @param {string} size
  */
 async function shoot(chrome, profile, url, file, size) {
-  await run(
-    chrome,
-    [
-      '--headless=new',
-      `--user-data-dir=${profile}`,
-      '--no-first-run',
-      '--disable-gpu',
-      '--hide-scrollbars',
-      `--window-size=${size}`,
-      '--virtual-time-budget=4000',
-      `--screenshot=${file}`,
-      url,
-    ],
-    { timeout: 60_000 },
-  );
+  const flags = ['--headless=new', '--no-first-run', '--disable-gpu', '--hide-scrollbars'];
+  const page = [`--window-size=${size}`, '--virtual-time-budget=4000', `--screenshot=${file}`];
+  await run(chrome, [...flags, `--user-data-dir=${profile}`, ...page, url], { timeout: 60_000 });
+}
+
+/** `LOCALES` (resolve-locale.ts), which .mjs cannot import — touch-points.test.ts pins it. */
+const LANGS = ['en', 'vi', 'ja', 'zh-CN', 'ro'];
+
+/**
+ * Every screenshot `--shoot` takes, as [url, file, window size] (docs/11 §5):
+ * the QA sweep — each route × theme × locale, plus the popup, the narrowest
+ * surface (340 px) and where a long translation overflows first — then the
+ * README set and the store set, both English.
+ *
+ * @param {{ qa: string, capture: string, store: string }} dirs
+ * @returns {[url: string, file: string, size: string][]}
+ */
+function shotList({ qa, capture, store }) {
+  const origin = `http://${HOST}:${PORT}`;
+  const page = (/** @type {string} */ query, /** @type {string} */ route) =>
+    `${origin}/manager.html?${query}#${route}`;
+  const routes = ['import', 'export', 'edit', 'settings', 'about'];
+  /** @type {[string, string, string][]} */
+  const jobs = [];
+  for (const lang of LANGS) {
+    for (const theme of ['light', 'dark']) {
+      const query = `theme=${theme}&lang=${lang}`;
+      for (const route of routes) {
+        jobs.push([page(query, route), join(qa, `${route}-${theme}-${lang}.png`), '1280,800']);
+      }
+      jobs.push([
+        `${origin}/popup.html?${query}`,
+        join(qa, `popup-${theme}-${lang}.png`),
+        '360,420',
+      ]);
+    }
+  }
+  for (const route of routes) {
+    jobs.push([page('theme=light&lang=en', route), join(capture, `${route}.png`), '1280,800']);
+  }
+  for (const route of ['edit', 'export', 'import']) {
+    jobs.push([page('theme=dark&lang=en', route), join(store, `${route}.png`), '1280,800']);
+  }
+  jobs.push([`${origin}/popup.html?theme=light&lang=en`, join(capture, 'popup.png'), '360,420']);
+  return jobs;
 }
 
 if (!existsSync(join(OUT, 'manifest.json'))) {
@@ -249,61 +279,10 @@ if (!existsSync(join(OUT, 'manifest.json'))) {
       const store = join(ROOT, 'store', 'screenshots');
       for (const dir of [qa, capture, store]) mkdirSync(dir, { recursive: true });
       const profile = mkdtempSync(join(tmpdir(), 'bookmarkmagic-harness-'));
-      const page = (/** @type {string} */ query, /** @type {string} */ route) =>
-        `http://${HOST}:${PORT}/manager.html?${query}#${route}`;
-      const ROUTES = ['import', 'export', 'edit', 'settings', 'about'];
-      // Every shipped locale (src/lib/i18n/resolve-locale.ts LOCALES — this
-      // script is plain .mjs and cannot import the TypeScript list; docs/07 §6).
-      const LANGS = ['en', 'vi', 'ja', 'zh-CN', 'ro'];
       try {
-        for (const lang of LANGS) {
-          for (const theme of ['light', 'dark']) {
-            for (const route of ROUTES) {
-              const file = join(qa, `${route}-${theme}-${lang}.png`);
-              await shoot(
-                chrome,
-                profile,
-                page(`theme=${theme}&lang=${lang}`, route),
-                file,
-                '1280,800',
-              );
-            }
-            // The popup is the narrowest surface (340 px) — where a long
-            // translation overflows first.
-            await shoot(
-              chrome,
-              profile,
-              `http://${HOST}:${PORT}/popup.html?theme=${theme}&lang=${lang}`,
-              join(qa, `popup-${theme}-${lang}.png`),
-              '360,420',
-            );
-          }
+        for (const [url, file, size] of shotList({ qa, capture, store })) {
+          await shoot(chrome, profile, url, file, size);
         }
-        for (const route of ROUTES) {
-          await shoot(
-            chrome,
-            profile,
-            page('theme=light&lang=en', route),
-            join(capture, `${route}.png`),
-            '1280,800',
-          );
-        }
-        for (const route of ['edit', 'export', 'import']) {
-          await shoot(
-            chrome,
-            profile,
-            page('theme=dark&lang=en', route),
-            join(store, `${route}.png`),
-            '1280,800',
-          );
-        }
-        await shoot(
-          chrome,
-          profile,
-          `http://${HOST}:${PORT}/popup.html?theme=light&lang=en`,
-          join(capture, 'popup.png'),
-          '360,420',
-        );
       } finally {
         rmSync(profile, { recursive: true, force: true });
         server.close();

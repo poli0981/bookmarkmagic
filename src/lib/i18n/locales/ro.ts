@@ -27,7 +27,7 @@ export default {
   },
   popup: {
     import: 'Importați marcaje…',
-    importHint: 'HTML, CSV, copii de rezervă JSON, fișierul Bookmarks al Chrome',
+    importHint: 'HTML, CSV, copii de rezervă JSON, fișierul Bookmarks din Chrome',
     export: 'Exportați marcaje…',
     exportHint: 'HTML, JSON, CSV sau Markdown',
     manage: 'Deschideți managerul',
@@ -54,7 +54,7 @@ export default {
     started: 'Descărcarea a început: {name}',
     markdownNote: 'Markdown este doar pentru partajare — BookmarkMagic nu îl poate importa înapoi.',
     csvNote:
-      'CSV este o vedere aplatizată: dosarele goale și dosarul care este bara de marcaje nu se păstrează.',
+      'CSV este o vedere aplatizată: nu se păstrează dosarele goale și nici care dosar este bara de marcaje.',
     csvDelimiter: 'Delimitator',
     comma: 'Virgulă ( , )',
     semicolon: 'Punct și virgulă ( ; )',
@@ -131,9 +131,9 @@ export default {
     },
     noDuplicates: 'Nu s-au găsit linkuri duplicate.',
     keepFirst: {
-      one: 'Păstrați prima apariție a fiecăruia, ștergeți {n} copie',
-      few: 'Păstrați prima apariție a fiecăruia, ștergeți {n} copii',
-      other: 'Păstrați prima apariție a fiecăruia, ștergeți {n} de copii',
+      one: 'Păstrați primul din fiecare, ștergeți {n} copie',
+      few: 'Păstrați primul din fiecare, ștergeți {n} copii',
+      other: 'Păstrați primul din fiecare, ștergeți {n} de copii',
     },
     keeps: 'păstrat',
     deleteCopy: 'Ștergeți copia „{title}” din {path}',
@@ -171,6 +171,7 @@ export default {
       ro: 'Română',
     },
     theme: 'Temă',
+    // TODO(review-ro): "Sistem" is a noun beside two adjectives agreeing with „temă”.
     themes: {
       system: 'Sistem',
       light: 'Luminoasă',
@@ -189,19 +190,19 @@ export default {
     reset: 'Reveniți la valorile implicite',
     resetTitle: 'Resetați toate setările?',
     resetBody:
-      'Limba, tema și fiecare alegere implicită revin la valorile inițiale. Marcajele nu sunt atinse.',
+      'Limba, tema și fiecare alegere implicită revin la valorile inițiale. Marcajele nu sunt afectate.',
     resetConfirm: 'Resetați',
     resetDone: 'Setările au revenit la valorile implicite',
   },
   about: {
     diagnostics: 'Diagnosticare',
-    copyDiagnostics: 'Copiați diagnosticarea',
+    copyDiagnostics: 'Copiați datele de diagnosticare',
     diagnosticsNote:
       'Un scurt jurnal local cu ce a făcut această filă — coduri de eroare și numere, niciodată titluri sau adrese. Vă părăsește computerul doar dacă îl lipiți undeva.',
-    diagnosticsCopied: 'Diagnosticarea a fost copiată',
-    diagnosticsCopyFailed: 'Diagnosticarea nu a putut fi copiată.',
+    diagnosticsCopied: 'Datele de diagnosticare au fost copiate',
+    diagnosticsCopyFailed: 'Datele de diagnosticare nu au putut fi copiate.',
     tagline:
-      'Importă, exportă și editează marcaje între browsere — offline, fără cont, fără cloud. Datele nu vă părăsesc niciodată dispozitivul.',
+      'Import, export și editare de marcaje între browsere — offline, fără cont, fără cloud. Datele nu vă părăsesc niciodată dispozitivul.',
     version: 'Versiunea {version}',
     links: 'Linkuri',
     repo: 'Depozitul GitHub',
@@ -221,7 +222,7 @@ export default {
   legal: {
     title: 'Înainte de a începe',
     summary:
-      'BookmarkMagic rulează în întregime pe dispozitivul dumneavoastră. Nu are servere, nu face cereri în rețea și nu colectează nimic — marcajele și setările nu părăsesc niciodată acest browser. Este software liber sub licența GPL-3.0 și nu oferă nicio garanție de niciun fel. Operațiile cu marcaje modifică datele browserului, iar modul „Înlocuire completă” șterge marcajele actuale, așa că păstrați propriile copii de rezervă pentru tot ce contează pentru dumneavoastră.',
+      'BookmarkMagic rulează în întregime pe dispozitivul dumneavoastră. Nu are servere, nu face cereri în rețea și nu colectează nimic — marcajele și setările nu părăsesc niciodată acest browser. Este software liber sub licența GPL-3.0 și este furnizat fără nicio garanție. Operațiile cu marcaje modifică datele browserului, iar modul „Înlocuire completă” șterge marcajele actuale, așa că păstrați propriile copii de rezervă pentru tot ce contează pentru dumneavoastră.',
     updatedTitle: 'Termenii au fost actualizați',
     updatedBody:
       'Aceste documente s-au modificat de când le-ați acceptat. Citiți-le din nou pentru a continua.',

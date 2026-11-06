@@ -36,6 +36,15 @@ describe('resolveLocale', () => {
     }
   });
 
+  it('lets an explicit script win over the region, and ignores extension subtags', () => {
+    expect(resolveLocale('zh-Hans-TW')).toBe('zh-CN');
+    expect(resolveLocale('zh-Hant-CN')).toBe('en');
+    expect(resolveLocale('zh-MY')).toBe('zh-CN');
+    expect(resolveLocale('zh-u-nu-hant')).toBe('zh-CN');
+    expect(resolveLocale('zh-CN-x-hant')).toBe('zh-CN');
+    expect(resolveLocale('zh-TW-u-ca-roc')).toBe('en');
+  });
+
   it('falls back to en for anything else', () => {
     expect(resolveLocale('en-US')).toBe('en');
     expect(resolveLocale('de')).toBe('en');
