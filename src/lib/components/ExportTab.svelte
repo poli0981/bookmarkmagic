@@ -44,7 +44,7 @@
       markdownStyle = settings.markdownStyle;
     } catch (err) {
       // Was `err.detail` alone — a raw English Chrome string as the entire
-      // screen, in all three languages (docs/02 §7).
+      // screen, in every language (docs/02 §7).
       loadError = describeError(err);
     } finally {
       loading = false;

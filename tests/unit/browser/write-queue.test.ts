@@ -264,7 +264,7 @@ describe('writeTree — API failure', () => {
   it('lets a cancellation stay a cancellation', async () => {
     // The abort check throws from inside the same loop as the create. Wrapping
     // it would relabel every user cancellation as a failure and make the
-    // `cancelled` state — and its copy in three languages — unreachable.
+    // `cancelled` state — and its copy in every language — unreachable.
     const fake = new FakeBookmarks();
     const controller = new AbortController();
 

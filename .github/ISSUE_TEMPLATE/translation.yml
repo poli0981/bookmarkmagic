@@ -1,5 +1,5 @@
 name: A translation is wrong or awkward
-description: Vietnamese or Japanese wording that is incorrect, unnatural, or untranslated.
+description: Vietnamese, Japanese, Chinese or Romanian wording that is incorrect, unnatural, or untranslated.
 title: '[i18n] '
 labels: [i18n]
 body:
@@ -7,9 +7,9 @@ body:
     attributes:
       value: |
         Native speakers are the only people who can catch this. English is the
-        source language; Vietnamese is reviewed by the maintainer and Japanese
-        is best-effort until a native pass, so JA reports are especially
-        welcome.
+        source language; Vietnamese is reviewed by the maintainer. Japanese,
+        Simplified Chinese and Romanian are best-effort until a native pass,
+        so reports in those three are especially welcome.
 
         You do **not** need to open a pull request or install anything — just
         tell us the wording. If you would rather send the change yourself,
@@ -23,6 +23,8 @@ body:
       options:
         - Tiếng Việt (vi)
         - 日本語 (ja)
+        - 简体中文 (zh-CN)
+        - Română (ro)
     validations:
       required: true
 

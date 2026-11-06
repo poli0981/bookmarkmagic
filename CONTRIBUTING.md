@@ -51,8 +51,9 @@ Anything you attach to a GitHub issue is public and permanent; see
 
 You do not need to clone anything. Use the translation issue form: the language,
 where the text appears, what it says now, and what it should say. Vietnamese is
-reviewed by the maintainer; **Japanese is best-effort until a native pass**, so
-JA corrections are especially welcome.
+reviewed by the maintainer; **Japanese, Simplified Chinese and Romanian are
+best-effort until a native pass**, so corrections in those three are especially
+welcome.
 
 One constraint if you send the change yourself: placeholders like `{n}` or
 `{name}` must appear in the translation exactly as in English — same names, same
@@ -60,7 +61,7 @@ count. A build gate enforces it.
 
 ## Setting up to write code
 
-Node **24 or newer** (see `.nvmrc`).
+Node **26 or newer** (see `.nvmrc`).
 
 ```bash
 npm ci
@@ -101,7 +102,8 @@ so they are not style preferences:
 - `src/lib/core/` is pure: it imports nothing from `browser/`, `stores/`, Svelte
   or `chrome.*`.
 - Files stay under 300 lines (hard limit 500), functions under 50 (hard 80).
-- Every user-visible string is an i18n key present in **all three** locales.
+- Every user-visible string is an i18n key present in **every** locale (en, vi,
+  ja, zh-CN, ro — `LOCALES` in `src/lib/i18n/resolve-locale.ts`).
 
 [`CLAUDE.md`](CLAUDE.md) is the entry point and [`docs/`](docs/) is the binding
 specification — **where code and docs disagree, the docs win.** A behaviour
@@ -134,17 +136,26 @@ a real regression into a passing test.
 
 ## Translations, in code
 
-`src/lib/i18n/locales/en.ts` is the schema; `vi.ts` and `ja.ts` are typed
-`satisfies Dict` against it, so a missing key is a compile error.
+`src/lib/i18n/locales/en.ts` is the schema; every other locale (`vi.ts`,
+`ja.ts`, `zh-CN.ts`, `ro.ts`, each with its `-notices` and `-import` parts) is
+typed `satisfies Dict` against it, so a missing key is a compile error.
 
 **Never add `as const` to `en.ts`.** It would make `Dict` a tree of string
 *literal* types, and every correct translation would become a type error — the
-only way to make the build pass would be leaving VI and JA in English.
+only way to make the build pass would be leaving every other locale in English.
 
-Four gates run on every change: identical key paths across the three locales,
-identical interpolation tokens per string, no empty leaves, and plural keys
-carrying exactly `{one, other}` everywhere. See `docs/07` for register and tone
-(VI: neutral-friendly, "bạn"; JA: です／ます with katakana loanwords).
+The gates that run on every change:
+- identical key paths across the locales;
+- identical interpolation tokens per string;
+- no empty leaves;
+- plural keys carrying exactly the forms the language needs: `{one, other}`
+  everywhere, plus `few` in Romanian ("1 marcaj", "5 marcaje", "20 de
+  marcaje");
+- language names written as endonyms, identical in every dictionary;
+- for Romanian, comma-below `ș ț` only, never the cedilla look-alikes.
+
+See `docs/07` for register and tone in each language. Adding a whole new
+language has its own checklist: `docs/07 §6`.
 
 ## Commits and pull requests
 

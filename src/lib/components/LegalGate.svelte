@@ -49,7 +49,7 @@
       }
       // The localized recovery sentence is the message; the raw browser error
       // is the separate technical detail (docs/02 §7). Showing `detail` in its
-      // place made legal.saveFailed dead in all three locales — at the one
+      // place made legal.saveFailed dead in every locale — at the one
       // moment a first-run user most needs an actionable instruction.
       saveFailed = true;
       saveDetail = outcome.detail;

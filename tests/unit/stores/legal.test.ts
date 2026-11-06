@@ -60,7 +60,7 @@ describe('blocked routes', () => {
 
   it('leaves #settings and #about reachable', () => {
     // Normative in docs/03 §4, docs/14 §2 and the docs/15 decision log:
-    // #about so the documents can be read first, #settings so a VI/JA user can
+    // #about so the documents can be read first, #settings so a non-English user can
     // switch language -- which is why the gate has no switcher of its own.
     expect(isGatedRoute('settings')).toBe(false);
     expect(isGatedRoute('about')).toBe(false);

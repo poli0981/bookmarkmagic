@@ -39,7 +39,7 @@ RIÊNG TƯ NGAY TỪ THIẾT KẾ
 • Miễn phí & mã nguồn mở (GPL-3.0) — bạn có thể đọc mã trên GitHub.
 
 NGÔN NGỮ
-English · Tiếng Việt · 日本語
+English · Tiếng Việt · 日本語 · 简体中文 · Română
 
 GIỚI HẠN (NÓI THẲNG)
 • Không thể nhập favicon — API bookmark của trình duyệt không có trường

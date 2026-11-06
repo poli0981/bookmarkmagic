@@ -37,7 +37,7 @@
       // The LOCALIZED sentence is the message; the raw browser error is the
       // separate technical detail docs/02 §7 asks for. Putting `detail` first
       // made every translation of settings.saveFailed dead code and showed a
-      // VI/JA user an untranslated Chrome string.
+      // non-English user an untranslated Chrome string.
       pushToast(t('settings.saveFailed'), 'danger');
       saveDetail = outcome.detail;
     });

@@ -1,7 +1,8 @@
 import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { LOCALES, type Locale } from '@/lib/i18n/resolve-locale';
+import { LOCALES } from '@/lib/i18n/resolve-locale';
+import { CHROME_LOCALE_DIRS } from '../helpers/locales';
 
 /**
  * The permission list is the product's most load-bearing public claim: it is in
@@ -20,18 +21,6 @@ const RAW = readFileSync(join(process.cwd(), 'wxt.config.ts'), 'utf8');
  * the very thing it is checking.
  */
 const CONFIG = RAW.replace(/\/\*[\s\S]*?\*\//g, '').replace(/\/\/[^\n]*/g, '');
-
-/**
- * Runtime locale id → Chrome's `_locales/` directory name (docs/07 §1). The one
- * place the two spellings meet: Chrome wants `zh_CN`, BCP 47 says `zh-CN`.
- */
-const CHROME_LOCALE_DIRS: Record<Locale, string> = {
-  en: 'en',
-  vi: 'vi',
-  ja: 'ja',
-  'zh-CN': 'zh_CN',
-  ro: 'ro',
-};
 
 const LOCALES_DIR = join(process.cwd(), 'src/public/_locales');
 

@@ -17,6 +17,8 @@ describe('localeTag', () => {
     expect(localeTag('en')).toBe('en-US');
     expect(localeTag('vi')).toBe('vi-VN');
     expect(localeTag('ja')).toBe('ja-JP');
+    expect(localeTag('zh-CN')).toBe('zh-CN');
+    expect(localeTag('ro')).toBe('ro-RO');
   });
 });
 
@@ -25,13 +27,16 @@ describe('formatCount', () => {
     expect(formatCount(1_234_567, 'en-US')).toBe('1,234,567');
   });
 
-  it('groups thousands for vi/ja with a locale-appropriate separator', () => {
+  it('groups thousands for vi/ja/zh/ro with a locale-appropriate separator', () => {
     // Asserted structurally rather than glyph-for-glyph: ICU separator data can
     // shift between Node releases, and a brittle assertion here would block an
     // unrelated Node bump for no real gain.
     expect(formatCount(1_234_567, 'vi-VN')).toMatch(/^1\D234\D567$/u);
     expect(formatCount(1_234_567, 'ja-JP')).toMatch(/^1\D234\D567$/u);
+    expect(formatCount(1_234_567, 'zh-CN')).toMatch(/^1\D234\D567$/u);
+    expect(formatCount(1_234_567, 'ro-RO')).toMatch(/^1\D234\D567$/u);
     expect(formatCount(1_234_567, 'vi-VN')).not.toBe(formatCount(1_234_567, 'en-US'));
+    expect(formatCount(1_234_567, 'ro-RO')).not.toBe(formatCount(1_234_567, 'en-US'));
   });
 
   it('keeps the cache keyed by tag — interleaved calls do not bleed', () => {
@@ -105,7 +110,9 @@ describe('Romanian plurals (docs/07 §5)', () => {
     expect(tPlural('import.countBookmarks', 1)).toBe('1 marcaj');
     expect(tPlural('import.countBookmarks', 5)).toBe('5 marcaje');
     expect(tPlural('import.countBookmarks', 20)).toBe('20 de marcaje');
-    expect(tPlural('import.countBookmarks', 1234)).toBe('1.234 de marcaje');
+    // Structural, like the grouping test above: ICU data may shift between Node
+    // releases. What matters is the grouped count followed by the `other` form.
+    expect(tPlural('import.countBookmarks', 1234)).toMatch(/^1\D234 de marcaje$/u);
   });
 });
 

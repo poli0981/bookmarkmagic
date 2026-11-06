@@ -43,7 +43,7 @@ native pass (`docs/00 §10.9`). Review before relying on it for a listing edit.
 • 無料・オープンソース（GPL-3.0）です。コードは GitHub で確認できます。
 
 対応言語
-English · Tiếng Việt · 日本語
+English · Tiếng Việt · 日本語 · 简体中文 · Română
 
 制限事項（正直に）
 • ファビコンはインポートできません。ブラウザのブックマーク API に

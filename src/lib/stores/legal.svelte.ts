@@ -27,7 +27,7 @@ export type LegalStatus =
  *
  * Normative and stated identically in docs/03 §4, docs/14 §2 and the docs/15
  * decision log: `#settings` and `#about` stay reachable, `#about` so the linked
- * documents can be read before accepting and `#settings` so a VI/JA user can
+ * documents can be read before accepting and `#settings` so a non-English user can
  * switch language first — which is why the gate carries no switcher of its own.
  */
 const GATED_ROUTES: readonly Route[] = Object.freeze(['import', 'export', 'edit']);
