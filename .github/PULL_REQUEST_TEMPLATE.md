@@ -22,10 +22,12 @@ a translation fix does not need the parser section, and vice versa.
 
 ### If it touches user-visible text
 
-- [ ] The key exists in **all three** locales — `en`, `vi`, `ja`. `en.ts` is the
-      schema; `vi`/`ja` use `satisfies Dict`, so a missing key fails the type
-      check. Never add `as const` to a locale file.
-- [ ] Interpolation tokens (`{n}`, `{name}`) match across all three.
+- [ ] The key exists in **every** locale — `en`, `vi`, `ja`, `zh-CN`, `ro`
+      (`LOCALES`). `en.ts` is the schema; the others use `satisfies Dict`, so a
+      missing key fails the type check. Never add `as const` to a locale file.
+- [ ] Interpolation tokens (`{n}`, `{name}`) match across every locale, and a
+      plural key carries the forms its language needs (`few` in Romanian —
+      `docs/07 §5`).
 
 ### If it is a parser fix
 
