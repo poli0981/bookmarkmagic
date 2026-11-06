@@ -1,6 +1,7 @@
 /**
  * English warnings and errors — split out of en.ts so both files stay under the
- * size limit (docs/10 §1). en.ts re-assembles them; vi/ja mirror this file.
+ * size limit (docs/10 §1). en.ts re-assembles them; every other locale mirrors
+ * this file.
  *
  * Same rules as en.ts: NEVER `as const`, full sentences, `{token}` interpolation.
  */

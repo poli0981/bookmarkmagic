@@ -12,7 +12,7 @@ Move your bookmarks between browsers the simple way: with a file. No account,
 no cloud sync, 100% offline.
 
 A Chrome (MV3) extension for importing, exporting and editing bookmarks and
-folder trees. English · Tiếng Việt · 日本語.
+folder trees. English · Tiếng Việt · 日本語 · 简体中文 · Română.
 
 ## Screenshots
 

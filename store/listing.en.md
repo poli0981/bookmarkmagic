@@ -38,7 +38,7 @@ PRIVACY BY DESIGN
 • Free & open source (GPL-3.0) — read the code on GitHub.
 
 LANGUAGES
-English · Tiếng Việt · 日本語
+English · Tiếng Việt · 日本語 · 简体中文 · Română
 
 LIMITATIONS (HONESTY CORNER)
 • Favicons can't be imported — the extensions API for bookmarks has no

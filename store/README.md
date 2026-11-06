@@ -15,6 +15,13 @@ treat the dashboard as authoritative and correct these files, not the listing.
 | `listing.en.md` | Name, summary, description — English is required by CWS and is the canonical version |
 | `listing.vi.md` | Vietnamese localized fields |
 | `listing.ja.md` | Japanese localized fields |
+| `listing.zh_CN.md` | Simplified Chinese localized fields (since v1.2.0) |
+| `listing.ro.md` | Romanian localized fields (since v1.2.0) |
+
+Files are named by **Chrome's** locale code (`zh_CN`, with an underscore), the
+same spelling as `src/public/_locales/`. Adding a language: `docs/07 §6` and
+`docs/13 §4` — the `LANGUAGES` paragraph inside *every* description lists the
+languages, so all of them are re-pasted when one is added.
 
 The summary field is capped at **132 characters** by the dashboard. Each file
 records its own count; re-check after any edit, because the limit is enforced at
@@ -22,4 +29,4 @@ submission time and a rejection there costs a round trip.
 
 Legal documents are English-only by design (`docs/07 §5`, `docs/14`), so there
 is no localized privacy policy to keep in step — the privacy-policy URL is the
-same in all three listings.
+same in every listing.

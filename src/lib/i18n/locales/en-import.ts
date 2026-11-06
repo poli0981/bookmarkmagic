@@ -1,7 +1,7 @@
 /**
  * English strings for the Import tab — split out of en.ts so both files stay
  * under the size limit (docs/10 §1), exactly like the notices. en.ts
- * re-assembles them; vi/ja mirror this file.
+ * re-assembles them; every other locale mirrors this file.
  *
  * Same rules as en.ts: NEVER `as const`, full sentences, `{token}` interpolation.
  */

@@ -196,6 +196,7 @@ describe('Romanian orthography', () => {
     'src/lib/i18n/locales/ro-notices.ts',
     'src/lib/i18n/locales/ro-import.ts',
     'src/public/_locales/ro/messages.json',
+    'store/listing.ro.md',
   ];
 
   /** ş Ş ţ Ţ — by code point, so no formatter can turn them into look-alikes. */

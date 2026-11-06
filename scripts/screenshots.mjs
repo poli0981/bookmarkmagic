@@ -13,13 +13,14 @@
  *   npm run build && node scripts/screenshots.mjs           # serve on :4318
  *   node scripts/screenshots.mjs --shoot                    # also capture PNGs
  *
- * Page URLs take `?theme=light|dark&lang=en|vi|ja&legal=0|1`, and the route as
- * the hash: http://localhost:4318/manager.html?theme=dark&lang=vi#edit
+ * Page URLs take `?theme=light|dark&lang=en|vi|ja|zh-CN|ro&legal=0|1`, and the
+ * route as the hash: http://localhost:4318/manager.html?theme=dark&lang=vi#edit
  *
  * `--shoot` drives a locally installed Chrome (CHROME_PATH, or the usual
  * install paths) headless, on a throwaway profile — never the user's own:
- * every route × theme × language at 1280×800 into `.output/qa-screens/` (for
- * review, git-ignored), the README set into `capture/`, and the store set into
+ * every route × theme × language at 1280×800, plus the popup per theme ×
+ * language at 360×420, into `.output/qa-screens/` (for review, git-ignored),
+ * the README set into `capture/`, and the store set into
  * `store/screenshots/`. Dev tool only: nothing here ships, the server listens
  * on 127.0.0.1 alone, and it never touches the network beyond it.
  */
@@ -251,8 +252,11 @@ if (!existsSync(join(OUT, 'manifest.json'))) {
       const page = (/** @type {string} */ query, /** @type {string} */ route) =>
         `http://${HOST}:${PORT}/manager.html?${query}#${route}`;
       const ROUTES = ['import', 'export', 'edit', 'settings', 'about'];
+      // Every shipped locale (src/lib/i18n/resolve-locale.ts LOCALES — this
+      // script is plain .mjs and cannot import the TypeScript list; docs/07 §6).
+      const LANGS = ['en', 'vi', 'ja', 'zh-CN', 'ro'];
       try {
-        for (const lang of ['en', 'vi', 'ja']) {
+        for (const lang of LANGS) {
           for (const theme of ['light', 'dark']) {
             for (const route of ROUTES) {
               const file = join(qa, `${route}-${theme}-${lang}.png`);
@@ -264,6 +268,15 @@ if (!existsSync(join(OUT, 'manifest.json'))) {
                 '1280,800',
               );
             }
+            // The popup is the narrowest surface (340 px) — where a long
+            // translation overflows first.
+            await shoot(
+              chrome,
+              profile,
+              `http://${HOST}:${PORT}/popup.html?theme=${theme}&lang=${lang}`,
+              join(qa, `popup-${theme}-${lang}.png`),
+              '360,420',
+            );
           }
         }
         for (const route of ROUTES) {
