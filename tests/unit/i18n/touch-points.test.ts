@@ -1,6 +1,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import en from '@/lib/i18n/locales/en';
 import { LOCALES } from '@/lib/i18n/resolve-locale';
 import { CHROME_LOCALE_DIRS } from '../../helpers/locales';
 
@@ -44,8 +45,9 @@ describe('every shipped locale is wired up outside src/', () => {
 
   it('lists the same languages in every store description and the README', () => {
     // The LANGUAGES paragraph is typed into each description by hand, so a
-    // new locale means re-pasting all of them (docs/13 §4).
-    const line = 'English · Tiếng Việt · 日本語 · 简体中文 · Română';
+    // new locale means re-pasting all of them (docs/13 §4). Built from the
+    // list, so a sixth locale fails every listing that does not name it.
+    const line = LOCALES.map((locale) => en.settings.lang[locale]).join(' · ');
     for (const locale of LOCALES) {
       expect(read(`store/listing.${CHROME_LOCALE_DIRS[locale]}.md`), locale).toContain(line);
     }

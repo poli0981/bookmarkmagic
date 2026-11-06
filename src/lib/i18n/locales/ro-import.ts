@@ -4,9 +4,10 @@ import type { Dict } from './en';
 export const importTab = {
   dropHint: 'Plasați aici un fișier de marcaje sau dați clic pentru a-l alege · maximum {size}',
   dropFormats:
-    'Exporturi HTML din browsere, CSV, copii de rezervă JSON din BookmarkMagic și Firefox, precum și fișierul Bookmarks al Chrome (nu are extensie).',
+    'Exporturi HTML din browsere, CSV, copii de rezervă JSON din BookmarkMagic și Firefox, precum și fișierul Bookmarks din Chrome (nu are extensie de fișier).',
   reading: 'Se citește {name}…',
   preview: 'Previzualizare',
+  // TODO(review-ro): Chrome ro may say „Importate” for its own import folder.
   folderName: 'Importat {date}',
   start: {
     one: 'Importați {n} marcaj',
@@ -14,11 +15,11 @@ export const importTab = {
     other: 'Importați {n} de marcaje',
   },
   backingUp:
-    'Se salvează o copie de rezervă de siguranță înainte de a înlocui ceva. Confirmați fereastra de salvare pentru a continua.',
+    'Se salvează o copie de rezervă de siguranță înainte de a înlocui ceva. Confirmați în fereastra de salvare pentru a continua.',
   keepTabOpen: 'Păstrați această filă deschisă până se termină importul.',
   progress: 'Se importă… {done} / {total}',
   doneSummary: 'Gata — au fost create {bookmarks} și {folders}.',
-  skipped: 'Omise: {existing} deja existente în acest browser și {inFile} repetate în fișier.',
+  skipped: 'Omise — deja în acest browser: {existing}; repetate în fișier: {inFile}.',
   stepSource: 'Sursă',
   stepOptions: 'Opțiuni',
   stepWriting: 'Scriere',
@@ -39,15 +40,16 @@ export const importTab = {
   whereReplace: 'Marcajele conțin acum exact ce conține fișierul.',
   replaceConfirmTitle: 'Înlocuiți tot?',
   replaceConfirmBody:
-    'Din acest browser vor fi șterse {current}, după salvarea unei copii de rezervă de siguranță. Apoi se scriu {incoming} din {name}.',
-  replaceConfirm: 'Faceți copia și înlocuiți',
-  target: { bar: 'bară', unfiled: 'Alte', mobile: 'Mobil' },
+    'Vor fi șterse din acest browser: {current}, după salvarea unei copii de rezervă de siguranță. Apoi se scrie conținutul din {name}: {incoming}.',
+  replaceConfirm: 'Salvați copia și înlocuiți',
+  target: { bar: 'bară', unfiled: 'Alte marcaje', mobile: 'Mobile' },
   targetNote:
-    'La Îmbinare și Înlocuire, conținutul acestui dosar ajunge direct în dosarul respectiv al browserului, nu într-o copie a lui.',
+    'La îmbinare și la înlocuire, conținutul acestui dosar ajunge direct în dosarul respectiv al browserului, nu într-o copie a lui.',
   reused: {
-    one: 'Adăugat în {n} dosar pe care îl aveați deja, fără a crea o copie.',
-    few: 'Adăugat în {n} dosare pe care le aveați deja, fără a crea copii.',
-    other: 'Adăugat în {n} de dosare pe care le aveați deja, fără a crea copii.',
+    one: 'Elementele au fost adăugate în {n} dosar pe care îl aveați deja, fără a crea o copie.',
+    few: 'Elementele au fost adăugate în {n} dosare pe care le aveați deja, fără a crea copii.',
+    other:
+      'Elementele au fost adăugate în {n} de dosare pe care le aveați deja, fără a crea copii.',
   },
   // Firefox's own ro names for its roots. TODO(review-ro): "Marcaje mobile".
   rootTitle: {
@@ -81,15 +83,15 @@ export const importTab = {
   openEdit: 'Deschideți fila Editare',
   another: 'Importați alt fișier',
   dedupe: 'Omiteți duplicatele deja existente în acest browser (găsite: {n})',
-  dedupeDisabled: 'Nu se aplică: Înlocuirea șterge mai întâi marcajele actuale.',
+  dedupeDisabled: 'Nu se aplică: „Înlocuire completă” șterge mai întâi marcajele actuale.',
   replaceWarning:
-    'Această acțiune șterge TOATE marcajele actuale. Mai întâi se salvează o copie de rezervă JSON și nu se șterge nimic până când aceasta reușește.',
+    'Această acțiune șterge TOATE marcajele actuale. Mai întâi se salvează o copie de rezervă JSON; ștergerea începe doar după ce aceasta a fost salvată cu succes.',
   attest:
     'Browserul nu a putut confirma că a fost salvată copia de rezervă. Căutați {name} în dosarul de descărcări, apoi confirmați — încă nu s-a șters nimic.',
   attestConfirm: 'Am copia de rezervă — ștergeți și înlocuiți',
   clearing: 'Se șterg marcajele actuale. Nu închideți această filă.',
   badgeNew: 'nou',
-  badgeDup: 'dublură',
+  badgeDup: 'duplicat',
   expand: 'Extindeți dosarul',
   collapse: 'Restrângeți dosarul',
   stats: {
@@ -101,7 +103,7 @@ export const importTab = {
   mode: {
     legend: 'Cum să fie adăugate?',
     newFolder: 'Într-un dosar nou (recomandat)',
-    merge: 'Îmbinare în dosarele existente',
+    merge: 'Îmbinare cu dosarele existente',
     replace: 'Înlocuire completă',
     newFolderNote:
       'Nu se atinge nimic din ce există; dacă vă răzgândiți, ștergeți un singur dosar cu dată.',

@@ -236,9 +236,10 @@ page is served with the production CSP as a `<meta>`, so a violation shows in
 the console exactly as it would in the extension. Pages take
 `?theme=light|dark&lang=en|vi|ja|zh-CN|ro&legal=0|1` and the route as the hash —
 `manager.html?theme=dark&lang=vi#edit`; `legal=0` shows the gate. `--shoot`
-photographs every route × theme × language at 1280×800 with a local headless
-Chrome (`CHROME_PATH`, or the usual install paths), plus the store set
-(`13 §2`). Use it to sweep layout, translation overflow and both themes in
+photographs every route × theme × language at 1280×800 and the popup per theme
+× language at 360×420 with a local headless Chrome (`CHROME_PATH`, or the usual
+install paths), plus the README and store sets (`13 §2`). It does not shoot
+the gate (`legal=0`) — open that by hand in each language. Use it to sweep layout, translation overflow and both themes in
 minutes. It is **not** the pass below: each page has its own fake tree and
 storage, nothing written survives a reload, and the popup's tiles open nothing.
 
@@ -310,10 +311,11 @@ storage, nothing written survives a reload, and the popup's tiles open nothing.
       not Japanese ones. With the browser in Traditional Chinese (`zh-TW`)
       and the setting on Automatic, the UI is English, and so is the name in
       chrome://extensions (`07 §1`).
-- [ ] Romanian and Chinese in the popup (340 px), the tab bar, the status bar
-      and every button: nothing truncated, wrapped mid-word or overlapping.
-      The visual sweep above covers each route at 1280×800. This item covers
-      the widths the sweep does not.
+- [ ] Romanian and Chinese in the popup, the tab bar, the status bar and
+      every button: nothing truncated, wrapped mid-word or overlapping. The
+      sweep photographs each route at 1280×800 and the popup at 360×420; this
+      item covers what it cannot — narrower windows, open dialogs, the import
+      preview, a running import and the Legal Gate.
 - [ ] Theme: system/light/dark. In **both** light and dark, read text on every
       surface — page, panels, inputs and the status bar, a selected row or
       card — and check the focus ring, control borders and disabled controls

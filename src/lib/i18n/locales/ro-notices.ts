@@ -70,23 +70,23 @@ export const warnings = {
 export const errors = {
   NOT_NETSCAPE: 'Acesta nu pare a fi un fișier HTML de marcaje.',
   NOT_BM_JSON:
-    'Acest fișier JSON nu este un fișier de marcaje pe care BookmarkMagic îl poate citi. BookmarkMagic citește propriile copii de rezervă, copiile de rezervă JSON din Firefox și fișierul Bookmarks al Chrome.',
+    'Acest fișier JSON nu este un fișier de marcaje pe care BookmarkMagic îl poate citi. BookmarkMagic citește propriile copii de rezervă, copiile de rezervă JSON din Firefox și fișierul Bookmarks din Chrome.',
   MALFORMED_JSON: 'Acest fișier nu este un JSON valid.',
   INVALID_NODE: 'Acest fișier conține o intrare pe care BookmarkMagic nu o poate citi.',
   BAD_CSV_HEADER:
     'Rândul de antet CSV lipsește sau coloanele lui sunt în altă ordine decât trebuie.',
   CSV_ROW_MISMATCH: 'Un rând CSV are un număr greșit de coloane.',
   CSV_UNCLOSED_QUOTE:
-    'Un câmp CSV deschis cu ghilimele nu este închis niciodată, așa că restul fișierului nu poate fi citit în mod sigur.',
+    'Un câmp CSV deschis cu ghilimele nu este închis niciodată, așa că restul fișierului nu poate fi citit corect.',
   UNKNOWN_FORMAT:
-    'Fișier nerecunoscut — se aștepta un export HTML de marcaje, un CSV, o copie de rezervă JSON BookmarkMagic sau Firefox ori fișierul Bookmarks al Chrome.',
+    'Fișier nerecunoscut — se aștepta un export HTML de marcaje, un CSV, o copie de rezervă JSON BookmarkMagic sau Firefox ori fișierul Bookmarks din Chrome.',
   FILE_TOO_LARGE: 'Acest fișier este prea mare pentru a fi importat.',
   TOO_MANY_NODES: 'Acest fișier conține prea multe marcaje pentru a fi importat în siguranță.',
   TOO_DEEP: 'Acest fișier are dosare imbricate mult prea adânc.',
   BACKUP_SERIALIZE_FAILED:
     'Copia de rezervă de siguranță nu a putut fi pregătită, așa că nu s-a modificat nimic.',
   BACKUP_EXCEEDS_LIMITS:
-    'Marcajele actuale depășesc ce ar putea BookmarkMagic să recitească dintr-o copie de rezervă, așa că Înlocuirea s-a oprit înainte de a șterge ceva. Folosiți în schimb Îmbinarea sau importul într-un dosar nou.',
+    'Marcajele actuale depășesc ce ar putea BookmarkMagic să recitească dintr-o copie de rezervă, așa că „Înlocuire completă” s-a oprit înainte de a șterge ceva. Folosiți în schimb „Îmbinare cu dosarele existente” sau „Într-un dosar nou”.',
   BACKUP_STALE:
     'Marcajele s-au tot modificat în timp ce se salva copia de rezervă de siguranță (le edita altă fereastră, altă filă sau sincronizarea), așa că nu s-a șters nimic. Încercați din nou peste câteva momente.',
   BACKUP_CANCELLED: 'Ați anulat copia de rezervă de siguranță, așa că nu s-a șters nimic.',

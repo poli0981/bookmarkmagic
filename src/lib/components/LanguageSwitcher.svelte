@@ -34,7 +34,12 @@
     onchange={(event) => select(event.currentTarget.value)}
   >
     {#each LOCALE_CHOICES as choice (choice.value)}
-      <option value={choice.value}>{t(choice.labelKey)}</option>
+      <!-- Each endonym in its own language: a screen reader voices "简体中文"
+           as Chinese and Chrome draws it with Chinese glyphs, whatever the UI
+           language is (docs/07 §2). "Automatic" is in the UI language. -->
+      <option value={choice.value} lang={choice.value === 'auto' ? undefined : choice.value}>
+        {t(choice.labelKey)}
+      </option>
     {/each}
   </select>
 </label>

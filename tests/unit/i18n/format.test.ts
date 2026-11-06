@@ -7,6 +7,7 @@ import {
   selectPluralForm,
 } from '@/lib/i18n/format';
 import { dateTime, getLocale, num, setLocale, tPlural } from '@/lib/i18n/index.svelte';
+import { LOCALES } from '@/lib/i18n/resolve-locale';
 
 afterEach(() => {
   setLocale('en');
@@ -119,8 +120,8 @@ describe('Romanian plurals (docs/07 §5)', () => {
 describe('requiredPluralForms', () => {
   it('asks every locale for one and other, and nothing more where few is unused', () => {
     // docs/07 §5: one-form locales still carry both keys.
-    for (const tag of ['en-US', 'vi-VN', 'ja-JP', 'zh-CN'] as const) {
-      expect(requiredPluralForms(tag)).toEqual(['one', 'other']);
+    for (const locale of LOCALES.filter((name) => name !== 'ro')) {
+      expect(requiredPluralForms(localeTag(locale)), locale).toEqual(['one', 'other']);
     }
   });
 });
@@ -137,7 +138,7 @@ describe('tPlural', () => {
   });
 
   it('resolves in every non-English locale without falling back to English', () => {
-    for (const locale of ['vi', 'ja', 'zh-CN', 'ro'] as const) {
+    for (const locale of LOCALES.filter((name) => name !== 'en')) {
       setLocale(locale);
       const text = tPlural('warnings.INVALID_DATE', 3);
       expect(text).not.toBe('warnings.INVALID_DATE');

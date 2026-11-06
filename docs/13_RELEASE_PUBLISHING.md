@@ -138,8 +138,8 @@ characters in every language.
 
 **VI summary:** `Nhập, xuất & chỉnh sửa bookmark giữa các trình duyệt — offline, không tài khoản, không cloud. Dữ liệu không rời khỏi máy bạn.`
 **JA summary:** `ブラウザ間でブックマークをインポート・エクスポート・編集。オフライン、アカウント不要、クラウド不要。データは端末から出ません。`
-**ZH-CN summary:** `在浏览器之间导入、导出和编辑书签——离线运行，无需账户，不用云端。您的数据不会离开您的设备。`
-**RO summary:** `Importă, exportă și editează marcaje între browsere — offline, fără cont, fără cloud. Datele nu vă părăsesc dispozitivul.`
+**ZH-CN summary:** `在浏览器之间导入、导出和编辑书签——离线运行，无需账户，无需云端。您的数据绝不会离开您的设备。`
+**RO summary:** `Import, export și editare de marcaje între browsere — offline, fără cont, fără cloud. Datele nu vă părăsesc dispozitivul.`
 Full descriptions: translate `store/listing.en.md` keeping its structure. The
 canonical copy lives in `store/listing.*.md` so listing text is
 version-controlled and reviewable — a listing edit made straight into the

@@ -65,7 +65,7 @@ export const errors = {
   TOO_DEEP: '此文件中的文件夹嵌套层级过深。',
   BACKUP_SERIALIZE_FAILED: '无法准备安全备份，因此未做任何更改。',
   BACKUP_EXCEEDS_LIMITS:
-    '您当前的书签超出了 BookmarkMagic 能从备份中读回的范围，因此“替换”在删除任何内容之前就已停止。请改为合并，或导入到新文件夹。',
+    '您当前的书签超出了 BookmarkMagic 能从备份中读回的范围，因此“全部替换”在删除任何内容之前就已停止。请改用“合并到现有文件夹”或“放入新文件夹”。',
   BACKUP_STALE:
     '保存安全备份期间，您的书签一直在变化（另一个窗口、标签页或同步正在编辑它们），因此未删除任何内容。请稍后重试。',
   BACKUP_CANCELLED: '您取消了安全备份，因此未删除任何内容。',
@@ -74,7 +74,7 @@ export const errors = {
   WRITE_LOCKED: '另一个 BookmarkMagic 标签页正在写入书签。请等待其完成后重试——未做任何更改。',
   NO_WRITABLE_ROOTS:
     '此浏览器个人资料中没有 BookmarkMagic 有权写入的书签文件夹。由组织管理的书签无法更改。',
-  PARTIAL_WRITE: '导入进行到一半时，浏览器停止接受书签。',
-  PARTIAL_CLEAR: '替换您的书签进行到一半时，浏览器停止了操作。',
+  PARTIAL_WRITE: '导入过程中，浏览器中途停止接受书签。',
+  PARTIAL_CLEAR: '替换书签的过程中，浏览器中途停止了操作。',
   UNKNOWN: '出了点问题。',
 } satisfies Dict['errors'];
