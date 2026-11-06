@@ -44,6 +44,7 @@ const FILES: Record<string, string> = {
   '_locales/en/messages.json': '{}',
   '_locales/vi/messages.json': '{}',
   '_locales/ja/messages.json': '{}',
+  '_locales/zh_CN/messages.json': '{}',
   'icon/16.png': 'x',
   'icon/32.png': 'x',
   'icon/48.png': 'x',

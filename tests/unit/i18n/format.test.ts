@@ -76,10 +76,11 @@ describe('selectPluralForm', () => {
     expect(selectPluralForm(2, 'en-US')).toBe('other');
   });
 
-  it('always returns other for vi and ja, which have one grammatical form', () => {
+  it('always returns other for vi, ja and zh, which have one grammatical form', () => {
     for (const count of [0, 1, 2, 100]) {
       expect(selectPluralForm(count, 'vi-VN')).toBe('other');
       expect(selectPluralForm(count, 'ja-JP')).toBe('other');
+      expect(selectPluralForm(count, 'zh-CN')).toBe('other');
     }
   });
 });
@@ -87,7 +88,7 @@ describe('selectPluralForm', () => {
 describe('requiredPluralForms', () => {
   it('asks every locale for one and other, and nothing more where few is unused', () => {
     // docs/07 §5: one-form locales still carry both keys.
-    for (const tag of ['en-US', 'vi-VN', 'ja-JP'] as const) {
+    for (const tag of ['en-US', 'vi-VN', 'ja-JP', 'zh-CN'] as const) {
       expect(requiredPluralForms(tag)).toEqual(['one', 'other']);
     }
   });
@@ -104,8 +105,8 @@ describe('tPlural', () => {
     expect(tPlural('warnings.INVALID_DATE', 1234)).toBe('1,234 unreadable dates were left blank.');
   });
 
-  it('resolves in vi and ja without falling back to English', () => {
-    for (const locale of ['vi', 'ja'] as const) {
+  it('resolves in every non-English locale without falling back to English', () => {
+    for (const locale of ['vi', 'ja', 'zh-CN'] as const) {
       setLocale(locale);
       const text = tPlural('warnings.INVALID_DATE', 3);
       expect(text).not.toBe('warnings.INVALID_DATE');

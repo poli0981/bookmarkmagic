@@ -2,6 +2,7 @@ import { formatCount, formatDateTime, localeTag, selectPluralForm } from './form
 import en, { type Dict } from './locales/en';
 import ja from './locales/ja';
 import vi from './locales/vi';
+import zhCN from './locales/zh-CN';
 import type { Locale } from './resolve-locale';
 
 /**
@@ -16,7 +17,7 @@ import type { Locale } from './resolve-locale';
  * A `Record<Locale, Dict>`, so a locale added to `LOCALES` without a dictionary
  * is a compile error here rather than an English UI at runtime.
  */
-const dicts: Record<Locale, Dict> = { en, vi, ja };
+const dicts: Record<Locale, Dict> = { en, vi, ja, 'zh-CN': zhCN };
 
 let locale = $state<Locale>('en');
 

@@ -92,6 +92,7 @@ const REQUIRED_FILES = [
   '_locales/en/messages.json',
   '_locales/vi/messages.json',
   '_locales/ja/messages.json',
+  '_locales/zh_CN/messages.json',
 ];
 
 /**

@@ -15,6 +15,19 @@ describe('resolveLocale', () => {
 
   it('accepts the underscore spelling Chrome uses for _locales directories', () => {
     expect(resolveLocale('vi_VN')).toBe('vi');
+    expect(resolveLocale('zh_CN')).toBe('zh-CN');
+  });
+
+  it('maps Simplified Chinese tags to zh-CN', () => {
+    for (const tag of ['zh', 'zh-CN', 'zh-cn', 'zh-SG', 'zh-Hans', 'zh-Hans-CN', 'zh-Hans-HK']) {
+      expect(resolveLocale(tag), tag).toBe('zh-CN');
+    }
+  });
+
+  it('gives Traditional Chinese English, as Chrome’s manifest fallback does (docs/07 §1)', () => {
+    for (const tag of ['zh-TW', 'zh-HK', 'zh-MO', 'zh-Hant', 'zh-Hant-TW', 'zh_TW']) {
+      expect(resolveLocale(tag), tag).toBe('en');
+    }
   });
 
   it('falls back to en for anything else', () => {
@@ -27,5 +40,6 @@ describe('resolveLocale', () => {
     // 'vic' / 'jav' (Javanese) start with vi/ja but are not our locales.
     expect(resolveLocale('jav')).toBe('en');
     expect(resolveLocale('vic')).toBe('en');
+    expect(resolveLocale('zha')).toBe('en');
   });
 });
