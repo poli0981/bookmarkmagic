@@ -30,6 +30,7 @@ const CHROME_LOCALE_DIRS: Record<Locale, string> = {
   vi: 'vi',
   ja: 'ja',
   'zh-CN': 'zh_CN',
+  ro: 'ro',
 };
 
 const LOCALES_DIR = join(process.cwd(), 'src/public/_locales');

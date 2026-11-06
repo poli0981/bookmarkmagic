@@ -15,7 +15,7 @@
  * `Record<Locale, …>`, so adding an id here and forgetting a table is a
  * compile error, not a silent fallback to English.
  */
-export const LOCALES = ['en', 'vi', 'ja', 'zh-CN'] as const;
+export const LOCALES = ['en', 'vi', 'ja', 'zh-CN', 'ro'] as const;
 
 export type Locale = (typeof LOCALES)[number];
 
@@ -33,6 +33,7 @@ export function resolveLocale(uiLanguage: string): Locale {
   if (language === 'vi') return 'vi';
   if (language === 'ja') return 'ja';
   if (language === 'zh') return isTraditional(subtags) ? 'en' : 'zh-CN';
+  if (language === 'ro') return 'ro';
   return 'en';
 }
 

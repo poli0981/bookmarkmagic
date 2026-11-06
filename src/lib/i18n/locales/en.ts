@@ -152,6 +152,7 @@ const dict = {
       vi: 'Tiếng Việt',
       ja: '日本語',
       'zh-CN': '简体中文',
+      ro: 'Română',
     },
     theme: 'Theme',
     themes: {
