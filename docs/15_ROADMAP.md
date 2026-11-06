@@ -27,7 +27,9 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | **v1.0.1 published** | ✔ observed 2026-10-28 | listing shows version 1.0.1 (`Updated: August 3, 2026`), 5 users. ⚠️ Exact approval date not recorded; `13 §1b` step 10 (clean-profile install of the published build + upgrade re-check) has no recorded result |
 | 7 — v1.1.0 | ✔ 2026-10-29 | PR-A toolchain/CI/Sonar (#26); PR-B import redesign, Chrome/Firefox formats, Merge reuse, Edit store + Sort A→Z + reorder, technical UI, diagnostics, docs/legal (#27); the second review's fixes, which missed the #27 merge (#28); the release workflow's artifact fix (#29) |
 | **v1.1.0 released** | ✔ 2026-10-29 | signed tag on `9040f84`, GitHub Release with a `sha256sum -c`-verified zip (`104f020c…2dd6c94`, 94 091 bytes). Its manifest differs from 1.0.1's only in `version`, `minimum_chrome_version` (120 → 136) and the new CSP; permissions unchanged. The first tag run failed before publishing anything (`12 §2.3`); fixed in #29 and the tag moved while no Release existed. `announce` and store publish skipped (variables unset) |
-| **v1.1.0 submitted** | ⚠️ pending | owner: the `11 §5` manual pass on real Chrome, including the **1.0.1 → 1.1.0 upgrade over an existing profile**, then upload the Release zip by hand (`13 §1b`) |
+| **v1.1.0 submitted** | ✔ by 2026-11-06 | uploaded to the CWS dashboard by hand (`13 §1b` step 6) |
+| **v1.1.0 published** | ✔ observed 2026-11-06 | owner reported the review passed; the listing shows version 1.1.0 (`Updated: October 29, 2026`), 6 users, "3 languages". ⚠️ As for 1.0.1, `13 §1b` step 10 (clean-profile install of the published build + upgrade re-check) has no recorded result |
+| 8 — v1.2.0 languages | in progress 2026-11-06 | Simplified Chinese (`zh-CN`) and Romanian (`ro`): one `LOCALES` list, a third plural form for Romanian, manifest `_locales`, store listings, intake form (`07`) |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
@@ -103,8 +105,9 @@ There is exactly one path, and every step has an owner in the repo:
 5. `11 §2`'s inventory and `CHANGELOG.md [Unreleased]` are updated.
 
 Translation fixes use `.github/ISSUE_TEMPLATE/translation.yml` and follow
-`07 §4`; the JA native review pass (`ja.ts`'s `TODO(review-ja)`) is the
-outstanding one, and it is user-facing now.
+`07 §4`. The native review passes are the outstanding ones, and all of them are
+user-facing: JA (`TODO(review-ja)`) since launch, and ZH-CN and RO
+(`TODO(review-zh)`, `TODO(review-ro)`) since v1.2.0.
 
 ### Release trigger
 
@@ -117,7 +120,8 @@ Cut a patch when **any** of these is true, rather than on a schedule:
 
 Listing copy tweaks alone do **not** need a patch — the store listing is edited
 independently of the package (`13 §5`), though the copy should still go through
-`store/listing.{en,vi,ja}.md` first so it is reviewable.
+`store/listing.*.md` first so it is reviewable. A **new** UI language is not a
+patch: it is a minor (`12 §4`).
 
 ## v1.1 — quality of life
 
@@ -140,10 +144,12 @@ independently of the package (`13 §5`), though the copy should still go through
    block decoder, no dependency. Also: capture a real Chrome HTML + `Bookmarks`
    pair to sit beside the hand-built `chrome-156-*` fixtures, and the JA native
    review.
-3. **v1.2 — the aggressive-dedupe toggle** (deferred this round), a
+3. **v1.3 — the aggressive-dedupe toggle** (deferred this round), a
    session-scoped import undo, Biome linting of `.svelte` files, and true
-   virtualization of the edit tree if 500-row chunks prove too coarse.
-4. **v1.2+ — automated CWS publishing** once the owner creates the `CHROME_*`
+   virtualization of the edit tree if 500-row chunks prove too coarse. These
+   were the v1.2 plan until 2026-11-06, when real installs in Chinese and
+   Romanian made two languages the next minor instead (see below).
+4. **v1.3+ — automated CWS publishing** once the owner creates the `CHROME_*`
    secrets; Edge Add-ons and Firefox AMO listings through WXT's multi-target
    build (each a separate go/no-go).
 
@@ -163,7 +169,23 @@ skip install scripts in the `Build + package` job (`12 §2`); whether a
 screen reader reads a focused row's button labels with its name (unconfirmed
 without one).
 
-## v1.2 — resilience
+## v1.2 — languages (planned 2026-11-06)
+
+The CWS dashboard showed installs and active users in Chinese and Romanian
+browsers, which the three shipped languages did not cover. v1.2.0 adds:
+
+| Locale | Notes |
+|---|---|
+| **简体中文 (`zh-CN`)** | Simplified only. A Traditional Chinese browser (`zh-TW`/`HK`/`MO`) on "Automatic" gets English, matching Chrome's own manifest fallback (`07 §1–2`). A `zh-TW` dictionary is a separate, later decision; the `zh-CN` id leaves room for it. |
+| **Română (`ro`)** | The first locale with **three** plural forms (`07 §5`), so the plural machinery grows a `few` form first. Comma-below `ș ț` enforced by a test. |
+
+Both are best-effort translations awaiting a native pass (`07 §4`, `00 §10`).
+The other candidates (Traditional Chinese, Russian, Polish, Arabic…) wait for
+the same dashboard evidence. Russian, Polish and Arabic also need plural forms
+beyond `few`; the guard test in `dictionaries.test.ts` fails first if one is
+attempted.
+
+## v1.3 — resilience (was v1.2 until 2026-11-06)
 
 - **Scheduled local snapshots**: periodic JSON backup. ⚠️ Requires `alarms`
   permission + a background service worker + `downloads` (or OPFS storage)
@@ -299,3 +321,10 @@ without one).
 | 2026-10-29 | **Diagnostics allowlist enforced by types**: every `DiagEvent` string field is a union of fixed values, error names pass through an allowlist (`'other'` otherwise), and `@ts-expect-error` tests keep a title from compiling | 09 §7 |
 | 2026-10-29 | **SonarCloud runs in two jobs**: coverage with no secret, then a scan that installs nothing and gets the lcov report as an artifact — a job's secrets are readable by every step on its runner | 12 §2.5 |
 | 2026-10-29 | **The first `v1.1.0` tag run failed before publishing, and the tag was moved.** `upload-artifact` skips hidden paths, so the build job's `.output/*` matched nothing. Fixed in #29; since no Release or asset existed yet, `v1.1.0` was re-pointed at the fixed `main` (`9040f84`) rather than burning a version. `13 §7`'s rule — never move the tag of a published Release — is unchanged | 12 §2.3, 13 §7 |
+| 2026-11-06 | **v1.1.0 is live; v1.2.0 is two languages, not the dedupe toggle.** The dashboard showed real installs in Chinese and Romanian browsers. A new UI language is a **minor** release — it changes what the switcher offers and what the listing says — while translation *fixes* stay patches (`12 §4`). The old v1.2 items move to v1.3 unchanged | 12 §4, 15 |
+| 2026-11-06 | **Simplified Chinese only, and a Traditional Chinese browser on "Automatic" gets English.** Chrome's manifest fallback goes `zh_TW → zh → en`, never to `zh_CN`, so mapping Traditional to Simplified in the UI would make the extension's name and its UI disagree. A user can still pick 简体中文 by hand | 07 §1–2 |
+| 2026-11-06 | **The locale id is `zh-CN`, not `zh`.** It is a persisted setting value: a bare `zh` would have to be migrated the day a `zh-TW` dictionary exists. The id doubles as the `<html lang>` value, which is what makes Chrome draw Simplified glyphs rather than Japanese ones | 07 §2 |
+| 2026-11-06 | **One `LOCALES` list.** Every table keyed by locale is a `Record<Locale, …>` and every allow-list spreads `LOCALES`, so a new locale missing anywhere is a compile error. Before, adding a language meant finding six hand-written `['en', 'vi', 'ja']` lists, and missing one degraded silently to English | 07 §2, §6 |
+| 2026-11-06 | **A third plural form, only where a locale needs it.** `Dict` widens each plural branch to `{ one, other, few? }`. Whether a locale carries `few` is decided by its own `Intl.PluralRules` categories and enforced at runtime, so en/vi/ja/zh write no dead `few`. A guard fails on any shipped locale needing `two`/`many`/`zero` before a grammar the helper cannot select can ship | 07 §5 |
+| 2026-11-06 | **Romanian uses comma-below `ș ț`, enforced by a test.** The cedilla forms `ş ţ` look alike and are different letters to search and sort — the classic Romanian localization defect | 07 §4 |
+| 2026-11-06 | **ZH-CN and RO ship best-effort, like JA.** Written from Chrome's own terminology in each language and marked `TODO(review-zh)` / `TODO(review-ro)`; the translation form lists both. Waiting for native reviewers would have left users who already installed the extension on English indefinitely | 07 §4, 00 §10 |

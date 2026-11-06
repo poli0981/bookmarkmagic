@@ -8,8 +8,9 @@ This file is the entry point; the `docs/` suite is the specification.
 >
 > **BookmarkMagic is published on the Chrome Web Store and has real users**
 > (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
-> 2026-10-28; v1.1.0 released on GitHub 2026-10-29, ⚠️ not yet submitted).
-> Phases 0–7 are complete; the project is in **maintenance**.
+> 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06).
+> Phases 0–7 are complete; Phase 8 (v1.2.0, two new UI languages) is in
+> progress; the project is otherwise in **maintenance**.
 > That changes the rules of the game:
 >
 > - Every change now reaches installed users through a store review. It needs a
@@ -51,9 +52,11 @@ This file is the entry point; the `docs/` suite is the specification.
    The canonical gate is docs/08 §3, run as `npm run guard`.
 4. `src/lib/core/` never imports browser APIs, Svelte, or `src/lib/browser`.
 5. Files ≤300 lines (hard 500); functions ≤50 (hard 80).
-6. Every string user-visible ⇒ i18n key in en+vi+ja (en is schema; vi/ja
-   `satisfies Dict`, where `Dict = typeof dict` is exported from
-   `locales/en.ts`). **Never `as const` on a locale file** — docs/07 §2.
+6. Every string user-visible ⇒ i18n key in **every shipped locale** — `LOCALES`
+   in `src/lib/i18n/resolve-locale.ts`: en, vi, ja, zh-CN, ro (en is schema;
+   the others `satisfies Dict`, where `Dict = Localized<typeof dict>` is
+   exported from `locales/en.ts`). **Never `as const` on a locale file** —
+   docs/07 §2. Romanian plural keys carry a third form, `few` (docs/07 §5).
 7. TypeScript strict; no `any`; casts need `// SAFETY:` comments.
 8. Conventional Commits; `npm run verify` green before every commit — and
    **`npm run verify:full` before anything release-bearing**. `verify` omits
@@ -153,6 +156,19 @@ contact aliases per purpose.
 checksum-verified zip). Still human-only: the docs/11 §5 manual pass on real
 Chrome including the **1.0.1 → 1.1.0 upgrade over an existing profile** ⚠️,
 then the zip uploaded to the store ⚠️.
+
+### Phase 8 — v1.2.0: Simplified Chinese and Romanian
+Real installs in Chinese and Romanian browsers (CWS dashboard) made two UI
+languages the next minor. In order: docs first (`07` gains §6 "Adding a
+locale") → one `LOCALES` list and a third plural form (`few`), with no new
+language yet → `zh-CN` → `ro` → manifest `_locales`, store listings, the
+translation form, the screenshot harness → visual sweep in both languages and
+an adversarial review of code *and* translations → 1.2.0. Both ship
+best-effort (`TODO(review-zh)`, `TODO(review-ro)`). A Traditional Chinese
+browser on "Automatic" gets English.
+**Exit:** v1.2.0 tagged and released. Human-only ⚠️: the `11 §5` pass with
+the **1.1.0 → 1.2.0 upgrade over an existing profile**, the zip upload, the
+two new listing languages in the dashboard, and the native review passes.
 
 ## Working style
 

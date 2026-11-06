@@ -121,14 +121,15 @@ call (⚠️ `13 §1b`).
 
 ## 3. Store listing — EN (canonical)
 
-**The listing copy lives in `store/listing.{en,vi,ja}.md`** — name, summary,
+**The listing copy lives in `store/listing.*.md`** — one file per locale
+(`en`, `vi`, `ja`, `zh_CN`, `ro`, named by Chrome's locale code) — name, summary,
 description, category and the privacy-policy URL, exactly as pasted into the
 dashboard. This section used to carry a second copy of the English text, and
 for v1.1.0 the two had already diverged (the store files gained the Chrome and
 Firefox imports, Merge reuse, the Replace confirmation and Sort A→Z; the copy
 here still described v1.0). A copy in two places is a copy that drifts.
 
-When the description changes: edit all three `store/listing.*.md` in the same
+When the description changes: edit every `store/listing.*.md` in the same
 pull request as the feature, keep claims to what the CHANGELOG says shipped,
 and paste them into the dashboard as part of `§1b`. The summary must stay ≤132
 characters in every language.
@@ -137,10 +138,20 @@ characters in every language.
 
 **VI summary:** `Nhập, xuất & chỉnh sửa bookmark giữa các trình duyệt — offline, không tài khoản, không cloud. Dữ liệu không rời khỏi máy bạn.`
 **JA summary:** `ブラウザ間でブックマークをインポート・エクスポート・編集。オフライン、アカウント不要、クラウド不要。データは端末から出ません。`
-Full VI/JA descriptions: translate §3 keeping structure. The canonical copy
-lives in `store/listing.{en,vi,ja}.md` so listing text is version-controlled and
-reviewable — a listing edit made straight into the dashboard has no diff and no
-history.
+**ZH-CN summary:** `在浏览器之间导入、导出和编辑书签——离线运行，无需账户，不用云端。您的数据不会离开您的设备。`
+**RO summary:** `Importă, exportă și editează marcaje între browsere — offline, fără cont, fără cloud. Datele nu vă părăsesc dispozitivul.`
+Full descriptions: translate `store/listing.en.md` keeping its structure. The
+canonical copy lives in `store/listing.*.md` so listing text is
+version-controlled and reviewable — a listing edit made straight into the
+dashboard has no diff and no history.
+
+**Adding a listing language** (v1.2.0 did two): in the dashboard, Store listing
+→ the language selector → add the language, then paste name, summary and
+description from its file. The "Languages" line in the public listing is not
+typed by anyone — CWS derives it from the package's `_locales/`, so it changes
+only when the new package is live. The `LANGUAGES` paragraph inside every
+description *is* typed, so a new locale means re-pasting the description of
+every existing language too.
 
 ⚠️ Those files were written from §3 **after** the listing went live, so they are
 a reconstruction, not a transcript. Owner: diff them against what the dashboard

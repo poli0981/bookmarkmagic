@@ -198,8 +198,9 @@ any of them changes (`09 §4`).
 - [ ] Right-click → Options lands on `#settings` both on a fresh profile and
       with a Manager tab already open on another route (§1 uses an undocumented
       URL fragment; `02 §5`).
-- [ ] All three `_locales` load (chrome://extensions shows localized name
-      when browser language switched).
+- [ ] All five `_locales` load (chrome://extensions shows the localized
+      description when the browser language is switched — and a `zh_TW`
+      browser shows English, `07 §1`).
 - [ ] Version bumped (semver) in `package.json` (WXT propagates to manifest).
 - [ ] Privacy tab answers unchanged, or updated + re-certified.
 - [ ] Store listing screenshots regenerated if the UI changed

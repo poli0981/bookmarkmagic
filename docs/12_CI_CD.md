@@ -244,9 +244,10 @@ release: bump package.json (semver) → CHANGELOG.md (Keep a Changelog) →
          git tag -s vX.Y.Z → push tag → release.yml
 ```
 
-- Patch = fixes/translations · Minor = features / any permission or
-  privacy-tab change (per `09 §4`) · Major = breaking format/schema changes
-  (BM JSON version bump).
+- Patch = fixes / translation fixes · Minor = features, **a new UI language**
+  (it changes the listing and what the switcher offers — `07 §6`) / any
+  permission or privacy-tab change (per `09 §4`) · Major = breaking
+  format/schema changes (BM JSON version bump).
 
 ## 5. Repo settings checklist (one-time ⚠️)
 

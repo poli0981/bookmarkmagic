@@ -228,7 +228,7 @@ no longer silently stop the tree following the browser.
   lost from 200 ms to roughly nothing — not to zero.
 - Legal gate: on Manager mount read `legal.acceptedVersion`; if
   `< LEGAL_VERSION` render `<LegalGate>` overlay blocking **#import / #export /
-  #edit** — **#settings and #about stay reachable**, so a VI/JA user can switch
+  #edit** — **#settings and #about stay reachable**, so a non-English user can switch
   language (and theme) before reading the notice and the gate needs no language
   switcher of its own. Accept → write version + timestamp → unlock.
   This three-route set is normative; `14 §2` states the same list.
