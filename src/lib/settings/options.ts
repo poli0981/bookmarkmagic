@@ -12,7 +12,7 @@
 import type { ExportFormat, ImportMode, ThemePreference } from '../browser/storage';
 import type { CsvDelimiter } from '../core/csv-dialect';
 import type { MarkdownStyle } from '../core/serialize/markdown';
-import type { Locale } from '../i18n/resolve-locale';
+import { LOCALES, type Locale } from '../i18n/resolve-locale';
 
 export interface SettingChoice<T extends string> {
   value: T;
@@ -20,12 +20,13 @@ export interface SettingChoice<T extends string> {
   labelKey: string;
 }
 
-/** `'auto'` is a first-class option: it is what `DEFAULT_SETTINGS.locale` is. */
+/**
+ * `'auto'` is a first-class option: it is what `DEFAULT_SETTINGS.locale` is.
+ * The rest follow `LOCALES`, so a new locale gets its row without an edit here.
+ */
 export const LOCALE_CHOICES: readonly SettingChoice<Locale | 'auto'>[] = [
   { value: 'auto', labelKey: 'settings.localeAuto' },
-  { value: 'en', labelKey: 'settings.lang.en' },
-  { value: 'vi', labelKey: 'settings.lang.vi' },
-  { value: 'ja', labelKey: 'settings.lang.ja' },
+  ...LOCALES.map((locale) => ({ value: locale, labelKey: `settings.lang.${locale}` })),
 ];
 
 export const THEME_CHOICES: readonly SettingChoice<ThemePreference>[] = [

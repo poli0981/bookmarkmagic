@@ -1,15 +1,16 @@
 /**
  * English dictionary — the schema source of truth (docs/07 §2).
  *
- * vi.ts and ja.ts mirror this exact shape via `satisfies Dict`, so a missing
- * key fails `tsc`. That is the whole completeness check; no i18n framework.
+ * Every other locale mirrors this exact shape via `satisfies Dict`, so a
+ * missing key fails `tsc`. That is the whole completeness check; no i18n
+ * framework.
  *
  * NEVER write `as const` here. It would make `Dict` a tree of *string literal*
  * types, so `satisfies Dict` would demand `vi.common.import === 'Import'` and
  * every correct translation would become a compile error.
  *
  * Interpolation is `{token}` replacement only — full sentences per key, never
- * concatenated fragments, so VI/JA word order works.
+ * concatenated fragments, so word order works in every language.
  */
 
 import { importTab } from './en-import';
@@ -144,8 +145,9 @@ const dict = {
     languageNote: 'Applies to this extension only, not to the browser.',
     localeAuto: 'Automatic (follow the browser)',
     lang: {
-      // Endonyms, deliberately identical in all three dictionaries: a Japanese
-      // user hunting for Vietnamese looks for "Tiếng Việt", not "ベトナム語".
+      // Endonyms, deliberately identical in every dictionary: a Japanese user
+      // hunting for Vietnamese looks for "Tiếng Việt", not "ベトナム語".
+      // dictionaries.test.ts holds them equal.
       en: 'English',
       vi: 'Tiếng Việt',
       ja: '日本語',
@@ -225,5 +227,25 @@ const dict = {
 
 export default dict;
 
-/** Widened shape (string, not the literal). vi/ja are typed against this. */
-export type Dict = typeof dict;
+/** A plural key as English writes it (docs/07 §5). */
+type Plural = { one: string; other: string };
+
+/**
+ * `T` with every plural branch opened to a third, optional form — the `few`
+ * Romanian needs (docs/07 §5). The only thing it adds; every other leaf stays
+ * `string`. Whether a locale must carry `few` depends on its own plural rules,
+ * which a type cannot see, so dictionaries.test.ts enforces that part.
+ */
+type Localized<T> = {
+  [K in keyof T]: T[K] extends string
+    ? string
+    : T[K] extends Plural
+      ? Plural & { few?: string }
+      : Localized<T[K]>;
+};
+
+/**
+ * Widened shape (string, not the literal). Every other locale is typed against
+ * this; plural branches may carry `few`.
+ */
+export type Dict = Localized<typeof dict>;

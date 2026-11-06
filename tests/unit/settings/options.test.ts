@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { DEFAULT_SETTINGS } from '@/lib/browser/storage';
 import { setLocale, t } from '@/lib/i18n/index.svelte';
-import type { Locale } from '@/lib/i18n/resolve-locale';
+import { LOCALES } from '@/lib/i18n/resolve-locale';
 import {
   CSV_DELIMITER_CHOICES,
   EXPORT_FORMAT_CHOICES,
@@ -22,14 +22,12 @@ const TABLES: [name: string, choices: readonly SettingChoice<string>[]][] = [
   ['MARKDOWN_STYLE_CHOICES', MARKDOWN_STYLE_CHOICES],
 ];
 
-const LOCALES: Locale[] = ['en', 'vi', 'ja'];
-
 afterEach(() => {
   setLocale('en');
 });
 
 describe('choice labels', () => {
-  it.each(TABLES)('%s resolves every labelKey in all three locales', (_name, choices) => {
+  it.each(TABLES)('%s resolves every labelKey in every locale', (_name, choices) => {
     // t() falls back to the key path on a miss, so a typo renders as literal
     // "settings.markdownStyle" in the UI and nothing else would catch it.
     const missing: string[] = [];
@@ -49,7 +47,7 @@ describe('choice values match the storage allow-lists', () => {
   // row offers a value coerceSettings rejects, choosing it silently does
   // nothing. Both are caught here.
   it.each([
-    ['locale', LOCALE_CHOICES, ['auto', 'en', 'vi', 'ja']],
+    ['locale', LOCALE_CHOICES, ['auto', ...LOCALES]],
     ['theme', THEME_CHOICES, ['system', 'light', 'dark']],
     ['defaultExportFormat', EXPORT_FORMAT_CHOICES, ['netscape-html', 'bm-json', 'csv', 'markdown']],
     ['defaultMergeMode', IMPORT_MODE_CHOICES, ['new-folder', 'merge', 'replace']],

@@ -1,24 +1,30 @@
 import { describe, expect, it } from 'vitest';
 import { BM_BACKUP_ERROR_CODES, BM_ENV_ERROR_CODES } from '@/lib/browser/errors';
 import { BM_PARSE_ERROR_CODES, PARSE_WARNING_CODES } from '@/lib/core/model';
-import en from '@/lib/i18n/locales/en';
+import { type LocaleTag, localeTag, PLURAL_FORMS, requiredPluralForms } from '@/lib/i18n/format';
+import en, { type Dict } from '@/lib/i18n/locales/en';
 import ja from '@/lib/i18n/locales/ja';
 import vi from '@/lib/i18n/locales/vi';
+import { LOCALES, type Locale } from '@/lib/i18n/resolve-locale';
 
 /**
- * Runtime companions to the `satisfies Dict` compile check (docs/07 §2).
+ * Runtime companions to the `satisfies Dict` compile check (docs/07 §2, §5).
  *
  * The compile check proves the *shape* matches. It is blind to what these
- * assert: interpolation tokens drifting between locales, empty leaves, and the
- * check itself being silently disabled by someone changing `satisfies` to `as`.
+ * assert: interpolation tokens drifting between locales, empty leaves, which
+ * plural forms a locale's grammar needs, and the check itself being silently
+ * disabled by someone changing `satisfies` to `as`.
  */
 
 type Node = { [key: string]: Node | string };
 
-const LOCALES: [name: string, dict: Node][] = [
+/** Every non-English locale, with the tag its plural rules come from. */
+const LOCALE_DICTS: [name: Locale, dict: Node][] = [
   ['vi', vi as Node],
   ['ja', ja as Node],
 ];
+
+const ALL: [name: Locale, dict: Node][] = [['en', en as Node], ...LOCALE_DICTS];
 
 /** Every leaf as a dotted path → value. */
 function flatten(node: Node, prefix = ''): Map<string, string> {
@@ -48,64 +54,150 @@ function branches(node: Node, prefix = ''): Map<string, string[]> {
   return out;
 }
 
+const FORM_KEYS = new Set<string>(PLURAL_FORMS);
 const english = flatten(en as Node);
+/** English's plural keys: every branch holding `one` and `other`. */
+const PLURAL_PATHS = new Set(
+  [...branches(en as Node)]
+    .filter(([, keys]) => keys.includes('one') && keys.includes('other'))
+    .map(([path]) => path),
+);
+
+/** `a.b.few` → `a.b` when `a.b` is a plural key, else undefined. */
+function pluralParent(path: string): string | undefined {
+  const cut = path.lastIndexOf('.');
+  const parent = path.slice(0, cut);
+  return cut > 0 && PLURAL_PATHS.has(parent) ? parent : undefined;
+}
+
+/** A `few` leaf has no English twin; it is compared against English `other`. */
+function englishTwin(path: string): string | undefined {
+  const parent = pluralParent(path);
+  if (parent !== undefined && path.endsWith('.few')) return english.get(`${parent}.other`);
+  return english.get(path);
+}
+
+const tagOf = (name: Locale): LocaleTag => localeTag(name);
+
+describe('the locale list', () => {
+  it('this suite checks every shipped locale', () => {
+    // A locale added to LOCALES but not to LOCALE_DICTS would skip every check
+    // below and still type-check (docs/07 §6).
+    expect(ALL.map(([name]) => name).sort()).toEqual([...LOCALES].sort());
+  });
+
+  it('every shipped locale needs only plural forms the helper can select', () => {
+    // docs/07 §5. selectPluralForm folds zero/two/many into `other`; a locale
+    // that actually uses one of them (ar, pl, ru…) must fail here, before its
+    // dictionary is written against a grammar the app cannot render.
+    for (const name of LOCALES) {
+      const categories = new Intl.PluralRules(tagOf(name)).resolvedOptions().pluralCategories;
+      expect(
+        categories.filter((category) => !FORM_KEYS.has(category)),
+        name,
+      ).toEqual([]);
+    }
+  });
+});
 
 describe('dictionary completeness', () => {
-  it.each(LOCALES)('%s has exactly the same key paths as en', (_name, dict) => {
-    expect([...flatten(dict).keys()].sort()).toEqual([...english.keys()].sort());
+  it.each(LOCALE_DICTS)('%s has exactly the same key paths as en', (_name, dict) => {
+    // `few` is the one leaf English has no twin for; the plural-shape test
+    // below decides where it belongs.
+    const paths = [...flatten(dict).keys()].filter(
+      (path) => !(path.endsWith('.few') && pluralParent(path) !== undefined),
+    );
+    expect(paths.sort()).toEqual([...english.keys()].sort());
   });
 
-  it.each(LOCALES)('%s uses the same interpolation tokens as en in every string', (_name, dict) => {
-    // `satisfies Dict` cannot see this: a translation that drops {total} from
-    // 'Importing… {done} / {total}' type-checks and renders a broken sentence.
-    const drift: string[] = [];
-    for (const [path, text] of flatten(dict)) {
-      const expected = tokens(english.get(path) ?? '');
-      const actual = tokens(text);
-      if (actual.join('|') !== expected.join('|')) {
-        drift.push(`${path}: expected {${expected.join('}, {')}}, got {${actual.join('}, {')}}`);
+  it.each(LOCALE_DICTS)(
+    '%s uses the same interpolation tokens as en in every string',
+    (_name, dict) => {
+      // `satisfies Dict` cannot see this: a translation that drops {total} from
+      // 'Importing… {done} / {total}' type-checks and renders a broken sentence.
+      const drift: string[] = [];
+      for (const [path, text] of flatten(dict)) {
+        const expected = tokens(englishTwin(path) ?? '');
+        const actual = tokens(text);
+        if (actual.join('|') !== expected.join('|')) {
+          drift.push(`${path}: expected {${expected.join('}, {')}}, got {${actual.join('}, {')}}`);
+        }
       }
-    }
-    expect(drift).toEqual([]);
-  });
+      expect(drift).toEqual([]);
+    },
+  );
 
-  it.each([['en', en as Node], ...LOCALES])('%s has no empty leaves', (_name, dict) => {
+  it.each(ALL)('%s has no empty leaves', (_name, dict) => {
     const empty = [...flatten(dict)].filter(([, text]) => text.trim() === '').map(([path]) => path);
     expect(empty).toEqual([]);
   });
 
-  it('carries every plural key as { one, other } in all three locales', () => {
-    // docs/07 §5. VI/JA have one grammatical form and repeat the same string,
-    // but they must still carry both keys or the `satisfies Dict` shape check
-    // §2 relies on for completeness stops proving anything.
-    const pluralPaths = [...branches(en as Node)]
-      .filter(([, keys]) => keys.includes('one') && keys.includes('other'))
-      .map(([path]) => path);
-
-    expect(pluralPaths.length).toBeGreaterThan(0);
-    for (const [name, dict] of LOCALES) {
-      const leaves = flatten(dict);
-      for (const path of pluralPaths) {
-        expect(leaves.get(`${path}.one`), `${name}: ${path}.one`).toBeTypeOf('string');
-        expect(leaves.get(`${path}.other`), `${name}: ${path}.other`).toBeTypeOf('string');
-      }
-    }
+  it('finds the plural keys at all', () => {
+    expect(PLURAL_PATHS.size).toBeGreaterThan(0);
   });
 
-  it('gives every plural key exactly the two forms, and no stray siblings', () => {
+  it.each(ALL)('%s carries exactly the plural forms its grammar needs', (name, dict) => {
+    // docs/07 §5: `{ one, other }` everywhere, plus `few` where the locale's
+    // own Intl.PluralRules uses it (Romanian). One-form locales repeat the
+    // same string in both, but must still carry both or the `satisfies Dict`
+    // shape check stops proving anything.
+    const required = requiredPluralForms(tagOf(name)).sort();
+    const shapes = branches(dict);
+    const wrong = [...PLURAL_PATHS]
+      .map((path) => [path, [...(shapes.get(path) ?? [])].sort()] as const)
+      .filter(([, keys]) => keys.join('|') !== required.join('|'))
+      .map(([path, keys]) => `${path}: {${keys.join(', ')}}`);
+    expect(wrong).toEqual([]);
+  });
+
+  it.each(ALL)('%s names no non-plural key one, few or other', (_name, dict) => {
+    // Any branch holding one of those keys is read as a plural — so a branch
+    // that is not one of English's plural keys is malformed (docs/07 §5).
+    const stray = [...branches(dict)]
+      .filter(([, keys]) => keys.some((key) => FORM_KEYS.has(key)))
+      .filter(([path]) => !PLURAL_PATHS.has(path))
+      .map(([path]) => path);
+    expect(stray).toEqual([]);
+  });
+
+  it('gives English exactly the two forms on every plural key', () => {
     const malformed = [...branches(en as Node)]
-      .filter(([, keys]) => keys.includes('one') || keys.includes('other'))
-      .filter(([, keys]) => keys.length !== 2)
+      .filter(([path]) => PLURAL_PATHS.has(path))
+      .filter(([, keys]) => [...keys].sort().join('|') !== 'one|other')
       .map(([path]) => path);
     expect(malformed).toEqual([]);
+  });
+
+  it.each(LOCALE_DICTS)('%s writes the language names as endonyms, like en', (_name, dict) => {
+    // docs/07 §5: identical in every dictionary, so a user can find their own
+    // language whatever the UI is currently in.
+    const names = [...flatten(dict)].filter(([path]) => path.startsWith('settings.lang.'));
+    const englishNames = [...english].filter(([path]) => path.startsWith('settings.lang.'));
+    expect(names.sort()).toEqual(englishNames.sort());
+  });
+
+  it('names every shipped locale in the language list', () => {
+    expect(Object.keys(en.settings.lang).sort()).toEqual([...LOCALES].sort());
+  });
+});
+
+describe('the Dict type', () => {
+  it('accepts a third plural form and nothing else', () => {
+    // Type-level: these lines are the test; tsc runs over this file.
+    const romanianStyle = { one: 'a', few: 'b', other: 'c' } satisfies Dict['popup']['bookmarks'];
+    // @ts-expect-error — `other` is required in every locale.
+    const missingOther = { one: 'a' } satisfies Dict['popup']['bookmarks'];
+    // @ts-expect-error — `many` is not a form any shipped locale carries.
+    const strayForm = { one: 'a', other: 'b', many: 'c' } satisfies Dict['popup']['bookmarks'];
+    // @ts-expect-error — a plain string leaf takes no plural forms.
+    const notPlural = { one: 'a', other: 'b' } satisfies Dict['common']['import'];
+    expect([romanianStyle, missingOther, strayForm, notPlural]).toHaveLength(4);
   });
 });
 
 describe('every code the core can emit has a message', () => {
   // A code with no key renders as its own dotted path ("warnings.INVALID_URL")
   // in the preview. The union types cannot catch that; this can.
-  const ALL: [name: string, dict: Node][] = [['en', en as Node], ...LOCALES];
-
   it.each(ALL)('%s has a plural message for every ParseWarningCode', (_name, dict) => {
     const leaves = flatten(dict);
     for (const code of PARSE_WARNING_CODES) {

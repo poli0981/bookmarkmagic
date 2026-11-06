@@ -13,6 +13,10 @@ describe('resolveLocale', () => {
     expect(resolveLocale('ja-JP')).toBe('ja');
   });
 
+  it('accepts the underscore spelling Chrome uses for _locales directories', () => {
+    expect(resolveLocale('vi_VN')).toBe('vi');
+  });
+
   it('falls back to en for anything else', () => {
     expect(resolveLocale('en-US')).toBe('en');
     expect(resolveLocale('de')).toBe('en');
