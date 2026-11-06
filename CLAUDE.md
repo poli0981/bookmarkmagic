@@ -8,9 +8,9 @@ This file is the entry point; the `docs/` suite is the specification.
 >
 > **BookmarkMagic is published on the Chrome Web Store and has real users**
 > (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
-> 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06).
-> Phases 0–7 are complete; Phase 8 (v1.2.0, two new UI languages) is in
-> progress; the project is otherwise in **maintenance**.
+> 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0
+> released on GitHub 2026-11-06, ⚠️ not yet submitted).
+> Phases 0–8 are complete; the project is in **maintenance**.
 > That changes the rules of the game:
 >
 > - Every change now reaches installed users through a store review. It needs a
@@ -166,7 +166,11 @@ translation form, the screenshot harness → visual sweep in both languages and
 an adversarial review of code *and* translations → 1.2.0. Both ship
 best-effort (`TODO(review-zh)`, `TODO(review-ro)`). A Traditional Chinese
 browser on "Automatic" gets English.
-**Exit:** v1.2.0 tagged and released. Human-only ⚠️: the `11 §5` pass with
+**Exit:** ✔ v1.2.0 tagged and released 2026-11-06 (signed tag on `e2f36bc`,
+checksum-verified zip). A finding worth keeping: on this Windows machine the
+process-spawning script tests time out intermittently under load (`main`'s
+too), so CI — whose Windows smoke job passed — was the gate.
+Human-only ⚠️: the `11 §5` pass with
 the **1.1.0 → 1.2.0 upgrade over an existing profile**, the zip upload, the
 two new listing languages in the dashboard, and the native review passes.
 
