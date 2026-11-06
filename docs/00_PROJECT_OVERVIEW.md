@@ -240,7 +240,8 @@ Derived identifiers (canonical across docs and code):
     (`07 §4`), written from Chrome's own terminology in each language but read
     by no native speaker. Each file's header carries `TODO(review-zh)` /
     `TODO(review-ro)`. The `translation` issue form lists both languages.
-14. ⚠️ **v1.2.0 to the store.** The usual `11 §5` pass plus the **1.1.0 →
+14. ⚠️ **v1.2.0 to the store.** The GitHub Release exists and is verified
+    (`15`'s progress table). The usual `11 §5` pass plus the **1.1.0 →
     1.2.0 upgrade over an existing profile**: a saved `vi` must survive, and
     "Automatic" in a `zh-CN` browser must now show Chinese. Then, in the
     dashboard, upload the Release zip **and add the 简体中文 and Română listing
