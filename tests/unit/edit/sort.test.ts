@@ -38,6 +38,11 @@ describe('sortedOrder', () => {
     expect(order.map((n) => n.title)).toEqual(['北京', '广州', '上海']);
   });
 
+  it('collates with the UI locale: ș is its own letter after s in ro', () => {
+    const order = sortedOrder([b('1', 'ștergere'), b('2', 'tabel'), b('3', 'sus')], 'ro');
+    expect(order.map((n) => n.title)).toEqual(['sus', 'ștergere', 'tabel']);
+  });
+
   it('keeps ties in their current order, and sorts untitled bookmarks by address', () => {
     const order = sortedOrder(
       [b('1', 'Same'), b('2', '', 'https://a.example/'), b('3', 'same')],

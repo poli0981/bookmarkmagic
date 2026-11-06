@@ -175,6 +175,8 @@ describe('settings store', () => {
     expect(document.documentElement.lang).toBe('ja');
     await updateSettings({ locale: 'zh-CN' });
     expect(document.documentElement.lang).toBe('zh-CN');
+    await updateSettings({ locale: 'ro' });
+    expect(document.documentElement.lang).toBe('ro');
     vi.spyOn(fakeBrowser.i18n, 'getUILanguage').mockReturnValue('en-GB');
     await updateSettings({ locale: 'auto' });
     expect(document.documentElement.lang).toBe('en');

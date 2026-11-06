@@ -1,9 +1,12 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 import { BM_BACKUP_ERROR_CODES, BM_ENV_ERROR_CODES } from '@/lib/browser/errors';
 import { BM_PARSE_ERROR_CODES, PARSE_WARNING_CODES } from '@/lib/core/model';
 import { type LocaleTag, localeTag, PLURAL_FORMS, requiredPluralForms } from '@/lib/i18n/format';
 import en, { type Dict } from '@/lib/i18n/locales/en';
 import ja from '@/lib/i18n/locales/ja';
+import ro from '@/lib/i18n/locales/ro';
 import vi from '@/lib/i18n/locales/vi';
 import zhCN from '@/lib/i18n/locales/zh-CN';
 import { LOCALES, type Locale } from '@/lib/i18n/resolve-locale';
@@ -24,6 +27,7 @@ const LOCALE_DICTS: [name: Locale, dict: Node][] = [
   ['vi', vi as Node],
   ['ja', ja as Node],
   ['zh-CN', zhCN as Node],
+  ['ro', ro as Node],
 ];
 
 const ALL: [name: Locale, dict: Node][] = [['en', en as Node], ...LOCALE_DICTS];
@@ -180,6 +184,47 @@ describe('dictionary completeness', () => {
 
   it('names every shipped locale in the language list', () => {
     expect(Object.keys(en.settings.lang).sort()).toEqual([...LOCALES].sort());
+  });
+});
+
+describe('Romanian orthography', () => {
+  // docs/07 §4: comma-below ș ț (U+0218–U+021B) are the letters; the cedilla
+  // forms ş ţ (U+015E/F, U+0162/3) only look alike, and break search and sort.
+  // Files, not the dictionary object, so comments and the manifest count too.
+  const FILES = [
+    'src/lib/i18n/locales/ro.ts',
+    'src/lib/i18n/locales/ro-notices.ts',
+    'src/lib/i18n/locales/ro-import.ts',
+    'src/public/_locales/ro/messages.json',
+  ];
+
+  /** ş Ş ţ Ţ — by code point, so no formatter can turn them into look-alikes. */
+  const CEDILLA = new Set([0x015e, 0x015f, 0x0162, 0x0163]);
+  const isCommaBelow = (point: number): boolean => point >= 0x0218 && point <= 0x021b;
+
+  it.each(FILES)('%s uses comma-below ș ț, never the cedilla forms', (file) => {
+    const points = [...readFileSync(join(process.cwd(), file), 'utf8')].map(
+      (char) => char.codePointAt(0) ?? 0,
+    );
+    expect(points.filter((point) => CEDILLA.has(point)).map((p) => p.toString(16))).toEqual([]);
+    // Non-vacuous: the file really is Romanian text with these letters in it.
+    expect(points.some(isCommaBelow)).toBe(true);
+  });
+
+  it('carries the "de" form only where Romanian grammar puts it', () => {
+    // `other` (20+) takes "de"; `one` and `few` never do. A swapped pair reads
+    // "5 de marcaje" / "20 marcaje" — both wrong, and both type-check.
+    const leaves = flatten(ro as Node);
+    const wrong: string[] = [];
+    for (const path of PLURAL_PATHS) {
+      for (const form of ['one', 'few'] as const) {
+        if (/\{n\} de /u.test(leaves.get(`${path}.${form}`) ?? '')) wrong.push(`${path}.${form}`);
+      }
+      const other = leaves.get(`${path}.other`) ?? '';
+      if (/\{n\} (?!de )\p{L}/u.test(other) && !/\{n\} de /u.test(other))
+        wrong.push(`${path}.other`);
+    }
+    expect(wrong).toEqual([]);
   });
 });
 

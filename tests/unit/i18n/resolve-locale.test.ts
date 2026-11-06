@@ -24,6 +24,12 @@ describe('resolveLocale', () => {
     }
   });
 
+  it('maps Romanian tags to ro', () => {
+    for (const tag of ['ro', 'ro-RO', 'ro-MD', 'RO_ro']) {
+      expect(resolveLocale(tag), tag).toBe('ro');
+    }
+  });
+
   it('gives Traditional Chinese English, as Chrome’s manifest fallback does (docs/07 §1)', () => {
     for (const tag of ['zh-TW', 'zh-HK', 'zh-MO', 'zh-Hant', 'zh-Hant-TW', 'zh_TW']) {
       expect(resolveLocale(tag), tag).toBe('en');
@@ -41,5 +47,6 @@ describe('resolveLocale', () => {
     expect(resolveLocale('jav')).toBe('en');
     expect(resolveLocale('vic')).toBe('en');
     expect(resolveLocale('zha')).toBe('en');
+    expect(resolveLocale('rom')).toBe('en');
   });
 });

@@ -85,6 +85,30 @@ describe('selectPluralForm', () => {
   });
 });
 
+describe('Romanian plurals (docs/07 §5)', () => {
+  it('selects one for 1, few for 0, 2–19 and …01–…19, other for the rest', () => {
+    expect(selectPluralForm(1, 'ro-RO')).toBe('one');
+    for (const count of [0, 2, 5, 19, 101, 119, 1001]) {
+      expect(selectPluralForm(count, 'ro-RO'), String(count)).toBe('few');
+    }
+    for (const count of [20, 21, 99, 100, 120, 1000]) {
+      expect(selectPluralForm(count, 'ro-RO'), String(count)).toBe('other');
+    }
+  });
+
+  it('asks Romanian dictionaries for all three forms', () => {
+    expect(requiredPluralForms('ro-RO')).toEqual(['one', 'few', 'other']);
+  });
+
+  it('renders the three forms through tPlural', () => {
+    setLocale('ro');
+    expect(tPlural('import.countBookmarks', 1)).toBe('1 marcaj');
+    expect(tPlural('import.countBookmarks', 5)).toBe('5 marcaje');
+    expect(tPlural('import.countBookmarks', 20)).toBe('20 de marcaje');
+    expect(tPlural('import.countBookmarks', 1234)).toBe('1.234 de marcaje');
+  });
+});
+
 describe('requiredPluralForms', () => {
   it('asks every locale for one and other, and nothing more where few is unused', () => {
     // docs/07 §5: one-form locales still carry both keys.
@@ -106,7 +130,7 @@ describe('tPlural', () => {
   });
 
   it('resolves in every non-English locale without falling back to English', () => {
-    for (const locale of ['vi', 'ja', 'zh-CN'] as const) {
+    for (const locale of ['vi', 'ja', 'zh-CN', 'ro'] as const) {
       setLocale(locale);
       const text = tPlural('warnings.INVALID_DATE', 3);
       expect(text).not.toBe('warnings.INVALID_DATE');
