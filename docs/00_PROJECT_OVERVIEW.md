@@ -26,16 +26,18 @@
 > `e2f36bc`); the listing was observed showing **version 1.2.0** (`Updated:
 > November 7, 2026`, 5 languages) on 2026-11-10. Installed users are on 1.2.0.
 >
-> **v1.2.1 — accessibility — is prepared, not yet released.** An accessibility
-> statement (`/ACCESSIBILITY.md`) and the fixes an audit found (`06 §5`).
-> ⚠️ It needs the owner's manual pass, including the 1.2.0 → 1.2.1 upgrade
-> over an existing profile, and a hand upload to the store (`13 §1b`).
+> **v1.2.1 — accessibility — is RELEASED on GitHub, not yet on the store.**
+> Tagged and released 2026-11-10 (signed tag on `d61318a`, checksum-verified
+> zip): an accessibility statement (`/ACCESSIBILITY.md`) and the fixes an
+> audit found (`06 §5`). ⚠️ It still needs the owner's manual pass, including
+> the 1.2.0 → 1.2.1 upgrade over an existing profile, and a hand upload to
+> the store (`13 §1b`); until it clears review, installed users stay on 1.2.0.
 >
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
 > bump, a CHANGELOG entry and an update submission (`13 §1b`). Sequencing lives
 > in `/CLAUDE.md`; what is still open is in §10 below.
-> **Doc suite version:** 1.10 (2026-11-10 — v1.2.0 live; v1.2.1 accessibility)
+> **Doc suite version:** 1.11 (2026-11-10 — v1.2.1 released on GitHub)
 
 ---
 
@@ -254,7 +256,8 @@ Derived identifiers (canonical across docs and code):
 
 ### v1.2.1 (added 2026-11-10)
 
-15. ⚠️ **v1.2.1 to the store.** The usual `11 §5` pass plus the **1.2.0 →
+15. ⚠️ **v1.2.1 to the store.** The GitHub Release exists and is verified
+    (`15`'s progress table). The usual `11 §5` pass plus the **1.2.0 →
     1.2.1 upgrade over an existing profile**, then the Release zip uploaded in
     the dashboard. No listing change: a patch (`13 §5`).
 16. ⚠️ **The accessibility checks no script can run** (`11 §5`): a Windows
