@@ -64,7 +64,8 @@ Three jobs. The two whose names branch protection requires (§5) are
 
 - **`quality` — "Quality gates".** Local, because the ops reusable runs no
   quality gates at all (§1). In order: `lint`, `check` (svelte-check on the
-  TS 6 API, then the TS 7 `tsc`), `knip`, `coverage` (`11 §1` thresholds),
+  TS 6 API — failing on warnings too since v1.2.1, which is what makes Svelte's
+  `a11y_*` checks a gate, `10 §3` — then the TS 7 `tsc`), `knip`, `coverage` (`11 §1` thresholds),
   `guard` (`08 §3`), `npm audit --omit=dev --audit-level=low` (the
   zero-runtime-dependencies claim, `09 T5`), `build`, `check:manifest`. The last
   two exist because the unit test over `wxt.config.ts` proves what we *asked*

@@ -63,7 +63,7 @@
     "dev:firefox": "wxt -b firefox",          // build sanity only, no store release
     "build": "wxt build",
     "zip": "wxt zip",
-    "check": "svelte-check --tsconfig ./tsconfig.json && tsc --noEmit && tsc -p tsconfig.scripts.json",
+    "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && tsc --noEmit && tsc -p tsconfig.scripts.json",
                                               // TS 6 API, the TS 7 tsc, then scripts/*.mjs via checkJs
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

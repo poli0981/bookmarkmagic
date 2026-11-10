@@ -78,6 +78,12 @@ rather than assign `undefined`. Build nodes with conditional spreads
   (`switch-every-tab-hotkey`) excludes `.svelte` and `.css` instead, and we
   follow it rather than putting the build on an experimental flag.
   **`svelte-check` is the authority** for everything inside `.svelte`.
+  Since v1.2.1 it runs with **`--fail-on-warnings`**: the Svelte compiler's
+  accessibility warnings (`a11y_*` — a click handler with no key handler, a
+  control with no label) are warnings, and through 1.2.0 a warning never
+  failed anything. It is the only lint that reads the markup. A deliberate
+  exception takes a `<!-- svelte-ignore a11y_… -->` with its reason beside it;
+  there are two, on `Modal`'s backdrop click and on the tree's `<ul>`.
 - **Markdown and YAML are excluded since Biome 2.6**, which started formatting
   both. The docs and workflow files are laid out by hand (long explanatory
   comments, deliberate wrapping); letting a formatter own them would turn every
