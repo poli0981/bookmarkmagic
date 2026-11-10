@@ -29,6 +29,28 @@ a translation fix does not need the parser section, and vice versa.
       plural key carries the forms its language needs (`few` in Romanian —
       `docs/07 §5`).
 
+### If it changes the interface
+
+`ACCESSIBILITY.md` is a public promise and `docs/06 §5` is its specification.
+
+- [ ] Everything new works from the **keyboard alone**, and focus is visible
+      on it — including on a control with a filled background.
+- [ ] Focus goes somewhere sensible when the thing that had it disappears
+      (a closed dialog, a removed row, a replaced step). It never falls to
+      the top of the page.
+- [ ] Every control has an accessible **name**; an icon-only button takes a
+      `label`. Text a screen reader speaks is an i18n key like any other.
+- [ ] No state is shown by **colour alone**, and a state shown by a fill or a
+      shadow has a `@media (forced-colors: active)` equivalent
+      (`tests/unit/styles/forced-colors.test.ts` holds the list).
+- [ ] Anything that moves sits inside
+      `@media (prefers-reduced-motion: no-preference)`; pointer targets are at
+      least 24 × 24 CSS px.
+- [ ] One pass with a **screen reader** over the changed screen (Narrator,
+      NVDA or VoiceOver) — or the PR says that it was not done.
+- [ ] `ACCESSIBILITY.md` is still true: its key table and its known
+      limitations.
+
 ### If it is a parser fix
 
 - [ ] A fixture is committed under `tests/fixtures/`, sanitized, with the

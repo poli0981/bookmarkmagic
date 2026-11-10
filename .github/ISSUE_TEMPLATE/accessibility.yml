@@ -1,0 +1,106 @@
+name: Something is hard or impossible to use
+description: A barrier with the keyboard, a screen reader, a contrast theme, zoom, or voice control.
+title: '[a11y] '
+labels: [accessibility]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you — a report like this is treated as a defect, not a wish.
+        [ACCESSIBILITY.md](https://github.com/poli0981/bookmarkmagic/blob/main/ACCESSIBILITY.md)
+        lists what is already known not to work well; it is fine to report
+        something on that list if it is in your way.
+
+        You do not need to explain why you use the tools you use.
+
+        **Please do not attach your real bookmarks file**, and check a
+        screenshot or recording for bookmark titles first — your bookmarks are
+        your browsing history.
+
+  - type: textarea
+    id: task
+    attributes:
+      label: What were you trying to do, and what happened instead?
+      placeholder: |
+        I tabbed to the tree on the Edit tab and pressed F2 to rename a
+        folder. Nothing was announced and I could not tell whether …
+    validations:
+      required: true
+
+  - type: dropdown
+    id: severity
+    attributes:
+      label: How badly does it get in the way?
+      options:
+        - Blocked — I could not finish what I was doing
+        - Hard — I finished, but only with a workaround
+        - Annoying — it works, but badly
+    validations:
+      required: true
+
+  - type: dropdown
+    id: area
+    attributes:
+      label: Where does it happen?
+      options:
+        - Import
+        - Export
+        - Edit
+        - Settings
+        - About / legal gate
+        - The toolbar popup
+        - Everywhere
+    validations:
+      required: true
+
+  - type: textarea
+    id: assistive-tech
+    attributes:
+      label: Assistive technology and settings
+      description: >-
+        Whatever applies, with a version if you know it — a screen reader
+        (Narrator, NVDA, JAWS, VoiceOver, ChromeVox, Orca), a contrast theme,
+        zoom level, reduced motion, voice control, switch access, a keyboard
+        only. "None, keyboard only" is a complete answer.
+      placeholder: NVDA 2026.3, Windows contrast theme "Night sky", 150 % zoom
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: BookmarkMagic version
+      description: Shown in the About tab, and on chrome://extensions.
+      placeholder: '1.2.1'
+    validations:
+      required: true
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and operating system
+      placeholder: Chrome 142 on Windows 11
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: The keys you pressed are as useful as anything else here.
+      placeholder: |
+        1. Open the manager, go to Edit
+        2. Tab to the tree, press ↓ three times
+        3. …
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: confirmations
+    attributes:
+      label: Before submitting
+      options:
+        - label: >-
+            Anything I attached contains no real addresses, titles or personal
+            data.
+          required: true

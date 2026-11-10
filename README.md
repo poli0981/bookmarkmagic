@@ -45,6 +45,17 @@ from anyone's real profile.
   A→Z, create folders, delete, and find duplicate links — every action
   reachable from the keyboard.
 
+## Accessibility
+
+Everything works without a mouse, a screen reader is told what is on screen
+and what an import did, contrast themes and reduced motion are respected, and
+the page declares the language you chose. The goal is WCAG 2.2 AA; it is a
+goal, not a claim — nobody has audited it.
+
+[`ACCESSIBILITY.md`](ACCESSIBILITY.md) has the detail: the keys, what was
+tested and with which screen reader, what is known not to work well yet, and
+how to report a barrier.
+
 ## Privacy
 
 This is the whole point of the project, so it is worth being precise.
@@ -148,6 +159,7 @@ a public issue.
 |---|---|
 | Security vulnerabilities (if you have no GitHub account) | security@poli0981.dev |
 | Privacy questions, removing a sample you sent | privacy@poli0981.dev |
+| An accessibility barrier (if you have no GitHub account) | accessibility@poli0981.dev |
 | The terms (EULA, disclaimer) | legal@poli0981.dev |
 | Licensing and permission questions | copyright@poli0981.dev |
 | Formal copyright (DMCA) notices | dmca@poli0981.dev |
