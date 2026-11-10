@@ -22,6 +22,13 @@ export interface TreeKeyEffects {
   nudge: (id: string, direction: -1 | 1) => void;
 }
 
+/** Alt alone with ↑ or ↓: Alt+Shift+↓, AltGr and the like belong to the browser or the OS. */
+function nudgeDirection(event: KeyboardEvent): -1 | 1 | undefined {
+  if (!event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return undefined;
+  if (event.key === 'ArrowUp') return -1;
+  return event.key === 'ArrowDown' ? 1 : undefined;
+}
+
 export function onTreeKey(
   event: KeyboardEvent,
   session: EditSession,
@@ -37,10 +44,8 @@ export function onTreeKey(
     effects.copy(focused);
     return;
   }
-  // Alt alone: Alt+Shift+↓ and the like belong to the browser or the OS.
-  if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
-    const direction = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : undefined;
-    if (direction === undefined || session.focusedId === undefined) return;
+  const direction = nudgeDirection(event);
+  if (direction !== undefined && session.focusedId !== undefined) {
     event.preventDefault();
     effects.nudge(session.focusedId, direction);
     return;

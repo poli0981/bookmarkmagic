@@ -56,7 +56,7 @@ export interface BulkProgress {
 /** A failed command, shown above the tree rather than replacing it. */
 export type ActionError = DescribedError & { partial?: BulkProgress };
 
-/** Where a moved row ended up among its siblings, 1-based — what the tab speaks. */
+/** Where a moved row ended up among the siblings on screen, 1-based — what the tab speaks. */
 export interface Placement {
   position: number;
   total: number;
@@ -86,6 +86,8 @@ export class EditCommands extends EditView {
   busy = $state(false);
   /** Where the pending delete was asked for. */
   private deleteOrigin: DeleteOrigin = 'tree';
+  /** An Alt+↑/↓ move is in flight. */
+  private nudging = false;
 
   protected readonly api: EditApi;
   protected readonly locale: () => string;
@@ -241,18 +243,29 @@ export class EditCommands extends EditView {
    * the sibling shown above or below and hands it to the drag's own planner,
    * so a key and a drag cannot disagree about what is legal.
    *
-   * @returns where the row now sits, for the tab to speak; `undefined` when
-   *   nothing moved — an end of the folder, a root, a managed node, busy.
+   * One at a time: a held key repeats faster than a move completes, and a
+   * second plan made before the first has landed is made from a tree that is
+   * about to change.
+   *
+   * @returns where the row now sits among the siblings on screen — the same
+   *   "n of m" its `aria-posinset` and `aria-setsize` say, so under a search
+   *   the spoken place and the tree's agree; `undefined` when nothing moved —
+   *   an end of the folder, a root, a managed node, busy.
    */
   nudge = async (id: string, direction: -1 | 1): Promise<Placement | undefined> => {
+    if (this.nudging) return undefined;
     const target = nudgeTarget(this.rows, id, direction);
     if (target === undefined) return undefined;
     const plan = planDrop(this.roots, id, target, direction < 0 ? 'before' : 'after');
-    if (plan?.position === undefined || !(await this.moveTo(id, plan))) return undefined;
-    return {
-      position: plan.position.local + 1,
-      total: findNode(this.roots, plan.parentId)?.children?.length ?? 0,
-    };
+    if (plan?.position === undefined) return undefined;
+    this.nudging = true;
+    try {
+      if (!(await this.moveTo(id, plan))) return undefined;
+    } finally {
+      this.nudging = false;
+    }
+    const row = this.rows.find((candidate) => candidate.node.id === id);
+    return row === undefined ? undefined : { position: row.posInSet, total: row.setSize };
   };
 
   /** A drag released on `targetId`; every illegal or no-op drop does nothing. */

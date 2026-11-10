@@ -98,6 +98,7 @@
       // this button, keeps the keyboard (docs/06 §5).
       event.stopPropagation();
       session.toggle(node.id);
+      session.focusedId ??= node.id;
       focusOwningTree(event.currentTarget);
     }}
   />
@@ -190,6 +191,12 @@
   @media (forced-colors: active) {
     .focused {
       outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+
+    /* After `.focused`: a drop INTO the focused folder must still show. */
+    .drop-into {
+      outline: 2px dashed Highlight;
       outline-offset: -2px;
     }
 

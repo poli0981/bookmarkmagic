@@ -43,13 +43,41 @@ describe('the accessibility statement', () => {
       '| A letter or digit |',
       '| Enter |',
       '| F2 |',
-      '| Delete |',
+      '| Delete (Fn+Delete on a Mac laptop) |',
       '| Menu key, or Shift+F10 |',
       '| Alt+↑ / Alt+↓ |',
       '| Ctrl+C (⌘C on macOS) |',
       '| Ctrl+F (⌘F on macOS) |',
     ];
     for (const key of keys) expect(statement, `missing ${key}`).toContain(key);
+  });
+
+  it('has a row for every key the tree’s code handles', () => {
+    // The other direction: a key ADDED to the code without a row here fails.
+    // `resolveKey` switches on these names; `tree-keys.ts` handles the rest.
+    const ROWS: Record<string, string> = {
+      ArrowDown: '| ↑ / ↓ |',
+      ArrowUp: '| ↑ / ↓ |',
+      Home: '| Home / End |',
+      End: '| Home / End |',
+      ArrowRight: '| → |',
+      ArrowLeft: '| ← |',
+      Enter: '| Enter |',
+      F2: '| F2 |',
+      Delete: '| Delete',
+      ContextMenu: '| Menu key, or Shift+F10 |',
+    };
+    const source = read('src/lib/edit/tree-keyboard.ts');
+    const cases = [...source.matchAll(/case '([A-Za-z0-9]+)':/g)].map((match) => match[1] ?? '');
+    expect(cases.length).toBeGreaterThanOrEqual(Object.keys(ROWS).length);
+    for (const key of cases) {
+      const row = ROWS[key];
+      expect(
+        row,
+        `tree-keyboard.ts handles ${key}, which has no row in ACCESSIBILITY.md`,
+      ).toBeDefined();
+      expect(statement).toContain(row ?? '');
+    }
   });
 
   it('states a goal and says what was not tested, rather than claiming conformance', () => {

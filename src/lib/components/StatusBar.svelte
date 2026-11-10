@@ -118,8 +118,12 @@
      theme replaces (docs/06 §5). A border, not an outline — the focus ring is
      the outline — and not a fill, which Chrome's text backplate would cover. */
   @media (forced-colors: active) {
-    footer button[aria-current='page'] {
+    /* `nav .cell`, to outrank the `:last-child` rule that removes About's
+       right edge; the padding gives back what the border takes, so the bar
+       does not change height between routes. */
+    footer nav .cell[aria-current='page'] {
       border: 2px solid Highlight;
+      padding: 2px 6px;
     }
   }
 </style>

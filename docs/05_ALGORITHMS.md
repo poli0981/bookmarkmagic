@@ -403,18 +403,34 @@ nudgeTarget(rows, id, direction):      // rows: the visible rows, in order; dire
   return neighbour.id
 
 nudge(id, direction):
+  a nudge already in flight → nothing     // a held key repeats faster than a move completes
   target = nudgeTarget(rows, id, direction); none → nothing
   plan = planDrop(roots, id, target, direction < 0 ? 'before' : 'after'); none → nothing
-  moveTo(id, plan)
-  return { position: plan.position.local + 1, total: the parent's child count }
+  moveTo(id, plan); refused → nothing
+  row = the row for id, as it is now
+  return { position: row.posInSet, total: row.setSize }   // among the siblings ON SCREEN
 ```
 
 Visible siblings, not all of them, because that is what a drag does too: the
-user places the item relative to a row they can see. A permanent root has no
-`parentId` that `planDrop` accepts, so it never moves. Asserted in
-`tree-keyboard.test.ts` (ends of a folder, a collapsed neighbour's children
-skipped, a filtered list) and `edit-session.test.ts` (Chrome's index rule in
-both directions, a root, a managed node, while busy).
+user places the item relative to a row they can see. Under a search that has
+a consequence: the row passes its visible neighbour **and every hidden item
+between them**, so down-then-up restores what is on screen but not
+necessarily the hidden order. The place it reports is the visible one too —
+the same "n of m" the row's `aria-posinset`/`aria-setsize` give — so what is
+spoken and what the tree says cannot disagree. A permanent root has no
+`parentId` that `planDrop` accepts, so it never moves.
+
+One at a time, because each plan is made from the optimistic tree: a second
+plan made before the first move has landed is made from a tree that is about
+to change. A residue is known and unfixed: the first move's live event can
+flush a frame after a second press's optimistic patch and roll the row back
+for that frame; the tree converges once the events drain (`15`, backlog).
+
+Asserted in `tree-keyboard.test.ts` (ends of a folder, an open neighbour's
+children stepped over, a filtered list, a root's neighbour) and
+`edit-session.test.ts` (Chrome's index rule in both directions, a root, a
+managed node, hidden items under a search, one move at a time, while busy, a
+refusal).
 
 ## 11. Live-sync batching — `edit/live-sync.ts`
 

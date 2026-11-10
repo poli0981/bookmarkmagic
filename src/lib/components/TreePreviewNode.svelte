@@ -163,6 +163,7 @@
     border-radius: var(--radius-sm);
     color: var(--accent);
     cursor: pointer;
-    padding: 1px var(--sp-2);
+    /* 24 px tall: an 18 px line, 2 px of padding, the border (WCAG 2.5.8). */
+    padding: 2px var(--sp-2);
   }
 </style>

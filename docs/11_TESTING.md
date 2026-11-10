@@ -231,15 +231,23 @@ them is tested where it lives:
   hand-maintained, like the contrast pairs.
 - **`edit/tree-keyboard.test.ts`**, **`edit/tree-keys.test.ts`** and
   **`stores/edit-session.test.ts`** — since v1.2.1 also Alt+↑/↓ (`05 §10`):
-  `nudgeTarget` at both ends of a folder, past a collapsed folder, in a
-  filtered list; the key reaching the command only with Alt alone; the move
-  itself by Chrome's index rule, refused for a root, a managed node and while
-  busy, and returning the new position.
+  `nudgeTarget` at both ends of a folder, stepping over an open neighbour's
+  children, in a filtered list; the key reaching the command only with Alt
+  alone; the move itself by Chrome's index rule, refused for a root, a managed
+  node and while busy, one at a time, and returning the row's place among the
+  siblings on screen — under a search too, where it passes hidden items.
 - **`components/focus-heading.test.ts`** — since v1.2.1 also
   `focusOwningTree`: a click on a row's control hands focus to the tree it
   sits in, and does nothing outside one.
-- **`links.test.ts`** — since v1.2.1 also `ACCESSIBILITY.md`: the file exists,
-  the About link ends at it, and the README links to it.
+- **`links.test.ts`** — since v1.2.1 also `ACCESSIBILITY.md`: the file exists
+  and the About link ends at it.
+- **`accessibility-statement.test.ts`** (v1.2.1) — the statement is a public
+  promise nothing in the build reads, so its routes and its key table are
+  pinned: the README links to it; the issue form exists and carries the
+  `accessibility` label; the address is the same in the statement, the README
+  and the issue chooser; every key `tree-keyboard.ts` switches on has a row;
+  it states a goal and an untested list, and it is dated. It cannot tell
+  whether a sentence is *true* — that is `§5`'s last item.
 - **`tests/unit/scripts/`** — the repo's own gates, tested like code. New in
   v1.1.0: `guard.test.ts` (`08 §3`), `check-manifest.test.ts` (a correct build
   passes, one without the CSP fails) and `sanitize-formats.test.ts` (the
@@ -324,14 +332,15 @@ storage, nothing written survives a reload, and the popup's tiles open nothing.
       chevron with the mouse, the arrow keys still work.
 - [ ] **Focus is never lost:** Tab to the theme control — the ring is visible
       on the selected segment, in the header and in `#settings`, in both
-      themes. "Open in Edit" from an import report, "Keep the first of each"
-      and a toolbar Sort A→Z each leave focus somewhere visible; the next Tab
-      does not start from the top of the page.
+      themes. After "Keep the first of each" and after a toolbar Sort A→Z,
+      focus is on something visible. After "Open in Edit" from an import
+      report it is on the page's main region, which shows no ring: the test is
+      that the next Tab goes into the tab's content, not back to the header.
 - [ ] **Screen reader** (Narrator on Windows, or NVDA; VoiceOver on macOS):
       the tree announces each row's name, level and "n of m"; a dialog reads
       its title and body; the import's steps and outcome are spoken; Alt+↓
-      speaks the row's new position. Record the reader and its version in
-      `ACCESSIBILITY.md`'s "Tested with" if it is a new one.
+      speaks the row's new position, once. Record the reader and its version
+      in `ACCESSIBILITY.md`'s "What has been tested".
 - [ ] **Contrast themes** (Windows: Settings → Accessibility → Contrast
       themes; or DevTools → Rendering → `forced-colors: active`): the tree's
       focused row, the drop line of a drag, the selected theme segment, the

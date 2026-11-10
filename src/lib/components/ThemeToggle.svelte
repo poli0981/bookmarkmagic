@@ -130,6 +130,12 @@
     color: var(--accent-fg);
   }
 
+  /* `button:hover` above is the more specific rule, and --fg on the accent
+     fill is under 3:1: hovering the chosen segment dimmed its own label. */
+  .selected:hover {
+    color: var(--accent-fg);
+  }
+
   /* The inset ring sits ON the selected segment's fill — and roving focus only
      ever lands on the selected segment. In --accent it was accent on accent:
      no visible focus at all (docs/06 §5). Drawn 2px further in, so the fill
@@ -145,7 +151,8 @@
      paints a backplate in the page colour behind forced text, which left
      "Light" as a black box on the highlight. */
   @media (forced-colors: active) {
-    .selected {
+    .selected,
+    .selected:hover {
       forced-color-adjust: none;
       background: Highlight;
       color: HighlightText;

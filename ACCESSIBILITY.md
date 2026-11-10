@@ -32,16 +32,19 @@ The priorities, in order:
 
 | Environment | Status |
 |---|---|
-| Chrome 136 or later on Windows, macOS, Linux and ChromeOS | Supported |
-| Edge, Brave, Vivaldi and Opera (the same build) | Best effort — it works, but is tested less |
+| Chrome 136 or later on Windows | Supported, and where the testing below was done |
+| Chrome 136 or later on macOS, Linux and ChromeOS | Supported; expected to work the same, not tested for accessibility |
+| Edge, Brave, Vivaldi and Opera (the same build) | Best effort — the extension runs there, and accessibility is untested |
 | Chrome on Android or iOS | Not applicable: Chrome there does not run extensions |
 
 ## What is in place
 
 ### Keyboard
 
-Everything is reachable with Tab and Shift+Tab, and every dialog can be closed
-with Esc. Focus is always visible, as a 2-pixel ring.
+Every control is either a tab stop or has a key of its own, and every dialog
+can be closed with Esc. Focus shows as a 2-pixel ring on controls; inside the
+bookmark tree, the current row is marked by a highlight and a bar at its left
+edge.
 
 The bookmark tree on the **Edit** tab is a single tab stop. Inside it:
 
@@ -54,14 +57,18 @@ The bookmark tree on the **Edit** tab is a single tab stop. Inside it:
 | A letter or digit | Jump to the next row whose title starts with it |
 | Enter | Open a bookmark in a new tab; open or close a folder |
 | F2 | Rename (Enter saves, Esc cancels) |
-| Delete | Delete, after a confirmation |
+| Delete (Fn+Delete on a Mac laptop) | Delete, after a confirmation |
 | Menu key, or Shift+F10 | **Move to…** — pick a destination folder from a filterable list |
 | Alt+↑ / Alt+↓ | Move the row up or down one place inside its folder |
 | Ctrl+C (⌘C on macOS) | Copy the focused bookmark's address |
 | Ctrl+F (⌘F on macOS) | Go to the search box, from anywhere on the Edit tab |
 
-The small buttons that appear on a row are shortcuts for the mouse. Each has a
-key in the table above, so they are deliberately not tab stops.
+The small buttons that appear on a row are shortcuts for the mouse, and are
+deliberately not tab stops: Open, Copy link, Rename, Move to… and Delete each
+have a key in the table above, and Sort A→Z is also a button on the toolbar.
+
+Alt+↑ and Alt+↓ move a row past the neighbour you can see. While a search is
+filtering the tree, that also carries it past any hidden items in between.
 
 Elsewhere: the theme control is a radio group (arrow keys change the choice),
 the file drop zone is a button that opens the file picker, and the folder
@@ -77,9 +84,12 @@ buttons and checkboxes — Tab, Enter and Space.
   opens with **Cancel** focused, so Enter never confirms a deletion.
 - An import is spoken as it goes: reading the file, backing up, writing,
   progress every 10 %, and the result. Failures are announced as alerts.
-- Moving a row with Alt+↑ or Alt+↓ speaks its new position.
-- When a step or a page replaces the one before it, focus moves to the new
-  content instead of falling back to the top of the page.
+- Moving a row with Alt+↑ or Alt+↓ announces its new position ("Docs:
+  position 2 of 5"). This is new in 1.2.1 and has not yet been checked with a
+  screen reader — see "What has been tested".
+- When an import moves to its next step, focus moves to that step's heading.
+  When a page change removes the control that had focus, focus moves to the
+  page's main content rather than back to the top of the page.
 - Every icon-only button has a name. Icons themselves are hidden from
   assistive technology.
 - The page title names the current section, and the page's language follows
@@ -88,26 +98,29 @@ buttons and checkboxes — Tab, Enter and Space.
 ### Seeing the page
 
 - **Contrast.** Text is at least 4.5:1 against its background, and control
-  borders and the focus ring at least 3:1, in the light theme and both dark
-  ones. A test fails the build if a colour pair drops below that.
+  borders and the focus ring at least 3:1, in the light and the dark theme. A
+  test fails the build if a colour pair drops below that.
 - **Contrast themes** (Windows "Contrast themes", `forced-colors`). Since
   1.2.1, the states that were shown only by a fill or a shadow — the focused
-  row, the selected theme, the current section, the selected option cards,
-  the progress bar — are drawn with system colours instead.
-- **Zoom.** The layout reflows as the window narrows or the page is zoomed;
-  browser zoom up to 200 % is expected to work.
+  row, where a dragged item will land, the selected theme, the current
+  section, the selected option cards, the progress bar, the edge of the file
+  drop zone — are drawn with the theme's own colours instead.
+- **Zoom.** The layout reflows as the window narrows or the page is zoomed.
 - **Light and dark** themes follow the system, or your choice in Settings.
-- **Disabled controls** are marked by colour and cursor, never by fading the
-  text until it cannot be read.
-- **Target size.** Since 1.2.1, every clickable target is at least
-  24 × 24 CSS pixels.
+- **Disabled buttons** are marked by colour and cursor, never by fading the
+  text until it cannot be read. (Two kinds of button are an exception; see
+  the limitations.)
+- **Target size.** Since 1.2.1, every button is at least 24 × 24 CSS pixels,
+  including the small icon buttons. Checkboxes, radio buttons and links in
+  text keep their natural size; their labels are part of the target.
 
 ### Motion
 
 If your system asks for reduced motion, nothing moves: no sliding, spinning or
 travelling stripes. A test fails the build if an animation is added outside
-that rule. Nothing flashes, and nothing times out while you are reading — an
-error message stays until you dismiss it.
+that rule. Nothing flashes. An error message stays until you dismiss it;
+short confirmations leave by themselves after four seconds (see the
+limitations below).
 
 ## What has been tested
 
@@ -116,11 +129,13 @@ error message stays until you dismiss it.
 | Keyboard only, mouse unplugged | Chrome on Windows 11 | November 2026, version 1.2.0 |
 | Screen reader | **Narrator** with Chrome on Windows 11 | November 2026, version 1.2.0 |
 | Contrast themes | Chrome with `forced-colors` emulated — not yet a real Windows theme | November 2026, version 1.2.1 |
-| Colour contrast, reduced motion, the tree's key handling, focus rings | Automated tests, on every change | Continuous |
+| What 1.2.1 changed: focus, Alt+↑/↓, button sizes | A scripted keyboard run in Chrome — no screen reader | November 2026, version 1.2.1 |
+| Colour contrast of the theme colours, reduced motion, the tree's key handling | Automated tests, on every change | Continuous |
 
-**Not tested**, so we cannot tell you how well they work: NVDA, JAWS,
-VoiceOver on macOS, ChromeVox on ChromeOS, Orca on Linux, voice control
-(Dragon, Voice Access, Voice Control), switch access, and screen magnifiers.
+**Not tested**, so we cannot tell you how well they work: anything on macOS,
+Linux or ChromeOS; NVDA, JAWS, VoiceOver, ChromeVox and Orca; voice control
+(Dragon, Voice Access, Voice Control); switch access; screen magnifiers; and
+zoom at 200 %. Narrator has not yet been run over what 1.2.1 added.
 If you use one of these, a report of what you found — good or bad — is
 genuinely useful.
 
@@ -128,9 +143,11 @@ genuinely useful.
 
 These are known, and none of them is by design.
 
-- **Most edits are not announced.** Alt+↑/↓ speaks the result; a rename, a
-  move to another folder, a sort, a new folder and "keep the first of each"
-  succeed silently. Search does not announce how many rows match.
+- **Most edits are not announced.** Alt+↑/↓ announces the result; a rename, a
+  move to another folder, a sort and a new folder succeed silently. Search
+  does not announce how many rows match. A key that cannot act — Alt+↑ on the
+  first item of a folder, Delete on one of the three top-level folders — does
+  nothing and says nothing.
 - **Folders and bookmarks sound alike in the tree.** They differ by an icon a
   screen reader does not read. A folder with something in it announces
   "expanded" or "collapsed"; an empty folder announces neither. The lock on a
@@ -141,17 +158,32 @@ These are known, and none of them is by design.
 - **Reordering with a pointer needs a drag.** There is a keyboard way
   (Alt+↑/↓) and Sort A→Z, but no click-only way to place one item before
   another.
-- **The tree's keys are not shown inside the extension.** The table above is
-  the list; the About tab links to this file.
-- **Some hints appear only on mouse hover**: the notes in the status bar, and
-  the reason a section is unavailable while an import is writing.
+- **Alt+↑/↓ may not reach the page on a Chromebook**, where the system can turn
+  those keys into Page Up and Page Down. On a Mac there is no Menu key (use
+  Shift+F10), and the laptop's delete key is Backspace, which the tree does
+  not act on (use Fn+Delete).
+- **The tree's keys are not shown inside the extension**, apart from Ctrl+F on
+  the search box. The table above is the list; the About tab links to this
+  file.
+- **The toolbar above the tree is announced as a toolbar**, but its buttons are
+  reached with Tab, not with the arrow keys a toolbar usually offers.
+- **Some hints appear only on mouse hover**: the notes in the status bar, where
+  a top-level folder of an imported file will go, and the reason a section is
+  unavailable while an import is writing.
+- **A section that is unavailable while an import is writing looks the same as
+  one that is available**; only the cursor and the hover hint differ. The same
+  goes for a tree row's small buttons while a sort or a bulk delete is
+  running. A screen reader does announce both as unavailable.
+- **Long titles are cut short with "…"** in the tree, and there is no way to
+  read the whole title there other than renaming (F2).
 - **Headings are sparse.** Sections are landmarks, but the pages have few
   headings to jump between, and there is no "skip to content" link past the
   header's controls.
 - **Descriptions in Settings are not tied to their controls**, so a screen
   reader reads the control's name but not the sentence under it.
-- **Short notices disappear after four seconds** ("Saved", "Link copied").
-  They are announced, but they cannot be paused.
+- **Short notices disappear after four seconds** ("Saved", "Link copied",
+  the name of an exported file). They are announced, but they cannot be
+  paused. An error stays, though a second error replaces the first.
 - **Text size follows zoom, not the browser's font-size setting.** Use
   Ctrl and + to enlarge the page.
 - **On the Edit tab, Ctrl+F always goes to BookmarkMagic's own search box**

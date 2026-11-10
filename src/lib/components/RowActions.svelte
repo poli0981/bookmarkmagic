@@ -36,6 +36,9 @@
   function act(run: () => void): (event: MouseEvent) => void {
     return (event) => {
       event.stopPropagation();
+      // With no row focused yet, this one is: the tree would otherwise start
+      // its arrow keys from the top, a screenful away from the click.
+      session.focusedId ??= node.id;
       focusOwningTree(event.currentTarget);
       run();
     };
