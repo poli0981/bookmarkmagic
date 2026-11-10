@@ -6,6 +6,8 @@
   import type { VisibleRow } from '../edit/tree-keyboard';
   import { t } from '../i18n/index.svelte';
   import type { EditSession } from '../stores/edit-session.svelte';
+  import Disclosure from './Disclosure.svelte';
+  import { focusOwningTree } from './focus-heading';
   import Icon from './icons/Icon.svelte';
   import RenameInput from './RenameInput.svelte';
   import RowActions from './RowActions.svelte';
@@ -89,22 +91,16 @@
     if (at !== undefined) void session.drop(node.id, at);
   }}
 >
-  {#if row.expandable}
-    <button
-      class="disclosure"
-      tabindex="-1"
-      aria-hidden="true"
-      onclick={(event) => {
-        // The row under it must not also take the click.
-        event.stopPropagation();
-        session.toggle(node.id);
-      }}
-    >
-      <Icon name="chevron" size={12} turned={row.expanded} />
-    </button>
-  {:else}
-    <span class="disclosure" aria-hidden="true"></span>
-  {/if}
+  <Disclosure
+    expanded={row.expandable ? row.expanded : undefined}
+    onclick={(event) => {
+      // The row under it must not also take the click — and the tree, not
+      // this button, keeps the keyboard (docs/06 §5).
+      event.stopPropagation();
+      session.toggle(node.id);
+      focusOwningTree(event.currentTarget);
+    }}
+  />
 
   <span class="glyph" class:folder={isFolder}>
     {#if node.unmodifiable !== undefined}
@@ -189,23 +185,37 @@
     box-shadow: inset 0 -2px 0 var(--accent);
   }
 
+  /* Contrast themes drop every fill and shadow above, which is all that marked
+     the focused row and a drop's place (docs/06 §5). */
+  @media (forced-colors: active) {
+    .focused {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+
+    /* A line laid over the row's edge: a real border would change the row's
+       height mid-drag and move the very zones the drop is measured against. */
+    .drop-before::after,
+    .drop-after::after {
+      content: '';
+      position: absolute;
+      inset-inline: 0;
+      border-top: 2px solid Highlight;
+      pointer-events: none;
+    }
+
+    .drop-before::after {
+      top: 0;
+    }
+
+    .drop-after::after {
+      bottom: 0;
+    }
+  }
+
   .matched .title {
     color: var(--accent);
     font-weight: 600;
-  }
-
-  .disclosure {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    flex: none;
-    background: none;
-    border: none;
-    color: var(--fg-muted);
-    cursor: pointer;
-    padding: 0;
   }
 
   .glyph {

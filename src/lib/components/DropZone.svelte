@@ -91,6 +91,18 @@
     background-color: var(--accent-subtle);
   }
 
+  /* The dashed edge is four background gradients, and a contrast theme removes
+     background images: the zone lost its boundary altogether (docs/06 §5). */
+  @media (forced-colors: active) {
+    .zone {
+      border: 2px dashed ButtonText;
+    }
+
+    .dragging {
+      border-color: Highlight;
+    }
+  }
+
   .glyph {
     display: inline-flex;
     padding: var(--sp-3);

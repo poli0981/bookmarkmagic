@@ -2,6 +2,7 @@
   import type { LiveNode } from '../browser/bookmarks';
   import type { CheckState } from '../core/select';
   import { num, t, tPlural } from '../i18n/index.svelte';
+  import Disclosure from './Disclosure.svelte';
   import Icon from './icons/Icon.svelte';
   import Self from './FolderPickNode.svelte';
 
@@ -40,18 +41,13 @@
      keyboard interface, and a tree role promised arrow keys it never had (uM5). -->
 <li>
   <div class="row" style:--depth={depth - 1}>
-    {#if folders.length > 0}
-      <button
-        class="disclosure"
-        aria-expanded={expanded}
-        aria-label={`${expanded ? t('import.collapse') : t('import.expand')}: ${node.title}`}
-        onclick={() => {
-          expanded = !expanded;
-        }}><Icon name="chevron" size={12} turned={expanded} /></button
-      >
-    {:else}
-      <span class="disclosure" aria-hidden="true"></span>
-    {/if}
+    <Disclosure
+      expanded={folders.length > 0 ? expanded : undefined}
+      label={`${expanded ? t('import.collapse') : t('import.expand')}: ${node.title}`}
+      onclick={() => {
+        expanded = !expanded;
+      }}
+    />
 
     <label>
       <input
@@ -113,20 +109,6 @@
     min-width: 0;
   }
 
-  .disclosure {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    flex: none;
-    background: none;
-    border: none;
-    color: var(--fg-muted);
-    cursor: pointer;
-    padding: 0;
-  }
-
   .glyph {
     display: inline-flex;
     color: var(--accent);
@@ -156,6 +138,7 @@
     border-radius: var(--radius-sm);
     color: var(--accent);
     cursor: pointer;
-    padding: 1px var(--sp-2);
+    /* 24 px tall: an 18 px line, 2 px of padding, the border (WCAG 2.5.8). */
+    padding: 2px var(--sp-2);
   }
 </style>

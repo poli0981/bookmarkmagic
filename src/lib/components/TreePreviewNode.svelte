@@ -2,6 +2,7 @@
   import type { NodeStatus } from '../core/diff';
   import { type BookmarkNode, isFolder } from '../core/model';
   import { num, t, tPlural } from '../i18n/index.svelte';
+  import Disclosure from './Disclosure.svelte';
   import Icon from './icons/Icon.svelte';
   import Self from './TreePreviewNode.svelte';
 
@@ -41,20 +42,13 @@
 
 <li>
   <div class="row" style:--depth={depth - 1}>
-    {#if folder && children.length > 0}
-      <button
-        class="disclosure"
-        aria-expanded={expanded}
-        aria-label={`${expanded ? t('import.collapse') : t('import.expand')}: ${node.title}`}
-        onclick={() => {
-          expanded = !expanded;
-        }}
-      >
-        <Icon name="chevron" size={12} turned={expanded} />
-      </button>
-    {:else}
-      <span class="disclosure" aria-hidden="true"></span>
-    {/if}
+    <Disclosure
+      expanded={folder && children.length > 0 ? expanded : undefined}
+      label={`${expanded ? t('import.collapse') : t('import.expand')}: ${node.title}`}
+      onclick={() => {
+        expanded = !expanded;
+      }}
+    />
     <span class="glyph" class:folder aria-hidden="true">
       <Icon name={folder ? (expanded && children.length > 0 ? 'folder-open' : 'folder') : 'link'} size={14} />
     </span>
@@ -109,20 +103,6 @@
 
   .row:hover {
     background: var(--bg-raised);
-  }
-
-  .disclosure {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 16px;
-    height: 16px;
-    flex: none;
-    background: none;
-    border: none;
-    color: var(--fg-muted);
-    cursor: pointer;
-    padding: 0;
   }
 
   .glyph {

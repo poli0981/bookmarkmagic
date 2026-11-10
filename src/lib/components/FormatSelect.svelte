@@ -65,6 +65,14 @@
     box-shadow: inset 3px 0 0 var(--accent);
   }
 
+  /* The radio still says which is chosen; the card around it should too. */
+  @media (forced-colors: active) {
+    .selected {
+      outline: 2px solid Highlight;
+      outline-offset: -2px;
+    }
+  }
+
   input {
     margin-top: 3px;
   }

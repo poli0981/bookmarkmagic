@@ -130,6 +130,32 @@
     color: var(--accent-fg);
   }
 
+  /* The inset ring sits ON the selected segment's fill — and roving focus only
+     ever lands on the selected segment. In --accent it was accent on accent:
+     no visible focus at all (docs/06 §5). Drawn 2px further in, so the fill
+     shows on both sides of it: at the very edge, a ring in the page's own
+     colour only made the segment look 2px smaller. */
+  .selected:focus-visible {
+    outline-color: var(--accent-fg);
+    outline-offset: -4px;
+  }
+
+  /* Contrast themes replace the fill, so the choice is said in system colours.
+     `forced-color-adjust: none` because the label sits on that fill: Chrome
+     paints a backplate in the page colour behind forced text, which left
+     "Light" as a black box on the highlight. */
+  @media (forced-colors: active) {
+    .selected {
+      forced-color-adjust: none;
+      background: Highlight;
+      color: HighlightText;
+    }
+
+    .selected:focus-visible {
+      outline-color: HighlightText;
+    }
+  }
+
   .compact button {
     padding: 5px 7px;
   }

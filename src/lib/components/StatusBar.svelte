@@ -113,4 +113,13 @@
   footer button:disabled {
     cursor: not-allowed;
   }
+
+  /* The current section was a colour and a fill, both of which a contrast
+     theme replaces (docs/06 §5). A border, not an outline — the focus ring is
+     the outline — and not a fill, which Chrome's text backplate would cover. */
+  @media (forced-colors: active) {
+    footer button[aria-current='page'] {
+      border: 2px solid Highlight;
+    }
+  }
 </style>

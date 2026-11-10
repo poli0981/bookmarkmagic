@@ -5,10 +5,16 @@
    * writing ones are disabled while a bulk command runs: a second sort started
    * from a row used to fail with two false messages and re-enable the toolbar
    * mid-sort (v1.1.0 review).
+   *
+   * A click hands focus back to the tree: Chrome focuses a `tabindex="-1"`
+   * button when it is clicked, and the tree ignores keys aimed at a row's own
+   * control, so the arrow keys went dead until the next click on a row. Each
+   * button is 24 × 24 px — the 14 px glyph, 4 px of padding, a 1 px border.
    */
   import type { EditNode } from '../edit/patch-tree';
   import { t } from '../i18n/index.svelte';
   import type { EditSession } from '../stores/edit-session.svelte';
+  import { focusOwningTree } from './focus-heading';
   import Icon from './icons/Icon.svelte';
 
   interface Props {
@@ -22,10 +28,15 @@
 
   let { node, session, editable, onopen, oncopy, onsort }: Props = $props();
 
-  /** A row button must not also focus or activate the row under it. */
+  /**
+   * A row button must not also focus or activate the row under it. Focus moves
+   * to the tree BEFORE the action runs, so a dialog the action opens remembers
+   * the tree — not this button — as where to return.
+   */
   function act(run: () => void): (event: MouseEvent) => void {
     return (event) => {
       event.stopPropagation();
+      focusOwningTree(event.currentTarget);
       run();
     };
   }
@@ -69,7 +80,7 @@
   button {
     display: inline-flex;
     align-items: center;
-    padding: 3px;
+    padding: 4px;
     background: none;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
