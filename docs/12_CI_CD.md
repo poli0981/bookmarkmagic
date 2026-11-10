@@ -199,7 +199,7 @@ Added 2026-10-28, replacing SonarCloud's Automatic Analysis so the project gets
 - The price of that isolation: the scan job has no `node_modules`, so Sonar's
   type-aware rules resolve our own modules (through `.wxt/`) but not the
   dependencies' types.
-- The scan action is **pinned to a commit** (`v8.3.0`): it is the step that
+- The scan action is **pinned to a commit** (`v8.4.0`): it is the step that
   holds `SONAR_TOKEN`. Dependabot and fork PRs get no repository secrets, so the
   scan is skipped with a notice instead of failing.
 - Coverage: `vitest.config.ts` measures every `src/**/*.ts` module and reports
