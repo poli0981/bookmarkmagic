@@ -8,9 +8,10 @@ This file is the entry point; the `docs/` suite is the specification.
 >
 > **BookmarkMagic is published on the Chrome Web Store and has real users**
 > (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
-> 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0
-> released on GitHub 2026-11-06, ⚠️ not yet submitted).
-> Phases 0–8 are complete; the project is in **maintenance**.
+> 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0 live,
+> confirmed on the listing 2026-11-10; v1.2.1 prepared 2026-11-10, ⚠️ not yet
+> submitted).
+> Phases 0–9 are complete; the project is in **maintenance**.
 > That changes the rules of the game:
 >
 > - Every change now reaches installed users through a store review. It needs a
@@ -33,7 +34,7 @@ This file is the entry point; the `docs/` suite is the specification.
 | docs/03_DATA_FLOW.md | Import/export/edit pipelines, state machine |
 | docs/04_FILE_FORMATS.md | Netscape HTML / BM JSON / CSV / Markdown specs |
 | docs/05_ALGORITHMS.md | Parser walk, normalize, dedupe, diff, write queue |
-| docs/06_UI.md | Tokens, layouts per tab, component inventory, a11y |
+| docs/06_UI.md | Tokens, layouts per tab, component inventory, a11y (§5 is the spec behind `/ACCESSIBILITY.md`) |
 | docs/07_I18N.md | chrome.i18n vs runtime store split, EN/VI/JA rules |
 | docs/08_MV3_COMPLIANCE.md | Manifest, permissions (bookmarks+storage ONLY), CWS rules |
 | docs/09_SECURITY_PRIVACY.md | Threat model T1–T8, secure-coding bans |
@@ -170,9 +171,28 @@ browser on "Automatic" gets English.
 checksum-verified zip). A finding worth keeping: on this Windows machine the
 process-spawning script tests time out intermittently under load (`main`'s
 too), so CI — whose Windows smoke job passed — was the gate.
-Human-only ⚠️: the `11 §5` pass with
-the **1.1.0 → 1.2.0 upgrade over an existing profile**, the zip upload, the
-two new listing languages in the dashboard, and the native review passes.
+✔ Live on the store, confirmed on the listing 2026-11-10 (5 languages).
+Human-only ⚠️, still open: the native review passes.
+
+### Phase 9 — v1.2.1: accessibility
+The owner's keyboard-only and Narrator pass over 1.2.0 found nothing; an audit
+of `src/` then found what such a pass cannot see. In order: dependency sync
+after Dependabot (the `biome.json` `$schema` and `docs/01` do **not** move
+with its PRs) → docs first (`06 §5`) → `ACCESSIBILITY.md` at the repository
+root with its intake (issue form, PR checklist, `accessibility@`) → the fixes:
+a focus ring that was drawn in the colour of the fill under it, forced-colours
+support, Alt+↑/↓ to reorder (through the drag's own `planDrop`), focus that
+fell to `<body>` in three places, 24 px targets, an About link to the
+statement → adversarial review → 1.2.1.
+Two things to carry forward. **`ACCESSIBILITY.md` is a public promise**: a UI
+change that makes its key table or its known-limitations list false has to
+change the file in the same PR (`11 §5` has the check). And the statement's
+goal is WCAG 2.2 AA **as a goal** — never write "conforms" or "compliant"
+without an audit to cite.
+**Exit:** v1.2.1 prepared 2026-11-10. Human-only ⚠️: the `11 §5` pass with the
+**1.2.0 → 1.2.1 upgrade over an existing profile**, a real Windows contrast
+theme and a screen-reader pass over Alt+↑/↓, the zip upload, and the native
+review of the two new strings.
 
 ## Working style
 

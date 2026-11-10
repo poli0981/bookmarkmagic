@@ -220,6 +220,26 @@ them is tested where it lives:
   from the real stylesheets, so a new component cannot opt out by forgetting.
   `motion.test.ts` first checks that it found more than 20 styled files to
   police.
+- **`styles/focus-ring.test.ts`** and **`styles/forced-colors.test.ts`**
+  (v1.2.1) — the two `06 §5` rules 1.2.0 broke without a test noticing. The
+  first fails on a component that insets a focus ring (`outline-offset` below
+  zero) while filling a state with `--accent`, unless that ring is
+  `--accent-fg`: the theme control's ring was accent on accent. The second
+  holds the list of components that show state by a fill or a shadow and
+  requires each to carry a `@media (forced-colors: active)` block naming a
+  system colour. Both read the real `.svelte` files; the second's list is
+  hand-maintained, like the contrast pairs.
+- **`edit/tree-keyboard.test.ts`**, **`edit/tree-keys.test.ts`** and
+  **`stores/edit-session.test.ts`** — since v1.2.1 also Alt+↑/↓ (`05 §10`):
+  `nudgeTarget` at both ends of a folder, past a collapsed folder, in a
+  filtered list; the key reaching the command only with Alt alone; the move
+  itself by Chrome's index rule, refused for a root, a managed node and while
+  busy, and returning the new position.
+- **`components/focus-heading.test.ts`** — since v1.2.1 also
+  `focusOwningTree`: a click on a row's control hands focus to the tree it
+  sits in, and does nothing outside one.
+- **`links.test.ts`** — since v1.2.1 also `ACCESSIBILITY.md`: the file exists,
+  the About link ends at it, and the README links to it.
 - **`tests/unit/scripts/`** — the repo's own gates, tested like code. New in
   v1.1.0: `guard.test.ts` (`08 §3`), `check-manifest.test.ts` (a correct build
   passes, one without the CSP fails) and `sanitize-formats.test.ts` (the
@@ -298,7 +318,31 @@ storage, nothing written survives a reload, and the popup's tiles open nothing.
       **and** Shift+F10 open **Move to…** with focus in its filter — type to
       narrow, Tab to a folder, Enter moves the item there; Esc closes it and
       focus returns to the tree. Ctrl+C copies the focused link. Every dialog
-      opens with focus inside and returns it on close.
+      opens with focus inside and returns it on close. **Alt+↑ / Alt+↓** moves
+      the focused row one place among its siblings and stops at either end;
+      a permanent root does not move. After clicking a row button or a
+      chevron with the mouse, the arrow keys still work.
+- [ ] **Focus is never lost:** Tab to the theme control — the ring is visible
+      on the selected segment, in the header and in `#settings`, in both
+      themes. "Open in Edit" from an import report, "Keep the first of each"
+      and a toolbar Sort A→Z each leave focus somewhere visible; the next Tab
+      does not start from the top of the page.
+- [ ] **Screen reader** (Narrator on Windows, or NVDA; VoiceOver on macOS):
+      the tree announces each row's name, level and "n of m"; a dialog reads
+      its title and body; the import's steps and outcome are spoken; Alt+↓
+      speaks the row's new position. Record the reader and its version in
+      `ACCESSIBILITY.md`'s "Tested with" if it is a new one.
+- [ ] **Contrast themes** (Windows: Settings → Accessibility → Contrast
+      themes; or DevTools → Rendering → `forced-colors: active`): the tree's
+      focused row, the drop line of a drag, the selected theme segment, the
+      current tab, the selected import-mode and export-format cards and the
+      progress bar's fill are all still distinguishable.
+- [ ] **Zoom and narrow windows:** at 200 % zoom and at a 400 px-wide window,
+      every route still works without a horizontal scrollbar on the page, and
+      no control is clipped or covered.
+- [ ] **`ACCESSIBILITY.md` is still true:** its key table matches `06 §5`, its
+      known limitations still exist (and nothing new belongs there), and its
+      "last reviewed" date is this release's.
 - [ ] Language switch EN→VI→JA→简体中文→Română live-updates all tabs;
       dates/numbers localized; restart persists. Header switcher and the
       `#settings` row agree at all times (one state, two views).

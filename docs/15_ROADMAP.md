@@ -31,7 +31,11 @@ Build-phase breakdown lives in `CLAUDE.md` (single source for sequencing).
 | **v1.1.0 published** | ✔ observed 2026-11-06 | owner reported the review passed; the listing shows version 1.1.0 (`Updated: October 29, 2026`), 6 users, "3 languages". ⚠️ As for 1.0.1, `13 §1b` step 10 (clean-profile install of the published build + upgrade re-check) has no recorded result |
 | 8 — v1.2.0 languages | ✔ 2026-11-06 | Simplified Chinese (`zh-CN`) and Romanian (`ro`): one `LOCALES` list, a third plural form for Romanian, manifest `_locales`, store listings, intake form (`07`). One PR (#33); a code review and a native-style translation review before the bump, every finding fixed — the worst a Romanian CSV note saying the bookmarks-bar folder itself is lost on export |
 | **v1.2.0 released** | ✔ 2026-11-06 | signed tag on `e2f36bc`, GitHub Release with a `sha256sum -c`-verified zip (`0b4a268c…f8617b`, 105 284 bytes). Its manifest differs from 1.1.0's only in `version`; the package gains `_locales/zh_CN` and `_locales/ro`. `announce` and store publish skipped (variables unset) |
-| **v1.2.0 submitted** | ⚠️ pending | owner: the `11 §5` pass incl. the **1.1.0 → 1.2.0 upgrade over an existing profile**, then the zip upload **and the two new listing languages** in the dashboard (`13 §1b`, `13 §4`) |
+| **v1.2.0 submitted** | ✔ by 2026-11-07 | uploaded to the CWS dashboard by hand, with the 简体中文 and Română listing languages (`13 §1b` step 6, `13 §4`) |
+| **v1.2.0 published** | ✔ observed 2026-11-10 | the listing shows version 1.2.0 (`Updated: November 7, 2026`), 3 users, "5 languages" — English, Tiếng Việt, română, 中文（中国）, 日本語. ⚠️ As for 1.0.1 and 1.1.0, `13 §1b` step 10 (clean-profile install of the published build + upgrade re-check) has no recorded result |
+| 9 — v1.2.1 accessibility | ✔ 2026-11-10 | `ACCESSIBILITY.md` and its intake (issue form, PR checklist, `accessibility@`); the defects an audit of `src/` found that a keyboard-and-Narrator pass had not — an invisible focus ring on the theme control, no forced-colours support, drag-only reordering (Alt+↑/↓), focus dropped on `<body>` in three places, targets under 24 px; dependency sync after Dependabot #31/#32/#35/#36 (`06 §5`) |
+| **v1.2.1 released** | ⚠️ pending | signed tag + GitHub Release once the PR is merged |
+| **v1.2.1 submitted** | ⚠️ pending | owner: the `11 §5` pass incl. the **1.2.0 → 1.2.1 upgrade over an existing profile**, a Windows contrast theme and a screen-reader pass over Alt+↑/↓, then the zip upload (`13 §1b`) |
 
 **Verified on real browsers 2026-07-25:** Chrome and Brave, unpacked build.
 Until that point every phase had been tested only against a hand-rolled
@@ -117,6 +121,9 @@ Cut a patch when **any** of these is true, rather than on a schedule:
 
 - a parser-tolerance fix exists (a user is currently unable to import a file);
 - a data-integrity or dead-end defect is fixed;
+- an accessibility barrier is fixed — something a keyboard, screen-reader or
+  contrast-theme user could not do or could not perceive (`ACCESSIBILITY.md`
+  promises exactly this);
 - a batch of translation fixes has accumulated;
 - a dependency fix is needed for a real advisory.
 
@@ -161,15 +168,51 @@ Items found by the 2026-10-28 audit and not closed in v1.1.0, with their IDs:
 cL6 non-UTF-8 charsets in HTML imports; cL9 an extension allowlist on drop
 (content sniffing is the gate, so not planned); cL13 a newline inside a title
 for Chrome's line-based importer; sA8.1 Biome does not lint `.svelte`. From
-the post-implementation review: a keyboard way to place an item before or after
-a sibling (drag has it; "Move to…" only appends); true virtualization of the
+the post-implementation review: ~~a keyboard way to place an item before or
+after a sibling~~ (✔ v1.2.1, Alt+↑/↓); true virtualization of the
 edit tree (a 500-row window around the focus shipped — `05 §9`); a
 `require-trusted-types-for 'script'` CSP, which would make Chrome itself
 enforce the raw-HTML ban (the Svelte runtime already creates the policy;
 untested in extension pages); an input on the ops repo's reusable workflow to
 skip install scripts in the `Build + package` job (`12 §2`); whether a
-screen reader reads a focused row's button labels with its name (unconfirmed
-without one).
+screen reader reads a focused row's button labels with its name (the owner's
+Narrator pass on 1.2.0 found nothing blocking, 2026-11; the verbosity itself
+was not measured, and NVDA, JAWS and VoiceOver remain untested).
+
+### Accessibility backlog (from the 2026-11-10 audit, not closed in v1.2.1)
+
+`ACCESSIBILITY.md` lists these as known limitations; this is where they are
+scheduled. None blocks a task; each is a patch when it lands (`12 §4`).
+
+- **Spoken results for the other edit commands.** Only Alt+↑/↓ announces what
+  it did. A move, a sort, a rename, "keep first" and a new folder are silent
+  on success, and so is a search (no result count, and "Nothing matches" is
+  not a live region).
+- **Row semantics.** A folder and a bookmark differ only by an `aria-hidden`
+  icon (an empty folder has no `aria-expanded`, so it sounds like a
+  bookmark); the policy-managed lock and the child count are an icon and a
+  bare number.
+- **A pointer route to reorder that is not a drag** (WCAG 2.5.7): drag and
+  Alt+↑/↓ exist; a click-only one does not.
+- **The tree's keys are shown nowhere in the UI.** `ACCESSIBILITY.md` lists
+  them and About links to it; an in-product key list would need a dialog.
+- **`role="toolbar"` without arrow keys** on the edit toolbar — the mismatch
+  the previews' `role="tree"` was removed for.
+- **Hover-only hints** (`title` on elements that cannot take focus): the
+  status bar's notes, the import target note, the busy reason on a disabled
+  tab.
+- **Headings and a skip link.** No route has an `<h1>`, `#edit` has no
+  headings, and the header's seven tab stops cannot be skipped. Landmarks
+  exist.
+- **Settings descriptions** are not tied to their controls
+  (`aria-describedby`), nor is the "dedupe is off under Replace" note.
+- **Info toasts leave after four seconds** with no pause on hover or focus.
+- **Font sizes are in px**, so Chrome's font-size setting does not scale the
+  UI (zoom does).
+- **Ctrl/⌘+F always goes to the search box** on `#edit`, even with a dialog
+  open.
+- **No automated check of the rendered markup** — no axe pass, no role
+  queries; the harness photographs but does not inspect.
 
 ## v1.2 — languages (planned 2026-11-06)
 
@@ -330,3 +373,9 @@ attempted.
 | 2026-11-06 | **A third plural form, only where a locale needs it.** `Dict` widens each plural branch to `{ one, other, few? }`. Whether a locale carries `few` is decided by its own `Intl.PluralRules` categories and enforced at runtime, so en/vi/ja/zh write no dead `few`. A guard fails on any shipped locale needing `two`/`many`/`zero` before a grammar the helper cannot select can ship | 07 §5 |
 | 2026-11-06 | **Romanian uses comma-below `ș ț`, enforced by a test.** The cedilla forms `ş ţ` look alike and are different letters to search and sort — the classic Romanian localization defect | 07 §4 |
 | 2026-11-06 | **ZH-CN and RO ship best-effort, like JA.** Written from Chrome's own terminology in each language and marked `TODO(review-zh)` / `TODO(review-ro)`; the translation form lists both. Waiting for native reviewers would have left users who already installed the extension on English indefinitely | 07 §4, 00 §10 |
+| 2026-11-10 | **v1.2.0 is live; v1.2.1 is accessibility.** The owner's keyboard-only and Narrator pass over 1.2.0 found nothing, and an audit of `src/` then found five things such a pass cannot see or did not reach: a focus ring drawn in the colour of the fill under it, no forced-colours support, reordering that only a drag could do, focus dropped on `<body>` in three places, and targets under 24 px. A pass by one person with one screen reader is evidence, not a verdict — which is also why the statement says what was tested and what was not | 06 §5, 11 §5 |
+| 2026-11-10 | **An accessibility statement, at the repository root.** `ACCESSIBILITY.md`, beside `SECURITY.md` and `CONTRIBUTING.md`, linked from the README and from About. It states **WCAG 2.2 AA as the goal, not as a conformance claim**: nobody has audited the product, and a claim would be the kind of sentence `14` exists to keep out of the project. Known limitations are listed in it rather than left in this backlog, because a user deciding whether the product will work for them reads that file, not this one | 06 §5, 15 |
+| 2026-11-10 | **`accessibility@poli0981.dev` for barrier reports**, the eleventh per-purpose alias (created and tested by the owner). It appears in `ACCESSIBILITY.md`, the README's contact table and the issue chooser — never in `src/`, by the 2026-08-03 rule, which the About link respects by pointing at the file instead. Reports have their own issue form and an `accessibility` label, because a barrier report needs the assistive technology and its version, which the bug form does not ask for | 06 §3.5, 13 §6 |
+| 2026-11-10 | **Alt+↑ / Alt+↓ reorders, and it is a patch.** It reuses `planDrop` and `moveTo`, so a keyboard move and a drag cannot disagree about what is legal, and there is no second write path to test. One place at a time, among the siblings on screen, like a drag. It ships in a patch because it closes a barrier to something the product already did rather than adding a capability; `12 §4` now says so. Rejected: "Move up / Move down" row buttons (a seventh and eighth button on a row that already hides six), and a position field in "Move to…" (a new dialog flow for the same result) — though a click-only route is still owed (WCAG 2.5.7, backlog) | 05 §10, 12 §4 |
+| 2026-11-10 | **Focus after a route change goes to `<main>`, not to the tree.** "Open in Edit" removes the button that was clicked. Focusing the tree when `#edit` mounts would also have fired on every first load, highlighting a row nobody chose and changing every screenshot; a route change with focus lost is the narrower condition and covers every tab | 06 §5 |
+| 2026-11-10 | **Dependabot's bumps are not the whole bump.** #31 and #36 moved Biome twice and left `biome.json`'s `$schema` behind both times, and left `vitest` a minor behind the coverage plugin that must match it; `01 §2` drifted with them. The sync is a human step after each Dependabot merge, and WXT still gets the built-manifest diff — 0.21.5 produced a manifest byte-identical to the 1.2.0 release asset | 01 §2, §6 |

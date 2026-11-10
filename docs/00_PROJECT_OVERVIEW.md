@@ -17,18 +17,25 @@
 > 5 users) on 2026-10-28. ⚠️ The exact approval date was never recorded — the
 > owner can read it from the dashboard. Installed users are on 1.0.1.
 >
-> **v1.1.0 is RELEASED on GitHub, not yet on the store.** Tagged and
-> released 2026-10-29 (signed tag on `9040f84`, checksum-verified zip). ⚠️ It
-> still needs the owner's manual pass on real Chrome, including the 1.0.1 →
-> 1.1.0 upgrade over an existing profile, and a hand upload to the store
-> (`13 §1b`); until it clears review, installed users stay on 1.0.1. It raises
-> the floor to Chrome 136 (`08 §7`); permissions are unchanged.
+> **v1.1.0 is PUBLISHED.** Tagged and released 2026-10-29 (signed tag on
+> `9040f84`, checksum-verified zip); the listing showed version 1.1.0 on
+> 2026-11-06. It raised the floor to Chrome 136 (`08 §7`); permissions are
+> unchanged.
+>
+> **v1.2.0 is PUBLISHED.** Tagged and released 2026-11-06 (signed tag on
+> `e2f36bc`); the listing was observed showing **version 1.2.0** (`Updated:
+> November 7, 2026`, 5 languages) on 2026-11-10. Installed users are on 1.2.0.
+>
+> **v1.2.1 — accessibility — is prepared, not yet released.** An accessibility
+> statement (`/ACCESSIBILITY.md`) and the fixes an audit found (`06 §5`).
+> ⚠️ It needs the owner's manual pass, including the 1.2.0 → 1.2.1 upgrade
+> over an existing profile, and a hand upload to the store (`13 §1b`).
 >
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
 > bump, a CHANGELOG entry and an update submission (`13 §1b`). Sequencing lives
 > in `/CLAUDE.md`; what is still open is in §10 below.
-> **Doc suite version:** 1.9 (2026-10-29 — v1.1.0 released on GitHub)
+> **Doc suite version:** 1.10 (2026-11-10 — v1.2.0 live; v1.2.1 accessibility)
 
 ---
 
@@ -240,13 +247,26 @@ Derived identifiers (canonical across docs and code):
     (`07 §4`), written from Chrome's own terminology in each language but read
     by no native speaker. Each file's header carries `TODO(review-zh)` /
     `TODO(review-ro)`. The `translation` issue form lists both languages.
-14. ⚠️ **v1.2.0 to the store.** The GitHub Release exists and is verified
-    (`15`'s progress table). The usual `11 §5` pass plus the **1.1.0 →
-    1.2.0 upgrade over an existing profile**: a saved `vi` must survive, and
-    "Automatic" in a `zh-CN` browser must now show Chinese. Then, in the
-    dashboard, upload the Release zip **and add the 简体中文 and Română listing
-    languages**, pasting `store/listing.zh_CN.md` and `store/listing.ro.md`
-    (`13 §4`).
+14. ✔ **v1.2.0 to the store** — live, observed 2026-11-10 (version 1.2.0,
+    `Updated: November 7, 2026`, 5 listing languages). ⚠️ Still unrecorded, as
+    for 1.0.1 and 1.1.0: `13 §1b` step 10, the clean-profile install of the
+    published build and the upgrade re-check against it.
+
+### v1.2.1 (added 2026-11-10)
+
+15. ⚠️ **v1.2.1 to the store.** The usual `11 §5` pass plus the **1.2.0 →
+    1.2.1 upgrade over an existing profile**, then the Release zip uploaded in
+    the dashboard. No listing change: a patch (`13 §5`).
+16. ⚠️ **The accessibility checks no script can run** (`11 §5`): a Windows
+    contrast theme over the tree, the tabs, the theme control and a running
+    import; a screen-reader pass over Alt+↑/↓ (does the new position get
+    spoken, once); 200 % zoom. The fixes were verified in a headless Chrome
+    with `forced-colors` emulated, which is not the same as a real theme.
+17. ⚠️ **Other screen readers.** `ACCESSIBILITY.md` says Narrator with Chrome
+    on Windows 11 was tested and NVDA, JAWS, VoiceOver and ChromeVox were not.
+    Any pass with one of those moves it from the second list to the first.
+18. ⚠️ **Native review of the new strings** — the About link label and the
+    spoken position — in JA, ZH-CN and RO, with the passes in items 9 and 13.
 
 ## 11. Reading order
 

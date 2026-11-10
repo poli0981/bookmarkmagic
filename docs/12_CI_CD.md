@@ -244,7 +244,10 @@ release: bump package.json (semver) → CHANGELOG.md (Keep a Changelog) →
          git tag -s vX.Y.Z → push tag → release.yml
 ```
 
-- Patch = fixes / translation fixes · Minor = features, **a new UI language**
+- Patch = fixes / translation fixes / **accessibility fixes** — including a
+  keyboard or assistive-technology route to something the product could
+  already do (v1.2.1's Alt+↑/↓ beside drag-to-reorder): it closes a barrier, it
+  does not add a capability · Minor = features, **a new UI language**
   (it changes the listing and what the switcher offers — `07 §6`) / any
   permission or privacy-tab change (per `09 §4`) · Major = breaking
   format/schema changes (BM JSON version bump).
