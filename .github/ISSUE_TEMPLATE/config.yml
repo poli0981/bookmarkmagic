@@ -14,6 +14,12 @@ contact_links:
     url: https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg
     about: Reviews are read, but a bug reported here gets fixed faster.
 
+  - name: Accessibility barrier, by email
+    url: mailto:accessibility@poli0981.dev
+    about: >-
+      The "Something is hard or impossible to use" form above is the quickest
+      route; email works too. See ACCESSIBILITY.md.
+
   - name: Question, or no GitHub account
     url: mailto:code@poli0981.dev
     about: >-

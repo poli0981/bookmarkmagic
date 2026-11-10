@@ -7,6 +7,11 @@ stop reading here — the forms ask for what is needed.
 
 Security problems go through [`SECURITY.md`](SECURITY.md), never a public issue.
 
+If something is hard or impossible to use — with a keyboard, a screen reader, a
+contrast theme, zoom — that is a defect, and it has its own form.
+[`ACCESSIBILITY.md`](ACCESSIBILITY.md) says what is already known and how a
+report is handled.
+
 ## Reporting a bookmark file that will not import
 
 This is the most valuable report this project gets, because a sample becomes a
@@ -109,6 +114,33 @@ so they are not style preferences:
 specification — **where code and docs disagree, the docs win.** A behaviour
 change that skips its doc leaves the spec lying, which is why the PR checklist
 asks about it.
+
+## Changing the interface
+
+[`ACCESSIBILITY.md`](ACCESSIBILITY.md) tells users what works; `docs/06 §5`
+is the specification behind it. A change to a component has to keep both true:
+
+- **Keyboard.** Whatever a pointer can do, a key can do. A control that is not
+  a tab stop on purpose (the tree's row buttons) has its key documented.
+- **Focus.** Always visible — check it on a control with a filled background,
+  where the default ring can vanish into the fill — and never dropped: when
+  the focused thing goes away, focus is put somewhere deliberate
+  (`src/lib/components/focus-heading.ts` has the helpers).
+- **Names.** Icons are decorative; the control carries the name. Anything a
+  screen reader speaks is an i18n key in every locale.
+- **Not colour alone, not motion.** A state shown by a fill or a shadow needs
+  a `forced-colors` equivalent; anything that moves sits behind
+  `prefers-reduced-motion: no-preference`. Tests enforce the second
+  (`tests/unit/styles/motion.test.ts`) and hold the list for the first
+  (`forced-colors.test.ts`).
+- **Native first.** A `<button>`, a `<dialog>`, a `<fieldset>` before an ARIA
+  role. A role is a promise of that role's keyboard behaviour: the previews
+  lost `role="tree"` because they did not have the arrow keys.
+- **Try it.** Unplug the mouse, then run one screen reader over the screen you
+  changed. Say in the PR which one, or that you could not.
+
+There is no component test framework here, so logic that can leave a component
+does, and is tested where it lands (`src/lib/edit/`, `src/lib/stores/`).
 
 ## Turning a reported file into a regression test
 

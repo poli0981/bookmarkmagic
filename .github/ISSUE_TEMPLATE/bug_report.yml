@@ -10,6 +10,10 @@ body:
         "A bookmark file will not import correctly" form instead — it asks for
         the one thing that makes those fixable.
 
+        If something is hard or impossible to use with a **keyboard, a screen
+        reader, a contrast theme or zoom**, the "Something is hard or
+        impossible to use" form asks better questions for that.
+
         If this is a **security** problem, do not file it here. See
         [SECURITY.md](https://github.com/poli0981/bookmarkmagic/blob/main/SECURITY.md).
 
