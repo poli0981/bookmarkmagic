@@ -120,6 +120,58 @@ describe('EditSession — drag and drop', () => {
   });
 });
 
+describe('EditSession — Alt+↑ / Alt+↓ (v1.2.1)', () => {
+  const seedThree = () =>
+    ['a', 'b', 'c'].map((t) => fake.seed('1', { title: t, url: `https://${t}/` }));
+
+  it('moves a row down past its neighbour by Chrome’s index rule, and says where it landed', async () => {
+    const [a] = seedThree();
+    await session.load();
+    // Down is the direction Chrome's same-parent index rule gets wrong if the
+    // local and the API index are confused (docs/05 §10).
+    expect(await session.nudge(a ?? '', 1)).toEqual({ position: 2, total: 3 });
+    expect(fake.childTitles('1')).toEqual(['b', 'a', 'c']);
+    expect(session.roots[0]?.children?.map((n) => n.title)).toEqual(['b', 'a', 'c']);
+    expect(await session.nudge(a ?? '', 1)).toEqual({ position: 3, total: 3 });
+    expect(fake.childTitles('1')).toEqual(['b', 'c', 'a']);
+  });
+
+  it('moves a row up, and stops at either end of the folder', async () => {
+    const [a, , c] = seedThree();
+    await session.load();
+    expect(await session.nudge(c ?? '', -1)).toEqual({ position: 2, total: 3 });
+    expect(fake.childTitles('1')).toEqual(['a', 'c', 'b']);
+    expect(await session.nudge(a ?? '', -1)).toBeUndefined();
+    expect(await session.nudge('nope', 1)).toBeUndefined();
+    expect(fake.countCalls('move')).toBe(1);
+  });
+
+  it('never moves a permanent root', async () => {
+    await session.load();
+    expect(await session.nudge('1', 1)).toBeUndefined();
+    expect(await session.nudge('2', -1)).toBeUndefined();
+    expect(fake.countCalls('move')).toBe(0);
+  });
+
+  it('does nothing while a bulk command runs, and reports a refusal as no move', async () => {
+    const [a] = seedThree();
+    await session.load();
+    session.busy = true;
+    expect(await session.nudge(a ?? '', 1)).toBeUndefined();
+    session.busy = false;
+    fake.move = async () => {
+      throw new Error('refused');
+    };
+    // The API is read when the session is built.
+    session = new EditSession(api(fake), () => 'en');
+    await session.load();
+    expect(await session.nudge(a ?? '', 1)).toBeUndefined();
+    expect(session.actionError).toBeDefined();
+    // The tree was re-read as it really is.
+    expect(session.roots[0]?.children?.map((n) => n.title)).toEqual(['a', 'b', 'c']);
+  });
+});
+
 describe('EditSession — rename, delete, new folder', () => {
   it('trims a rename and ignores a blank or unchanged one', async () => {
     const id = fake.seed('1', { title: 'old', url: 'https://x/' });

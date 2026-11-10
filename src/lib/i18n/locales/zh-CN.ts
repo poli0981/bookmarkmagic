@@ -124,6 +124,7 @@ export default {
     sortPartial:
       '已移动 {total} 项中的 {done} 项，随后浏览器拒绝了操作。文件夹现在显示的是实际顺序。',
     alreadySorted: '此文件夹已经排好序了。',
+    movedPosition: '{title}：第 {position} 项，共 {total} 项',
   },
   settings: {
     autosave: '更改会随时自动保存。',

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { EditNode } from '@/lib/edit/patch-tree';
-import { resolveKey, visibleRows } from '@/lib/edit/tree-keyboard';
+import { nudgeTarget, resolveKey, visibleRows } from '@/lib/edit/tree-keyboard';
 
 const TREE: EditNode[] = [
   {
@@ -135,5 +135,63 @@ describe('resolveKey — type-ahead', () => {
 
   it('does nothing when no row matches', () => {
     expect(resolveKey('z', 'bar', rows)).toEqual({ kind: 'none' });
+  });
+});
+
+describe('nudgeTarget — the sibling Alt+↑/↓ moves a row past (docs/05 §10)', () => {
+  const FOLDER: EditNode[] = [
+    {
+      id: 'bar',
+      title: 'Bookmarks bar',
+      children: [
+        { id: 'a', parentId: 'bar', title: 'A', url: 'https://a.example/' },
+        {
+          id: 'dev',
+          parentId: 'bar',
+          title: 'Dev',
+          children: [{ id: 'gh', parentId: 'dev', title: 'GitHub', url: 'https://github.com/' }],
+        },
+        { id: 'z', parentId: 'bar', title: 'Z', url: 'https://z.example/' },
+      ],
+    },
+    { id: 'other', title: 'Other', children: [] },
+  ];
+
+  it('is the row’s neighbour in its own folder', () => {
+    const rows = visibleRows(FOLDER, new Set(['bar']));
+    expect(nudgeTarget(rows, 'dev', -1)).toBe('a');
+    expect(nudgeTarget(rows, 'dev', 1)).toBe('z');
+  });
+
+  it('is nothing at either end of the folder', () => {
+    const rows = visibleRows(FOLDER, new Set(['bar']));
+    expect(nudgeTarget(rows, 'a', -1)).toBeUndefined();
+    expect(nudgeTarget(rows, 'z', 1)).toBeUndefined();
+    // An only child has no one to trade places with.
+    expect(nudgeTarget(visibleRows(FOLDER, new Set(['bar', 'dev'])), 'gh', 1)).toBeUndefined();
+  });
+
+  it('steps over an open neighbour’s children, which are not its siblings', () => {
+    // Visually GitHub sits between Dev and Z; Z's neighbour above is still Dev.
+    const rows = visibleRows(FOLDER, new Set(['bar', 'dev']));
+    expect(nudgeTarget(rows, 'z', -1)).toBe('dev');
+    expect(nudgeTarget(rows, 'a', 1)).toBe('dev');
+  });
+
+  it('counts only the siblings a search still shows', () => {
+    const rows = visibleRows(FOLDER, new Set(['bar']), new Set(['bar', 'a', 'z']));
+    expect(nudgeTarget(rows, 'a', 1)).toBe('z');
+    expect(nudgeTarget(rows, 'z', -1)).toBe('a');
+  });
+
+  it('names a root’s neighbour too — refusing to move a root is planDrop’s job', () => {
+    const rows = visibleRows(FOLDER, new Set());
+    expect(nudgeTarget(rows, 'bar', 1)).toBe('other');
+  });
+
+  it('is nothing for a row that is not on screen, or no row at all', () => {
+    const rows = visibleRows(FOLDER, new Set(['bar']));
+    expect(nudgeTarget(rows, 'gh', 1)).toBeUndefined();
+    expect(nudgeTarget(rows, undefined, 1)).toBeUndefined();
   });
 });

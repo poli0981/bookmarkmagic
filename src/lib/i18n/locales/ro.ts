@@ -157,6 +157,7 @@ export default {
     sortPartial:
       'Elemente mutate înainte ca browserul să refuze: {done} din {total}. Dosarul arată acum ordinea reală.',
     alreadySorted: 'Acest dosar este deja în ordine.',
+    movedPosition: '{title}: poziția {position} din {total}',
   },
   settings: {
     autosave: 'Modificările se salvează pe măsură ce le faceți.',

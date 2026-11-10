@@ -124,6 +124,7 @@ export default {
     sortPartial:
       'Đã di chuyển {done} trong số {total} mục trước khi trình duyệt từ chối. Thư mục đang hiển thị đúng thứ tự thực tế.',
     alreadySorted: 'Thư mục này đã được sắp xếp.',
+    movedPosition: '{title}: vị trí {position} trên {total}',
   },
   settings: {
     autosave: 'Thay đổi được lưu ngay khi bạn chỉnh.',

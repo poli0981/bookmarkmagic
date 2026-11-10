@@ -12,7 +12,11 @@ import { FakeBookmarks } from '../../helpers/fake-bookmarks';
 let fake: FakeBookmarks;
 let session: EditSession;
 let tree: HTMLUListElement;
-let effects: { open: Mock<(id: string) => void>; copy: Mock<(id: string) => void> };
+let effects: {
+  open: Mock<(id: string) => void>;
+  copy: Mock<(id: string) => void>;
+  nudge: Mock<(id: string, direction: -1 | 1) => void>;
+};
 let ids: { dev: string; gh: string; docs: string };
 
 beforeEach(async () => {
@@ -36,12 +40,17 @@ beforeEach(async () => {
     () => 'en',
   );
   await session.load();
-  effects = { open: vi.fn<(id: string) => void>(), copy: vi.fn<(id: string) => void>() };
+  effects = {
+    open: vi.fn<(id: string) => void>(),
+    copy: vi.fn<(id: string) => void>(),
+    nudge: vi.fn<(id: string, direction: -1 | 1) => void>(),
+  };
   tree = document.createElement('ul');
   tree.addEventListener('keydown', (event) =>
     onTreeKey(event, session, {
       open: (node: EditNode) => effects.open(node.id),
       copy: (node: EditNode) => effects.copy(node.id),
+      nudge: effects.nudge,
     }),
   );
 });
@@ -101,8 +110,36 @@ describe('onTreeKey', () => {
     session.renamingId = undefined;
     const button = tree.appendChild(document.createElement('button'));
     expect(press('ArrowDown', {}, button).defaultPrevented).toBe(false);
-    expect(press('ArrowDown', { altKey: true }).defaultPrevented).toBe(false);
+    // Alt+← is the browser's Back; Ctrl+↓ is nothing of ours.
+    expect(press('ArrowLeft', { altKey: true }).defaultPrevented).toBe(false);
+    expect(press('ArrowDown', { ctrlKey: true }).defaultPrevented).toBe(false);
     expect(session.focusedId).toBe(ids.docs);
+  });
+
+  it('asks to move the focused row with Alt+↑ and Alt+↓, and with Alt alone', () => {
+    session.focusedId = ids.docs;
+    expect(press('ArrowDown', { altKey: true }).defaultPrevented).toBe(true);
+    expect(press('ArrowUp', { altKey: true }).defaultPrevented).toBe(true);
+    expect(effects.nudge.mock.calls).toEqual([
+      [ids.docs, 1],
+      [ids.docs, -1],
+    ]);
+    // The focus does not move: the row does.
+    expect(session.focusedId).toBe(ids.docs);
+
+    // Alt+Shift+↓, Ctrl+Alt+↓ and ⌘+Alt+↓ belong to the browser or the OS.
+    press('ArrowDown', { altKey: true, shiftKey: true });
+    press('ArrowDown', { altKey: true, ctrlKey: true });
+    press('ArrowDown', { altKey: true, metaKey: true });
+    expect(effects.nudge).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not ask to move anything with no row focused, or while renaming', () => {
+    press('ArrowDown', { altKey: true });
+    session.focusedId = ids.docs;
+    session.renamingId = ids.docs;
+    press('ArrowDown', { altKey: true });
+    expect(effects.nudge).not.toHaveBeenCalled();
   });
 
   it('starts no write while a bulk command runs', () => {

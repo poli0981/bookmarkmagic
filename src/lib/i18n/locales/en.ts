@@ -138,6 +138,7 @@ const dict = {
     sortPartial:
       'Moved {done} of {total} items before the browser refused. The folder shows its real order now.',
     alreadySorted: 'This folder is already in order.',
+    movedPosition: '{title}: position {position} of {total}',
   },
   settings: {
     autosave: 'Changes are saved as you make them.',
