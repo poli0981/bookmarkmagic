@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { onMount, tick } from 'svelte';
   import AboutTab from '@/lib/components/AboutTab.svelte';
   import EditTab from '@/lib/components/EditTab.svelte';
   import ExportTab from '@/lib/components/ExportTab.svelte';
@@ -11,6 +11,7 @@
   import TabBar from '@/lib/components/TabBar.svelte';
   import ThemeToggle from '@/lib/components/ThemeToggle.svelte';
   import Toast from '@/lib/components/Toast.svelte';
+  import { focusIfLost } from '@/lib/components/focus-heading';
   import Icon from '@/lib/components/icons/Icon.svelte';
   import { t } from '@/lib/i18n/index.svelte';
   import { isWriting } from '@/lib/stores/import-session.svelte';
@@ -52,6 +53,20 @@
     document.title = `${t(ROUTE_KEYS[getRoute()])} · ${t('common.appName')}`;
   });
 
+  // A route change can take the focused control with it — "Open in Edit" on
+  // the import report unmounts the button that was clicked — and focus then
+  // falls to <body>, back at the top of the page. It goes to <main> instead.
+  // Only when it was lost — the tab and status-bar buttons keep theirs — and
+  // never while the page is loading: `startRouting` reads the hash on mount,
+  // which is a route change to this effect and not to the user, and a fresh
+  // load must not move focus by itself.
+  let routeSettled = false;
+  $effect(() => {
+    void getRoute();
+    if (!routeSettled) return;
+    void tick().then(() => focusIfLost(mainEl));
+  });
+
   onMount(() => {
     // The tab bar and the footer already refuse to navigate mid-write. This
     // closes the third door: browser Back, which fires `hashchange` directly
@@ -60,6 +75,10 @@
     const stopRouting = startRouting({
       isBlocked: isWriting,
       onBlocked: () => pushToast(t('common.busy'), 'info'),
+    });
+    // After the route the hash named has rendered (see the effect above).
+    void tick().then(() => {
+      routeSettled = true;
     });
 
     // Leaving mid-write would kill the queue with the tab (docs/03 §5).

@@ -2,32 +2,32 @@
   /**
    * The #edit tab — docs/03 §3, docs/06 §3.3. Markup and wiring only: state
    * and commands live in `stores/edit-session.svelte.ts`, live events in
-   * `edit/live-sync.ts`.
+   * `edit/live-sync.ts`, the dialogs' markup in `EditDialogs.svelte`.
    */
   import { onMount, tick, untrack } from 'svelte';
   import { subscribe } from '../browser/bookmarks';
   import { copyToClipboard } from '../browser/clipboard';
   import { openBookmarkUrl } from '../browser/open-url';
-  import { countDescendants, displayTitle, toEditNode } from '../edit/edit-node';
+  import { displayTitle, toEditNode } from '../edit/edit-node';
   import { createBatcher } from '../edit/live-sync';
-  import { moveTargets } from '../edit/move-target';
   import { type EditNode, findNode } from '../edit/patch-tree';
   import { onTreeKey } from '../edit/tree-keys';
-  import { getLocale, num, t, tPlural } from '../i18n/index.svelte';
+  import { getLocale, num, t } from '../i18n/index.svelte';
   import { EditSession } from '../stores/edit-session.svelte';
   import { pushToast } from '../stores/toast.svelte';
-  import ConfirmDialog from './ConfirmDialog.svelte';
   import DuplicatePanel from './DuplicatePanel.svelte';
+  import EditDialogs from './EditDialogs.svelte';
   import EditToolbar from './EditToolbar.svelte';
   import ErrorCallout from './ErrorCallout.svelte';
   import { focusIfLost } from './focus-heading';
-  import MoveToDialog from './MoveToDialog.svelte';
   import TreeList from './TreeList.svelte';
 
   const session = new EditSession(undefined, getLocale);
   let searchInput = $state<HTMLInputElement | undefined>();
   let treeEl = $state<HTMLElement | undefined>();
   let panelEl = $state<HTMLElement | undefined>();
+  /** What Alt+↑/↓ just did, for the live region below (docs/06 §5). */
+  let announcement = $state('');
 
   onMount(() => {
     void session.load();
@@ -82,12 +82,6 @@
     if (node === undefined) return undefined;
     return node.url === undefined ? node : findNode(session.roots, node.parentId ?? '');
   });
-  // Only while the dialog is open: it walks every folder in the tree.
-  const targets = $derived(
-    session.movingNode === undefined ? [] : moveTargets(session.roots, session.movingNode),
-  );
-  const descendantCount = $derived(countDescendants(session.pendingDelete));
-  const pendingTitle = $derived(displayTitle(session.pendingDelete, t('edit.untitled')));
 
   const partialNote = $derived.by(() => {
     const partial = session.actionError?.partial;
@@ -114,8 +108,28 @@
     pushToast(t(copied ? 'edit.copied' : 'edit.copyFailed'), copied ? 'success' : 'danger');
   }
 
+  /**
+   * Alt+↑ / Alt+↓. The row's `aria-posinset` changes, but a screen reader does
+   * not re-read the active descendant for that — so the new place is spoken.
+   */
+  async function nudge(id: string, direction: -1 | 1): Promise<void> {
+    const placed = await session.nudge(id, direction);
+    if (placed === undefined) return;
+    announcement = t('edit.movedPosition', {
+      title: displayTitle(findNode(session.roots, id), t('edit.untitled')),
+      position: num(placed.position),
+      total: num(placed.total),
+    });
+    await tick();
+    treeEl?.querySelector(`[data-node-id="${CSS.escape(id)}"]`)?.scrollIntoView({ block: 'nearest' });
+  }
+
   function onKeydown(event: KeyboardEvent): void {
-    onTreeKey(event, session, { open: (node) => void open(node), copy: (node) => void copy(node) });
+    onTreeKey(event, session, {
+      open: (node) => void open(node),
+      copy: (node) => void copy(node),
+      nudge: (id, direction) => void nudge(id, direction),
+    });
   }
 
   /** ⌘/Ctrl-F focuses the search box, whatever the case of the F (docs/06 §3.3). */
@@ -142,6 +156,18 @@
           panelEl?.querySelector<HTMLElement>('[data-panel-close]'),
       );
     }
+  }
+
+  /**
+   * A bulk command disables the button that started it for as long as it runs
+   * (Sort A→Z), or removes it with what it deleted (keep-first), and the
+   * closing dialog cannot return focus to either. Once the command is over,
+   * a focus that fell to `<body>` is put somewhere deliberate.
+   */
+  async function afterBulk(run: Promise<void>, target: () => HTMLElement | null | undefined): Promise<void> {
+    await run;
+    await tick();
+    focusIfLost(target());
   }
 </script>
 
@@ -194,52 +220,19 @@
   </div>
 {/if}
 
-<MoveToDialog
-  node={session.movingNode}
-  {targets}
-  onpick={(parentId) => {
-    const id = session.movingNode?.id;
-    session.movingNode = undefined;
-    if (id !== undefined) void session.moveTo(id, { parentId });
-  }}
-  oncancel={() => (session.movingNode = undefined)}
-/>
+<!-- Always in the page, and only its text changes: a region inserted already
+     filled is not reliably announced (the same rule as ImportAnnouncer). -->
+<p class="sr-only" role="status" aria-live="polite">{announcement}</p>
 
-<ConfirmDialog
-  open={session.pendingDelete !== undefined}
-  danger
-  title={t('edit.deleteTitle')}
-  body={descendantCount > 0
-    ? tPlural('edit.deleteFolderBody', descendantCount, { title: pendingTitle })
-    : t('edit.deleteBody', { title: pendingTitle })}
-  confirmLabel={t('edit.delete')}
-  cancelLabel={t('common.cancel')}
-  onconfirm={() => void confirmDelete()}
-  oncancel={() => (session.pendingDelete = undefined)}
-/>
-
-<ConfirmDialog
-  open={session.pendingKeepFirst}
-  danger
-  title={t('edit.keepFirstTitle')}
-  body={tPlural(
-    'edit.keepFirstBody',
-    session.duplicateGroups.reduce((n, g) => n + g.nodes.length - 1, 0),
-  )}
-  confirmLabel={t('edit.delete')}
-  cancelLabel={t('common.cancel')}
-  onconfirm={() => void session.keepFirst()}
-  oncancel={() => (session.pendingKeepFirst = false)}
-/>
-
-<ConfirmDialog
-  open={session.pendingSort !== undefined}
-  title={t('edit.sortTitle', { title: displayTitle(session.pendingSort?.folder, t('edit.untitled')) })}
-  body={tPlural('edit.sortBody', session.pendingSort?.moves.length ?? 0)}
-  confirmLabel={t('edit.sort')}
-  cancelLabel={t('common.cancel')}
-  onconfirm={() => void session.confirmSort()}
-  oncancel={() => (session.pendingSort = undefined)}
+<EditDialogs
+  {session}
+  ondelete={() => void confirmDelete()}
+  onkeepFirst={() =>
+    void afterBulk(
+      session.keepFirst(),
+      () => panelEl?.querySelector<HTMLElement>('[data-panel-close]') ?? treeEl,
+    )}
+  onsort={() => void afterBulk(session.confirmSort(), () => treeEl)}
 />
 
 <style>

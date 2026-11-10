@@ -126,6 +126,7 @@ export default {
     sortPartial:
       'ブラウザが拒否する前に {total} 件中 {done} 件を移動しました。フォルダは現在の実際の順序で表示されています。',
     alreadySorted: 'このフォルダはすでに並んでいます。',
+    movedPosition: '{title}：{total} 件中 {position} 番目',
   },
   settings: {
     autosave: '変更は自動的に保存されます。',

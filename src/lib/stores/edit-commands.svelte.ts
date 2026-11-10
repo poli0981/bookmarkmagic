@@ -32,6 +32,7 @@ import {
   moveNode,
   removeNode,
 } from '../edit/patch-tree';
+import { nudgeTarget } from '../edit/tree-keyboard';
 import { EditView } from './edit-view.svelte';
 
 /** The slice of `browser/bookmarks.ts` the tab writes through — injectable for tests. */
@@ -54,6 +55,12 @@ export interface BulkProgress {
 
 /** A failed command, shown above the tree rather than replacing it. */
 export type ActionError = DescribedError & { partial?: BulkProgress };
+
+/** Where a moved row ended up among its siblings, 1-based — what the tab speaks. */
+export interface Placement {
+  position: number;
+  total: number;
+}
 
 /** Where a delete was asked for: the tree (Del, a row's button) or the duplicate panel. */
 export type DeleteOrigin = 'tree' | 'panel';
@@ -208,20 +215,44 @@ export class EditCommands extends EditView {
     });
   };
 
-  /** Shared by drag & drop and the keyboard "Move to…" dialog. */
-  moveTo = async (id: string, plan: DropPlan): Promise<void> => {
-    if (this.busy) return;
+  /**
+   * Shared by drag & drop, the keyboard "Move to…" dialog and Alt+↑/↓.
+   *
+   * @returns whether the move was made — false when it was refused here or by
+   *   the browser.
+   */
+  moveTo = async (id: string, plan: DropPlan): Promise<boolean> => {
+    if (this.busy) return false;
     const node = findNode(this.roots, id);
-    if (node === undefined || !this.isEditable(node)) return;
-    if (!canMoveInto(this.roots, id, plan.parentId)) return;
+    if (node === undefined || !this.isEditable(node)) return false;
+    if (!canMoveInto(this.roots, id, plan.parentId)) return false;
     const { parentId, position } = plan;
-    await this.guard(async () => {
+    return this.guard(async () => {
       this.roots = moveNode(this.roots, id, parentId, position?.local);
       await this.api.move(
         id,
         position === undefined ? { parentId } : { parentId, index: position.api },
       );
     });
+  };
+
+  /**
+   * Alt+↑ / Alt+↓: the keyboard's "before" and "after" (docs/06 §5). It picks
+   * the sibling shown above or below and hands it to the drag's own planner,
+   * so a key and a drag cannot disagree about what is legal.
+   *
+   * @returns where the row now sits, for the tab to speak; `undefined` when
+   *   nothing moved — an end of the folder, a root, a managed node, busy.
+   */
+  nudge = async (id: string, direction: -1 | 1): Promise<Placement | undefined> => {
+    const target = nudgeTarget(this.rows, id, direction);
+    if (target === undefined) return undefined;
+    const plan = planDrop(this.roots, id, target, direction < 0 ? 'before' : 'after');
+    if (plan?.position === undefined || !(await this.moveTo(id, plan))) return undefined;
+    return {
+      position: plan.position.local + 1,
+      total: findNode(this.roots, plan.parentId)?.children?.length ?? 0,
+    };
   };
 
   /** A drag released on `targetId`; every illegal or no-op drop does nothing. */

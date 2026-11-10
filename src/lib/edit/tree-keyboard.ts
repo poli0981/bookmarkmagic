@@ -116,6 +116,27 @@ export function resolveKey(
   }
 }
 
+/**
+ * The sibling shown just above (`-1`) or below (`+1`) a row — what Alt+↑ and
+ * Alt+↓ move it past (docs/05 §10).
+ *
+ * The VISIBLE siblings: under a search only the matches count, because the
+ * user places the row relative to one they can see, exactly as a drag does. A
+ * collapsed neighbour's children are not rows, so they are skipped for free.
+ *
+ * @returns the neighbour's id, or `undefined` at either end of the folder.
+ */
+export function nudgeTarget(
+  rows: readonly VisibleRow[],
+  id: string | undefined,
+  direction: -1 | 1,
+): string | undefined {
+  const row = rows.find((candidate) => candidate.node.id === id);
+  if (row === undefined) return undefined;
+  const siblings = rows.filter((candidate) => candidate.parentId === row.parentId);
+  return siblings[siblings.indexOf(row) + direction]?.node.id;
+}
+
 function focusAt(rows: readonly VisibleRow[], index: number): TreeAction {
   const row = rows[Math.max(0, Math.min(index, rows.length - 1))];
   return row === undefined ? NONE : { kind: 'focus', id: row.node.id };

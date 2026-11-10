@@ -4,7 +4,8 @@
  * Purpose: the tree's keyboard contract applied to the session. Arrows, Home,
  *   End and type-ahead move the focus; → and ← open and close; Enter opens;
  *   F2, Delete and the menu key (or Shift+F10) rename, delete and "Move to…";
- *   Ctrl/⌘+C copies the link. Kept out of EditTab so the component stays
+ *   Alt+↑ and Alt+↓ move the row one place among its siblings; Ctrl/⌘+C
+ *   copies the link. Kept out of EditTab so the component stays
  *   wiring (docs/10 §1); the key → action mapping itself is `tree-keyboard`.
  * Guarantees: does nothing while a rename box is open or for keys aimed at a
  *   row's own control, and the session refuses writes while a bulk command
@@ -17,6 +18,8 @@ import { resolveKey } from './tree-keyboard';
 export interface TreeKeyEffects {
   open: (node: EditNode) => void;
   copy: (node: EditNode) => void;
+  /** Alt+↑ (`-1`) or Alt+↓ (`+1`) on the focused row. */
+  nudge: (id: string, direction: -1 | 1) => void;
 }
 
 export function onTreeKey(
@@ -32,6 +35,14 @@ export function onTreeKey(
     if (focused === undefined) return;
     event.preventDefault();
     effects.copy(focused);
+    return;
+  }
+  // Alt alone: Alt+Shift+↓ and the like belong to the browser or the OS.
+  if (event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey) {
+    const direction = event.key === 'ArrowUp' ? -1 : event.key === 'ArrowDown' ? 1 : undefined;
+    if (direction === undefined || session.focusedId === undefined) return;
+    event.preventDefault();
+    effects.nudge(session.focusedId, direction);
     return;
   }
   if (event.ctrlKey || event.metaKey || event.altKey) return;
