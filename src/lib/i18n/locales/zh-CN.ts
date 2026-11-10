@@ -174,6 +174,7 @@ export default {
     repo: 'GitHub 代码库',
     issues: '报告问题',
     changelog: '版本发布与更新日志',
+    accessibility: '无障碍',
     store: 'Chrome 网上应用店页面',
     thirdParty: '第三方代码',
     thirdPartyNote:

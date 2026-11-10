@@ -20,6 +20,14 @@ export const ISSUES_URL = `${REPO_URL}/issues`;
 export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
 
 /**
+ * The accessibility statement (docs/06 §3.5, §5): what works, what was tested,
+ * what is known not to, the tree's keys — shown nowhere in the UI — and how to
+ * report a barrier. A link to the file, not an address: no email appears on an
+ * in-product surface (see STORE_URL below).
+ */
+export const ACCESSIBILITY_URL = `${REPO_URL}/blob/main/ACCESSIBILITY.md`;
+
+/**
  * The published Chrome Web Store listing (item id — docs/00 §9).
  *
  * The only route from inside the product to rating or reviewing it, which

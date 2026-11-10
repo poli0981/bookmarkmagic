@@ -1,7 +1,15 @@
 <script lang="ts">
   import { getAppVersion } from '../browser/app-info';
   import { dateTime, t } from '../i18n/index.svelte';
-  import { CHANGELOG_URL, DONATE_LINKS, ISSUES_URL, LEGAL_URLS, REPO_URL, STORE_URL } from '../links';
+  import {
+    ACCESSIBILITY_URL,
+    CHANGELOG_URL,
+    DONATE_LINKS,
+    ISSUES_URL,
+    LEGAL_URLS,
+    REPO_URL,
+    STORE_URL,
+  } from '../links';
   import { copyToClipboard } from '../browser/clipboard';
   import { snapshot } from '../browser/diagnostics';
   import { getAcceptance } from '../stores/legal.svelte';
@@ -45,6 +53,11 @@
     <li>
       <a href={CHANGELOG_URL} target="_blank" rel="noopener noreferrer">
         {t('about.changelog')}<Icon name="external" size={12} />
+      </a>
+    </li>
+    <li>
+      <a href={ACCESSIBILITY_URL} target="_blank" rel="noopener noreferrer">
+        {t('about.accessibility')}<Icon name="external" size={12} />
       </a>
     </li>
     <li><a href={STORE_URL} target="_blank" rel="noopener noreferrer">{t('about.store')}<Icon name="external" size={12} /></a></li>
