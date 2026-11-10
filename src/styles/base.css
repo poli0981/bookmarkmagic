@@ -36,6 +36,14 @@ a {
   color: var(--accent);
 }
 
+/* The browser's default placeholder grey is not one of our tokens, so the
+   contrast test never saw it: about 4:1 on --bg-sunken. --fg-muted is a tested
+   pair on every surface (docs/06 §1). */
+::placeholder {
+  color: var(--fg-muted);
+  opacity: 1;
+}
+
 /* Mono for anything machine-shaped: counts, versions, paths, addresses. */
 code,
 kbd,

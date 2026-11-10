@@ -85,7 +85,9 @@
   }
 </script>
 
-<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions -->
+<!-- svelte-ignore a11y_click_events_have_key_events, a11y_no_noninteractive_element_interactions —
+     the click is the backdrop's (it lands on the dialog element), a pointer
+     shortcut for what Esc and the Dismiss button already do from the keyboard. -->
 <dialog
   bind:this={dialog}
   class:danger

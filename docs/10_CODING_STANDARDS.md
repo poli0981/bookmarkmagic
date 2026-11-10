@@ -82,8 +82,11 @@ rather than assign `undefined`. Build nodes with conditional spreads
   accessibility warnings (`a11y_*` — a click handler with no key handler, a
   control with no label) are warnings, and through 1.2.0 a warning never
   failed anything. It is the only lint that reads the markup. A deliberate
-  exception takes a `<!-- svelte-ignore a11y_… -->` with its reason beside it;
-  there are two, on `Modal`'s backdrop click and on the tree's `<ul>`.
+  exception takes a `<!-- svelte-ignore a11y_… -->` with its reason in the
+  same comment; there are two, on `Modal`'s backdrop click and on the tree's
+  `<ul>`. (`TreeRow`'s row `<div>` avoids the same warning differently — an
+  empty `onkeydown` and `role="presentation"` — because the keys are the
+  tree's, not the row's.)
 - **Markdown and YAML are excluded since Biome 2.6**, which started formatting
   both. The docs and workflow files are laid out by hand (long explanatory
   comments, deliberate wrapping); letting a formatter own them would turn every

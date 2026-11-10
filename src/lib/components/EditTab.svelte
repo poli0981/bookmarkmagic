@@ -2,17 +2,17 @@
   /**
    * The #edit tab — docs/03 §3, docs/06 §3.3. Markup and wiring only: state
    * and commands live in `stores/edit-session.svelte.ts`, live events in
-   * `edit/live-sync.ts`, the dialogs' markup in `EditDialogs.svelte`.
+   * `edit/live-sync.ts` (wired by `stores/edit-live.ts`), the dialogs' markup
+   * in `EditDialogs.svelte`.
    */
   import { onMount, tick, untrack } from 'svelte';
-  import { subscribe } from '../browser/bookmarks';
   import { copyToClipboard } from '../browser/clipboard';
   import { openBookmarkUrl } from '../browser/open-url';
-  import { displayTitle, toEditNode } from '../edit/edit-node';
-  import { createBatcher } from '../edit/live-sync';
+  import { displayTitle } from '../edit/edit-node';
   import { type EditNode, findNode } from '../edit/patch-tree';
   import { onTreeKey } from '../edit/tree-keys';
   import { getLocale, num, t } from '../i18n/index.svelte';
+  import { connectLive } from '../stores/edit-live';
   import { EditSession } from '../stores/edit-session.svelte';
   import { pushToast } from '../stores/toast.svelte';
   import DuplicatePanel from './DuplicatePanel.svelte';
@@ -31,36 +31,10 @@
 
   onMount(() => {
     void session.load();
-    // One patch per frame, and a single re-read for bursts — an import in
-    // another tab sends an event per node (docs/03 §3 "Live sync").
-    const batcher = createBatcher({
-      onFlush: session.applyLiveEvents,
-      onBurst: () => void session.load(),
-    });
-    let importing = false;
-    // Listeners attach on enter and detach on leave: a tab left subscribed
-    // during an import would take one event per created node.
-    const unsubscribe = subscribe({
-      onCreated: (_id, node) => {
-        if (importing || node.parentId === undefined) return;
-        batcher.push({ kind: 'created', parentId: node.parentId, index: node.index, node: toEditNode(node) });
-      },
-      onRemoved: (id) => batcher.push({ kind: 'removed', id }),
-      onChanged: (id, changes) => batcher.push({ kind: 'changed', id, changes }),
-      onMoved: (id, info) => batcher.push({ kind: 'moved', id, ...info }),
-      onChildrenReordered: () => batcher.resync(),
-      onImportBegan: () => {
-        importing = true;
-      },
-      onImportEnded: () => {
-        importing = false;
-        batcher.resync();
-      },
-    });
+    const disconnect = connectLive(session);
     globalThis.addEventListener('keydown', onWindowKeydown);
     return () => {
-      unsubscribe();
-      batcher.dispose();
+      disconnect();
       session.dispose();
       globalThis.removeEventListener('keydown', onWindowKeydown);
     };
@@ -115,6 +89,10 @@
   async function nudge(id: string, direction: -1 | 1): Promise<void> {
     const placed = await session.nudge(id, direction);
     if (placed === undefined) return;
+    // Emptied first: a region set to the text it already holds says nothing,
+    // and two rows of one name can land on one position.
+    announcement = '';
+    await tick();
     announcement = t('edit.movedPosition', {
       title: displayTitle(findNode(session.roots, id), t('edit.untitled')),
       position: num(placed.position),

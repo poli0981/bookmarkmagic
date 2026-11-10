@@ -181,8 +181,9 @@ was not measured, and NVDA, JAWS and VoiceOver remain untested).
 
 ### Accessibility backlog (from the 2026-11-10 audit, not closed in v1.2.1)
 
-`ACCESSIBILITY.md` lists these as known limitations; this is where they are
-scheduled. None blocks a task; each is a patch when it lands (`12 §4`).
+`ACCESSIBILITY.md` lists the user-facing ones as known limitations; this is
+where they are scheduled. None blocks a task; each is a patch when it lands
+(`12 §4`).
 
 - **Spoken results for the other edit commands.** Only Alt+↑/↓ announces what
   it did. A move, a sort, a rename, "keep first" and a new folder are silent
@@ -201,8 +202,8 @@ scheduled. None blocks a task; each is a patch when it lands (`12 §4`).
 - **Hover-only hints** (`title` on elements that cannot take focus): the
   status bar's notes, the import target note, the busy reason on a disabled
   tab.
-- **Headings and a skip link.** No route has an `<h1>`, `#edit` has no
-  headings, and the header's seven tab stops cannot be skipped. Landmarks
+- **Headings and a skip link.** Only the legal gate has an `<h1>`, `#edit` has
+  no headings, and the header's five tab stops cannot be skipped. Landmarks
   exist.
 - **Settings descriptions** are not tied to their controls
   (`aria-describedby`), nor is the "dedupe is off under Replace" note.
@@ -212,7 +213,20 @@ scheduled. None blocks a task; each is a patch when it lands (`12 §4`).
 - **Ctrl/⌘+F always goes to the search box** on `#edit`, even with a dialog
   open.
 - **No automated check of the rendered markup** — no axe pass, no role
-  queries; the harness photographs but does not inspect.
+  queries; the harness photographs but does not inspect. (A process gap, so
+  not in the statement.) The forced-colours and focus-ring tests are
+  file-level text checks: they cannot see specificity, which is how three of
+  the 1.2.1 review's findings got past them.
+- **Disabled without a visual cue.** The section tabs during a write, and a
+  row's buttons during a bulk command, change only the cursor.
+- **Keys that cannot act are silent** — Alt+↑ at the top of a folder, Delete on
+  a root. And on a Mac laptop the delete key is Backspace, which the tree
+  does not handle; on ChromeOS Alt+↑/↓ may arrive as Page Up/Down.
+- **Truncated titles** have no way to be read in full in the tree.
+- **A held Alt+↑/↓ can flicker.** Moves run one at a time, but the live event
+  of one can flush a frame after the next press's optimistic patch and roll
+  the row back for that frame (`05 §10`). It converges; the fix is to drain
+  the batcher before planning.
 
 ## v1.2 — languages (planned 2026-11-06)
 
@@ -376,6 +390,8 @@ attempted.
 | 2026-11-10 | **v1.2.0 is live; v1.2.1 is accessibility.** The owner's keyboard-only and Narrator pass over 1.2.0 found nothing, and an audit of `src/` then found five things such a pass cannot see or did not reach: a focus ring drawn in the colour of the fill under it, no forced-colours support, reordering that only a drag could do, focus dropped on `<body>` in three places, and targets under 24 px. A pass by one person with one screen reader is evidence, not a verdict — which is also why the statement says what was tested and what was not | 06 §5, 11 §5 |
 | 2026-11-10 | **An accessibility statement, at the repository root.** `ACCESSIBILITY.md`, beside `SECURITY.md` and `CONTRIBUTING.md`, linked from the README and from About. It states **WCAG 2.2 AA as the goal, not as a conformance claim**: nobody has audited the product, and a claim would be the kind of sentence `14` exists to keep out of the project. Known limitations are listed in it rather than left in this backlog, because a user deciding whether the product will work for them reads that file, not this one | 06 §5, 15 |
 | 2026-11-10 | **`accessibility@poli0981.dev` for barrier reports**, the eleventh per-purpose alias (created and tested by the owner). It appears in `ACCESSIBILITY.md`, the README's contact table and the issue chooser — never in `src/`, by the 2026-08-03 rule, which the About link respects by pointing at the file instead. Reports have their own issue form and an `accessibility` label, because a barrier report needs the assistive technology and its version, which the bug form does not ask for | 06 §3.5, 13 §6 |
-| 2026-11-10 | **Alt+↑ / Alt+↓ reorders, and it is a patch.** It reuses `planDrop` and `moveTo`, so a keyboard move and a drag cannot disagree about what is legal, and there is no second write path to test. One place at a time, among the siblings on screen, like a drag. It ships in a patch because it closes a barrier to something the product already did rather than adding a capability; `12 §4` now says so. Rejected: "Move up / Move down" row buttons (a seventh and eighth button on a row that already hides six), and a position field in "Move to…" (a new dialog flow for the same result) — though a click-only route is still owed (WCAG 2.5.7, backlog) | 05 §10, 12 §4 |
+| 2026-11-10 | **Svelte's accessibility warnings fail the build.** `svelte-check --fail-on-warnings`: the `a11y_*` checks are compiler warnings, a warning never failed anything, and Biome does not read `.svelte` — so nothing linted the markup. The suite was at zero warnings, which is the only cheap moment to turn it on | 10 §3, 12 §2 |
+| 2026-11-10 | **The review of 1.2.1 found what the tests could not, again.** Twelve code findings and seventeen in the docs — among them a tree that jumped to the top on the first click of a row button (the fix for one focus defect causing another), three forced-colours rules that lost to more specific ones, and an accessibility statement that promised more than the code did: "every clickable target is 24 px", "nothing times out", "focus is always a 2-pixel ring". The statement was rewritten to what the source supports, and its untested list grew. A statement written by the author of the code needs the same adversarial read as the code | 11 §5 |
+| 2026-11-10 | **Alt+↑ / Alt+↓ reorders, and it is a patch.** It reuses `planDrop` and `moveTo`, so a keyboard move and a drag cannot disagree about what is legal, and there is no second write path to test. One place at a time, among the siblings on screen, like a drag. It ships in a patch because it closes a barrier to something the product already did rather than adding a capability; `12 §4` now says so. Rejected: "Move up / Move down" row buttons (two more on a row that already hides up to five), and a position field in "Move to…" (a new dialog flow for the same result) — though a click-only route is still owed (WCAG 2.5.7, backlog) | 05 §10, 12 §4 |
 | 2026-11-10 | **Focus after a route change goes to `<main>`, not to the tree.** "Open in Edit" removes the button that was clicked. Focusing the tree when `#edit` mounts would also have fired on every first load, highlighting a row nobody chose and changing every screenshot; a route change with focus lost is the narrower condition and covers every tab | 06 §5 |
-| 2026-11-10 | **Dependabot's bumps are not the whole bump.** #31 and #36 moved Biome twice and left `biome.json`'s `$schema` behind both times, and left `vitest` a minor behind the coverage plugin that must match it; `01 §2` drifted with them. The sync is a human step after each Dependabot merge, and WXT still gets the built-manifest diff — 0.21.5 produced a manifest byte-identical to the 1.2.0 release asset | 01 §2, §6 |
+| 2026-11-10 | **Dependabot's bumps are not the whole bump.** #31 and #36 moved Biome twice and left `biome.json`'s `$schema` behind both times, and left `vitest`'s declared range a minor behind the coverage plugin's, which must match it (the lockfile had both at 5.1.0); `01 §2` drifted with them. The sync is a human step after each Dependabot merge, and WXT still gets the built-manifest diff — 0.21.5 produced a manifest byte-identical to the 1.2.0 release asset | 01 §2, §6 |

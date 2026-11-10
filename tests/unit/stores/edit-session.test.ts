@@ -153,6 +153,53 @@ describe('EditSession — Alt+↑ / Alt+↓ (v1.2.1)', () => {
     expect(fake.countCalls('move')).toBe(0);
   });
 
+  it('never moves a policy-managed node', async () => {
+    const managed = fake.addManagedRoot();
+    await session.load();
+    expect(session.rows.some((row) => row.node.id === managed.id)).toBe(true);
+    expect(await session.nudge(managed.id, -1)).toBeUndefined();
+    expect(await session.nudge(managed.id, 1)).toBeUndefined();
+    expect(fake.countCalls('move')).toBe(0);
+  });
+
+  it('under a search, passes the hidden items too and reports the place the tree shows', async () => {
+    const titles = ['zz one', 'plain', 'plainer', 'zz two', 'zz three'];
+    const ids = titles.map((t, i) => fake.seed('1', { title: t, url: `https://n${i}.test/` }));
+    await session.load();
+    session.setQuery('zz');
+    session.debounced = 'zz';
+    expect(session.rows.filter((row) => row.parentId === '1').map((row) => row.node.title)).toEqual(
+      ['zz one', 'zz two', 'zz three'],
+    );
+    // Past its visible neighbour — and so past the two hidden items between.
+    // The place reported is the one the tree shows: 2 of the 3 rows on screen,
+    // which is what the row's aria-posinset says, not 4 of 5.
+    expect(await session.nudge(ids[0] ?? '', 1)).toEqual({ position: 2, total: 3 });
+    expect(fake.childTitles('1')).toEqual(['plain', 'plainer', 'zz two', 'zz one', 'zz three']);
+  });
+
+  it('runs one move at a time: a second press while the first is in flight does nothing', async () => {
+    const [a] = seedThree();
+    let release: () => void = () => {};
+    const gate = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    const move = fake.move;
+    fake.move = async (...args) => {
+      await gate;
+      await move(...args);
+    };
+    session = new EditSession(api(fake), () => 'en');
+    await session.load();
+    const first = session.nudge(a ?? '', 1);
+    expect(await session.nudge(a ?? '', 1)).toBeUndefined();
+    release();
+    expect(await first).toEqual({ position: 2, total: 3 });
+    expect(fake.childTitles('1')).toEqual(['b', 'a', 'c']);
+    // And the next one goes through.
+    expect(await session.nudge(a ?? '', 1)).toEqual({ position: 3, total: 3 });
+  });
+
   it('does nothing while a bulk command runs, and reports a refusal as no move', async () => {
     const [a] = seedThree();
     await session.load();

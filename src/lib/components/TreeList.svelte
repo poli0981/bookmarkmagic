@@ -76,9 +76,16 @@
     win = next(follow(win, focusIndex, rows.length), rows.length);
   }
 
-  /** Tabbing in with nothing focused focuses the first row, so arrows work at once (uL6). */
+  /**
+   * Tabbing in with nothing focused focuses the first row, so arrows work at
+   * once (uL6). Only for a focus that came from the keyboard: a mouse press on
+   * a row in a scrolled tree focuses this list too, and picking the first row
+   * then scrolled the tree to the top under the pointer — the click that
+   * followed landed on whatever row had moved there.
+   */
   function onFocus(): void {
-    if (session.focusedId === undefined) session.focusedId = rows[0]?.node.id;
+    if (session.focusedId !== undefined || element?.matches(':focus-visible') !== true) return;
+    session.focusedId = rows[0]?.node.id;
   }
 </script>
 
@@ -88,7 +95,9 @@
       {tPlural('edit.showEarlier', Math.min(range.from, WINDOW))}
     </button>
   {/if}
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions — the tree
+       pattern: the focusable `role="tree"` list IS the widget that takes the
+       keys, with the active row named by aria-activedescendant. -->
   <ul
     bind:this={element}
     class="tree"
@@ -176,5 +185,11 @@
 
   .more:hover {
     background: var(--accent-subtle);
+  }
+
+  /* Inset: `.frame` clips its overflow, and the global ring sits 2px outside
+     the button — on these two it was cut off on every side. */
+  .more:focus-visible {
+    outline-offset: -2px;
   }
 </style>

@@ -11,7 +11,8 @@ This file is the entry point; the `docs/` suite is the specification.
 > 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0 live,
 > confirmed on the listing 2026-11-10; v1.2.1 prepared 2026-11-10, ⚠️ not yet
 > submitted).
-> Phases 0–9 are complete; the project is in **maintenance**.
+> Phases 0–8 are complete and Phase 9 (v1.2.1) is prepared; the project is in
+> **maintenance**.
 > That changes the rules of the game:
 >
 > - Every change now reaches installed users through a store review. It needs a
@@ -172,7 +173,9 @@ checksum-verified zip). A finding worth keeping: on this Windows machine the
 process-spawning script tests time out intermittently under load (`main`'s
 too), so CI — whose Windows smoke job passed — was the gate.
 ✔ Live on the store, confirmed on the listing 2026-11-10 (5 languages).
-Human-only ⚠️, still open: the native review passes.
+Human-only ⚠️, still open: the native review passes, and `13 §1b` step 10 —
+the published build installed on a clean profile — which has no recorded
+result for any version.
 
 ### Phase 9 — v1.2.1: accessibility
 The owner's keyboard-only and Narrator pass over 1.2.0 found nothing; an audit
@@ -188,7 +191,9 @@ Two things to carry forward. **`ACCESSIBILITY.md` is a public promise**: a UI
 change that makes its key table or its known-limitations list false has to
 change the file in the same PR (`11 §5` has the check). And the statement's
 goal is WCAG 2.2 AA **as a goal** — never write "conforms" or "compliant"
-without an audit to cite.
+without an audit to cite. The review found the first draft of the statement
+overclaiming in nine places ("every clickable target", "nothing times out"):
+check each sentence of it against the source, not against the intention.
 **Exit:** v1.2.1 prepared 2026-11-10. Human-only ⚠️: the `11 §5` pass with the
 **1.2.0 → 1.2.1 upgrade over an existing profile**, a real Windows contrast
 theme and a screen-reader pass over Alt+↑/↓, the zip upload, and the native

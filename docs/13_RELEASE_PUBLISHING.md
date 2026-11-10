@@ -49,6 +49,10 @@ privacy and distribution tabs are already filled; you are replacing the package.
      new `[X.Y.Z]` line must be added). Forgetting the link refs is the easy
      half to miss.
 
+   A third when the interface changed, or a new check was run:
+   - `ACCESSIBILITY.md` — its "Last reviewed" line (date and version) and its
+     "What has been tested" table, once `11 §5`'s last item has been done.
+
    `wxt.config.ts` declares no `version` key — WXT derives it from
    `package.json` (`08 §5`). If it appears in your diff, something is wrong.
 3. PR → CI green → merge to `main`. **The bump must be on `main` before the
@@ -178,6 +182,11 @@ actually shows and correct the files, not the dashboard.
   requires a sanitized sample (`scripts/sanitize-bookmarks.mjs`) plus explicit
   consent to commit it as a GPL-3.0 fixture, because that is what turns a report
   into a regression test (`11 §2`, `15 §v1.0.x`).
+- Accessibility reports — their own form (`accessibility.yml`, label
+  `accessibility`) and `accessibility@poli0981.dev` for people without a
+  GitHub account. `ACCESSIBILITY.md` promises an acknowledgement within about
+  a week and a patch for a blocking barrier (`15`, release trigger); a report
+  that is not fixed at once goes into its Known limitations.
 - Discord servers (`#support` in the OSS server) — pin an FAQ post.
   ⚠️ The invite URL is not recorded anywhere in the repo.
 - Review flow for feature requests: label → roadmap doc PR → milestone.

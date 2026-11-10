@@ -107,6 +107,11 @@
     background: var(--accent-subtle);
   }
 
+  /* Inset: the list scrolls, so it clips the global ring drawn outside. */
+  button:focus-visible {
+    outline-offset: -2px;
+  }
+
   .label {
     overflow: hidden;
     text-overflow: ellipsis;
