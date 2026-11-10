@@ -58,6 +58,10 @@ bookmarkmagic/
 │   └── sanitize/                # its format modules: detect, mappers, spans, html, json, csv, leaks
 ├── docs/                        # this suite (00–15)
 ├── legal/                       # EULA.md, DISCLAIMER.md, PRIVACY.md, THIRD_PARTY_NOTICES.md
+├── README.md / CHANGELOG.md     # what users read; CHANGELOG is linked from #about
+├── ACCESSIBILITY.md             # the accessibility statement (06 §5), linked from #about
+├── CONTRIBUTING.md / SECURITY.md / CODE_OF_CONDUCT.md
+├── .github/                     # issue forms, PR template, workflows (12), dependabot, FUNDING
 ├── src/
 │   ├── public/
 │   │   ├── icon/                # 16/32/48/128 png

@@ -392,6 +392,30 @@ destination. Asserted in `move-target.test.ts` (both index spaces, cross-folder,
 into a bookmark refused, beside itself, beside a root) and, against the
 in-memory fake, in `edit-session.test.ts`.
 
+**Keyboard reorder** (Alt+↑ / Alt+↓, since v1.2.1) adds no planner. It picks a
+target row and a zone, and `planDrop` does the rest:
+
+```
+nudgeTarget(rows, id, direction):      // rows: the visible rows, in order; direction: -1 | +1
+  row = the row for id; none if absent
+  siblings = rows with row.parentId, in order            // the VISIBLE ones: under a search, only matches
+  neighbour = siblings[index of row + direction]; none at either end
+  return neighbour.id
+
+nudge(id, direction):
+  target = nudgeTarget(rows, id, direction); none → nothing
+  plan = planDrop(roots, id, target, direction < 0 ? 'before' : 'after'); none → nothing
+  moveTo(id, plan)
+  return { position: plan.position.local + 1, total: the parent's child count }
+```
+
+Visible siblings, not all of them, because that is what a drag does too: the
+user places the item relative to a row they can see. A permanent root has no
+`parentId` that `planDrop` accepts, so it never moves. Asserted in
+`tree-keyboard.test.ts` (ends of a folder, a collapsed neighbour's children
+skipped, a filtered list) and `edit-session.test.ts` (Chrome's index rule in
+both directions, a root, a managed node, while busy).
+
 ## 11. Live-sync batching — `edit/live-sync.ts`
 
 ```
