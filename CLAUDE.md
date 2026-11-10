@@ -9,10 +9,9 @@ This file is the entry point; the `docs/` suite is the specification.
 > **BookmarkMagic is published on the Chrome Web Store and has real users**
 > (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
 > 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0 live,
-> confirmed on the listing 2026-11-10; v1.2.1 prepared 2026-11-10, ⚠️ not yet
-> submitted).
-> Phases 0–8 are complete and Phase 9 (v1.2.1) is prepared; the project is in
-> **maintenance**.
+> confirmed on the listing 2026-11-10; v1.2.1 released on GitHub 2026-11-10,
+> ⚠️ not yet submitted).
+> Phases 0–9 are complete; the project is in **maintenance**.
 > That changes the rules of the game:
 >
 > - Every change now reaches installed users through a store review. It needs a
@@ -194,7 +193,12 @@ goal is WCAG 2.2 AA **as a goal** — never write "conforms" or "compliant"
 without an audit to cite. The review found the first draft of the statement
 overclaiming in nine places ("every clickable target", "nothing times out"):
 check each sentence of it against the source, not against the intention.
-**Exit:** v1.2.1 prepared 2026-11-10. Human-only ⚠️: the `11 §5` pass with the
+A third: **code moved out of a component starts counting.** SonarCloud's
+new-code gate (80 %) failed the first push because the live-sync wiring left
+`EditTab` for a `.ts` module with no test. Extracting to stay under a size
+limit is half the job; the test is the other half.
+**Exit:** ✔ v1.2.1 tagged and released 2026-11-10 (signed tag on `d61318a`,
+checksum-verified zip). Human-only ⚠️: the `11 §5` pass with the
 **1.2.0 → 1.2.1 upgrade over an existing profile**, a real Windows contrast
 theme and a screen-reader pass over Alt+↑/↓, the zip upload, and the native
 review of the two new strings.
