@@ -58,6 +58,14 @@
     background-size: 17px 17px;
   }
 
+  /* A contrast theme removes the fill's colour and stripes: without a system
+     colour the bar is an empty box at every percentage (docs/06 §5). */
+  @media (forced-colors: active) {
+    .fill {
+      background-color: Highlight;
+    }
+  }
+
   .status {
     margin: 0;
     font-family: var(--font-mono);

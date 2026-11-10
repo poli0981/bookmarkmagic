@@ -117,6 +117,16 @@
     visibility: hidden;
   }
 
+  /* A contrast theme leaves the pill a hairline box in the page's own colours.
+     A heavier border in the highlight colour marks the current section
+     (docs/06 §5) — a border, not a fill: Chrome paints a backplate behind
+     forced text, so a label on a filled pill became a box of the page colour. */
+  @media (forced-colors: active) {
+    .indicator {
+      border: 2px solid Highlight;
+    }
+  }
+
   @media (max-width: 560px) {
     nav {
       --tab-width: 2.75rem;

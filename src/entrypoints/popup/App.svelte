@@ -227,7 +227,7 @@
 
   .settings {
     display: inline-flex;
-    padding: 3px;
+    padding: 4px;
     border: 1px solid transparent;
     border-radius: var(--radius-sm);
     background: none;

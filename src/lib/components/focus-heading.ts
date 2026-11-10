@@ -35,3 +35,18 @@ export function focusLost(): boolean {
 export function focusIfLost(target: HTMLElement | null | undefined): void {
   if (target !== null && target !== undefined && focusLost()) target.focus();
 }
+
+/**
+ * Hand focus to the tree a row control sits in — docs/06 §5.
+ *
+ * The #edit tree's row buttons and chevron are mouse shortcuts, not tab stops
+ * (`tabindex="-1"`), but Chrome still focuses one when it is clicked. The
+ * tree's key handler ignores keys aimed at a row's own control, so a single
+ * click used to switch the arrow keys off until the next click on a row; and
+ * "Move to…" opened from the button returned focus to a button on a row that
+ * had since moved. Called from the click, before any dialog opens, so the
+ * dialog remembers the tree as the place to return to.
+ */
+export function focusOwningTree(from: EventTarget | null): void {
+  if (from instanceof Element) from.closest<HTMLElement>('[role="tree"]')?.focus();
+}

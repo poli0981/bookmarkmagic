@@ -72,6 +72,10 @@ const UI_PAIRS: [fg: string, bg: string][] = [
   ['--border-strong', '--bg-raised'],
   ['--accent', '--bg'],
   ['--accent', '--bg-raised'],
+  // A ring drawn INSIDE an accent-filled control (ThemeToggle's selected
+  // segment) is --accent-fg: in --accent it was invisible through 1.2.0.
+  // `focus-ring.test.ts` checks that such a component makes the switch.
+  ['--accent-fg', '--accent'],
 ];
 const UI_RATIO = 3;
 

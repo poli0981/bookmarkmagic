@@ -1,5 +1,10 @@
 import { afterEach, describe, expect, it } from 'vitest';
-import { focusIfLost, focusLost, focusWhenShown } from '@/lib/components/focus-heading';
+import {
+  focusIfLost,
+  focusLost,
+  focusOwningTree,
+  focusWhenShown,
+} from '@/lib/components/focus-heading';
 
 /** Focus repair for multi-step screens and deletes — docs/06 §5. */
 afterEach(() => {
@@ -55,5 +60,36 @@ describe('focusWhenShown', () => {
     button(scope).focus();
     focusWhenShown(heading);
     expect(document.activeElement).toBe(heading);
+  });
+});
+
+describe('focusOwningTree', () => {
+  function tree(): { tree: HTMLElement; rowButton: HTMLButtonElement } {
+    const list = document.body.appendChild(document.createElement('ul'));
+    list.setAttribute('role', 'tree');
+    list.tabIndex = 0;
+    const item = list.appendChild(document.createElement('li'));
+    const rowButton = button(item);
+    rowButton.tabIndex = -1;
+    return { tree: list, rowButton };
+  }
+
+  it('moves focus from a clicked row control to the tree it sits in', () => {
+    // Chrome focuses a tabindex="-1" button on click, and the tree ignores keys
+    // aimed at a row's own control — the arrow keys went dead (docs/06 §5).
+    const { tree: list, rowButton } = tree();
+    rowButton.focus();
+    expect(document.activeElement).toBe(rowButton);
+    focusOwningTree(rowButton);
+    expect(document.activeElement).toBe(list);
+  });
+
+  it('does nothing for a control outside a tree, or for no target at all', () => {
+    const outside = button();
+    outside.focus();
+    focusOwningTree(outside);
+    expect(document.activeElement).toBe(outside);
+    expect(() => focusOwningTree(null)).not.toThrow();
+    expect(document.activeElement).toBe(outside);
   });
 });

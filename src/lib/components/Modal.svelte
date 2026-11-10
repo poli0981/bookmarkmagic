@@ -170,7 +170,8 @@
     border-radius: var(--radius-sm);
     color: var(--fg-muted);
     cursor: pointer;
-    padding: 2px;
+    /* 24 × 24 px with its 16 px glyph (WCAG 2.5.8). */
+    padding: 4px;
   }
 
   .dismiss:hover {

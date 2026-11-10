@@ -108,10 +108,11 @@
     color: var(--danger);
   }
 
+  /* 24 × 24 px with its 14 px glyph (WCAG 2.5.8). */
   button {
     display: inline-flex;
     flex-shrink: 0;
-    padding: 2px;
+    padding: 5px;
     border: none;
     border-radius: var(--radius-sm);
     background: none;
