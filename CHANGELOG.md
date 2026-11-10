@@ -14,6 +14,55 @@ version bump).
 
 Nothing yet.
 
+## [1.2.1] — 2026-11-10
+
+Accessibility. Permissions are unchanged (`bookmarks` and `storage`), nothing
+is asked of you again, and there is nothing to do — Chrome updates itself.
+
+### Added
+
+- **An accessibility statement**,
+  [`ACCESSIBILITY.md`](ACCESSIBILITY.md): what works with a keyboard and a
+  screen reader, what was tested and with what, what is known not to work
+  well yet, every key the Edit tree understands, and how to report a barrier.
+  About links to it.
+- **Reorder with the keyboard.** On the Edit tab, **Alt+↑** and **Alt+↓** move
+  the focused bookmark or folder one place up or down inside its folder — until
+  now only a drag could do that. The new position is announced for screen
+  readers (not yet checked with one).
+- **Windows contrast themes.** The focused row, the line that shows where a
+  dragged item will land, the selected theme, the current section, the
+  selected import mode and export format, the progress bar and the drop zone's
+  outline are now drawn in the theme's own colours; before, they disappeared.
+  Checked with Chrome's emulation so far, not yet with a real theme.
+
+### Fixed
+
+- The theme switch showed no focus ring: it was drawn in the same colour as
+  the button under it.
+- Keyboard focus is no longer thrown back to the top of the page after "Open
+  in Edit", after "Keep the first of each", or after sorting a folder from the
+  toolbar.
+- Clicking a row's button or its arrow no longer stops the arrow keys from
+  working in the tree.
+- Clicking a row in a long, scrolled tree no longer jumps the tree back to the
+  top.
+- Small buttons — the ones on a tree row, the folder arrows, the close buttons
+  on dialogs and notices, the popup's gear, "Show more" — are at least
+  24 × 24 pixels to click or tap.
+- The focus ring was cut off on "Show earlier / Show more" in the tree and on
+  the folders in "Move to…"; the selected theme lost its label on hover; and
+  the search box's placeholder text was fainter than the rest.
+
+### Notes
+
+- The goal is WCAG 2.2 AA; it is a goal, not a claim — nobody has audited the
+  extension. If something is hard or impossible to use, the "Something is hard
+  or impossible to use" form on GitHub, or accessibility@poli0981.dev, reaches
+  the maintainer.
+- The two new pieces of text are best-effort in Japanese, Chinese and Romanian,
+  like the rest of those translations.
+
 ## [1.2.0] — 2026-11-06
 
 Two new languages. Permissions are unchanged (`bookmarks` and `storage`), and
@@ -244,7 +293,8 @@ from 2026-08-03.
 - Parsing is bounded: 25 MB per file, 100 000 nodes, 200 levels of nesting.
 - No network access of any kind at runtime, enforced by a grep gate in CI.
 
-[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.2.0...HEAD
+[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.2.1...HEAD
+[1.2.1]: https://github.com/poli0981/bookmarkmagic/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.1...v1.1.0
 [1.0.1]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.0...v1.0.1
