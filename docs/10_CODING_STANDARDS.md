@@ -50,7 +50,7 @@ rather than assign `undefined`. Build nodes with conditional spreads
 
 ```jsonc
 {
-  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.6.4/schema.json",
   "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
   // Svelte, CSS, Markdown and YAML are excluded on purpose — see the notes below.
   "files": {
