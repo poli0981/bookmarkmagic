@@ -11,14 +11,22 @@
  */
 import { subscribe } from '../browser/bookmarks';
 import { toEditNode } from '../edit/edit-node';
-import { createBatcher } from '../edit/live-sync';
+import { type BatcherOptions, createBatcher } from '../edit/live-sync';
 import type { EditSession } from './edit-session.svelte';
 
-/** @returns the teardown: unsubscribe, and drop anything still queued. */
-export function connectLive(session: EditSession): () => void {
+/**
+ * @param schedule when a batch is flushed — the next frame by default; tests
+ *   pass one they fire by hand.
+ * @returns the teardown: unsubscribe, and drop anything still queued.
+ */
+export function connectLive(
+  session: EditSession,
+  schedule?: BatcherOptions['schedule'],
+): () => void {
   const batcher = createBatcher({
     onFlush: session.applyLiveEvents,
     onBurst: () => void session.load(),
+    ...(schedule === undefined ? {} : { schedule }),
   });
   let importing = false;
   const unsubscribe = subscribe({
