@@ -192,6 +192,7 @@ const dict = {
     repo: 'GitHub repository',
     issues: 'Report an issue',
     changelog: 'Releases and changelog',
+    accessibility: 'Accessibility',
     store: 'Chrome Web Store listing',
     thirdParty: 'Third-party code',
     thirdPartyNote:

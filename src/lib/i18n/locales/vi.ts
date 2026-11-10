@@ -176,6 +176,7 @@ export default {
     repo: 'Kho mã trên GitHub',
     issues: 'Báo lỗi',
     changelog: 'Bản phát hành và nhật ký thay đổi',
+    accessibility: 'Hỗ trợ tiếp cận',
     store: 'Trang trên Chrome Web Store',
     thirdParty: 'Mã của bên thứ ba',
     thirdPartyNote:

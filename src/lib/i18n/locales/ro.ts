@@ -209,6 +209,7 @@ export default {
     repo: 'Depozitul GitHub',
     issues: 'Raportați o problemă',
     changelog: 'Versiuni și jurnalul modificărilor',
+    accessibility: 'Accesibilitate',
     store: 'Pagina din Magazinul Chrome Web',
     thirdParty: 'Cod terț',
     thirdPartyNote:

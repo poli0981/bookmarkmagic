@@ -5,6 +5,7 @@ import { getAppVersion } from '@/lib/browser/app-info';
 import { setLocale, t } from '@/lib/i18n/index.svelte';
 import { LOCALES } from '@/lib/i18n/resolve-locale';
 import {
+  ACCESSIBILITY_URL,
   CHANGELOG_URL,
   DONATE_LINKS,
   ISSUES_URL,
@@ -26,6 +27,7 @@ describe('outbound links', () => {
       REPO_URL,
       ISSUES_URL,
       CHANGELOG_URL,
+      ACCESSIBILITY_URL,
       ...LEGAL_URLS.map((link) => link.url),
       ...DONATE_LINKS.map((link) => link.url),
     ];
@@ -82,6 +84,14 @@ describe('outbound links', () => {
     // not 404 because someone renamed or deleted the target.
     expect(CHANGELOG_URL.endsWith('/blob/main/CHANGELOG.md')).toBe(true);
     expect(existsSync(join(REPO_ROOT, 'CHANGELOG.md'))).toBe(true);
+  });
+
+  it('links an ACCESSIBILITY.md that actually exists', () => {
+    // The statement is the only place the tree's keys are written for users
+    // and the only route from inside the product to reporting a barrier
+    // (docs/06 §3.5). Same check as the changelog: it must not 404.
+    expect(ACCESSIBILITY_URL.endsWith('/blob/main/ACCESSIBILITY.md')).toBe(true);
+    expect(existsSync(join(REPO_ROOT, 'ACCESSIBILITY.md'))).toBe(true);
   });
 
   it('links a README the badges and install steps live in', () => {
