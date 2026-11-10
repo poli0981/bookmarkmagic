@@ -81,6 +81,11 @@ function shim() {
     ] },
     { id: '3', title: 'Mobile bookmarks', children: [b('Read later', 'https://later.example.com/')] },
   ] }];
+  // Chrome gives every node but the root a parentId, and the product relies on
+  // it: without one, nothing can be placed beside a sibling (drag, Alt+↑/↓) and
+  // the toolbar's Sort has no folder to act on.
+  const adopt = (nodes, parentId) => { for (const n of nodes) { if (parentId !== undefined) n.parentId = parentId; if (n.children) adopt(n.children, n.id); } };
+  adopt(tree);
   const byId = (id, nodes = tree) => { for (const n of nodes) { if (n.id === id) return n; const hit = n.children && byId(id, n.children); if (hit) return hit; } };
   const parentOf = (id, nodes = tree) => { for (const n of nodes) { if (n.children?.some((c) => c.id === id)) return n; const hit = n.children && parentOf(id, n.children); if (hit) return hit; } };
   const clone = (v) => structuredClone(v);
@@ -89,7 +94,7 @@ function shim() {
     getTree: async () => clone(tree),
     create: async ({ parentId, title, url, index }) => { const p = byId(parentId); const n = url ? { id: String(next++), parentId, title, url, dateAdded: Date.now() } : { id: String(next++), parentId, title, dateAdded: Date.now(), children: [] }; const at = index ?? p.children.length; p.children.splice(at, 0, n); events.onCreated.fire(n.id, clone({ ...n, index: at })); return clone(n); },
     update: async (id, changes) => { Object.assign(byId(id), changes); events.onChanged.fire(id, changes); },
-    move: async (id, { parentId, index }) => { const from = parentOf(id); const n = byId(id); const old = from.children.indexOf(n); from.children.splice(old, 1); const to = byId(parentId ?? from.id); let at = index ?? to.children.length; if (to === from && at > old) at--; to.children.splice(at, 0, n); events.onMoved.fire(id, { parentId: to.id, index: at, oldParentId: from.id, oldIndex: old }); },
+    move: async (id, { parentId, index }) => { const from = parentOf(id); const n = byId(id); const old = from.children.indexOf(n); from.children.splice(old, 1); const to = byId(parentId ?? from.id); let at = index ?? to.children.length; if (to === from && at > old) at--; to.children.splice(at, 0, n); n.parentId = to.id; events.onMoved.fire(id, { parentId: to.id, index: at, oldParentId: from.id, oldIndex: old }); },
     remove: async (id) => { const p = parentOf(id); p.children = p.children.filter((c) => c.id !== id); events.onRemoved.fire(id, {}); },
   };
   bookmarks.removeTree = bookmarks.remove;
