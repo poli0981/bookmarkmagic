@@ -236,6 +236,14 @@ them is tested where it lives:
   alone; the move itself by Chrome's index rule, refused for a root, a managed
   node and while busy, one at a time, and returning the row's place among the
   siblings on screen — under a search too, where it passes hidden items.
+- **`stores/edit-live.test.ts`** (v1.2.1) — the wiring that used to sit
+  untested in `EditTab`'s `onMount`, with `wxt/browser` mocked to seven
+  hand-fired event emitters and a hand-fired frame: a frame's events land as
+  one patch; a created node with no parent is ignored; nothing is patched
+  during Chrome's own import, and its end re-reads once; a wholesale reorder
+  re-reads; teardown detaches every listener and drops what was queued.
+  SonarCloud's new-code gate is what asked for it — moving code out of a
+  component makes it count.
 - **`components/focus-heading.test.ts`** — since v1.2.1 also
   `focusOwningTree`: a click on a row's control hands focus to the tree it
   sits in, and does nothing outside one.

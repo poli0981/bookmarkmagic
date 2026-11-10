@@ -130,7 +130,8 @@ bookmarkmagic/
 │   │   │   ├── import-session.svelte.ts
 │   │   │   ├── edit-view.svelte.ts      # #edit: what the tree shows (03 §3)
 │   │   │   ├── edit-commands.svelte.ts  # #edit: single-item writes, extends the view
-│   │   │   └── edit-session.svelte.ts   # #edit: duplicates + bulk commands, extends both
+│   │   │   ├── edit-session.svelte.ts   # #edit: duplicates + bulk commands, extends both
+│   │   │   └── edit-live.ts             # #edit: subscribes a session to the browser's events (03 §3)
 │   │   ├── i18n/                    # runtime UI i18n (see 07_I18N.md)
 │   │   │   ├── index.svelte.ts
 │   │   │   ├── format.ts            # pure Intl number/date helpers (07 §3)
