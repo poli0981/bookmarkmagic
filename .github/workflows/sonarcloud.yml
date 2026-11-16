@@ -107,7 +107,7 @@ jobs:
         if: steps.token.outputs.present == 'true'
         # Pinned to a commit, not a moving tag: this step holds a token. Dependabot
         # proposes updates (with the repo's 7-day cooldown).
-        uses: SonarSource/sonarqube-scan-action@4d1dc0c91ee400dcf8a6dddf2f705ac36542e304 # v8.4.0
+        uses: SonarSource/sonarqube-scan-action@e805d875275f728fac1885b413934be6d7c63f65 # v8.4.1
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         with:
