@@ -139,6 +139,30 @@ How new advisories are kept out:
 - Dependabot *security* PRs bypass `cooldown`; one for a version younger than
   a week may fail to resolve until it ages. That is the intended trade-off.
 
+### 3.2 Licence gate — `npm run check:licenses`
+
+Added 2026-11-18. `scripts/check-licenses.mjs` reads every entry of
+`package-lock.json` (lockfile v3 records each package's `license` field, and every
+entry carries one) and fails the run on any licence outside two lists:
+
+| Packages | Accepted | Why |
+|---|---|---|
+| What the build compiles into the extension — `CREDITED_PACKAGES` in `scripts/credited-packages.mjs`, the same list the build gate and the notices test read (`14 §5`) | `MIT`, `ISC`, `BSD-2-Clause`, `BSD-3-Clause`, `Apache-2.0`, `0BSD`, `MIT-0` | This code travels inside a GPL-3.0-or-later extension; only permissive licences that combine with it cleanly |
+| Everything else — all of it build and test tooling, since there are no runtime dependencies | the above, plus `MPL-2.0`, `BlueOak-1.0.0`, `CC0-1.0`, `CC-BY-4.0`, `Python-2.0`, `Unlicense`, `Zlib` | Tools never ship. File-level copyleft (MPL-2.0 — `lightningcss`, under Vite) is fine for a tool; network copyleft, source-available terms and missing or custom licences are not |
+
+SPDX expressions are evaluated (`OR` needs either side, `AND` both). An entry
+with no `license`, `UNLICENSED` or `SEE LICENSE IN …` fails. A new licence
+enters the tree through a reviewed change to the lists — or one `EXCEPTIONS`
+entry with its reason and a `15` decision-log row — never unnoticed inside a
+Dependabot bump. The gate trusts each package's own declaration, as any
+lockfile-based check must, and needs neither `node_modules` nor the network.
+It runs in `verify`, in CI's `quality` job and in the release build.
+
+Considered and not used: `actions/dependency-review-action`. It sees only
+what a pull request changes, reads licences from ClearlyDefined rather than
+the lockfile, checks only runtime-scoped packages unless told otherwise, and
+cannot run locally — a second, weaker opinion beside this one.
+
 ## 4. Permissions posture
 
 `bookmarks` + `storage`, nothing else (justifications in `08 §2`). Any PR

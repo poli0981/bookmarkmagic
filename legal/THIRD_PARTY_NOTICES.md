@@ -1,6 +1,6 @@
 # Third-Party Notices — BookmarkMagic
 
-Last updated: 2026-10-29
+Last updated: 2026-11-18
 
 **No runtime dependencies are installed** — `package.json` has an empty
 `dependencies` list (`docs/01 §4`). A few small MIT-licensed pieces are,
@@ -14,14 +14,18 @@ notices travel with it in `THIRD_PARTY_NOTICES.txt` at the root of the package:
 | [wxt](https://github.com/wxt-dev/wxt) + [@wxt-dev/browser](https://github.com/wxt-dev/wxt) | The one-line `browser` export: `globalThis.browser` when it exists, else `globalThis.chrome` | MIT |
 
 The build enforces this list: `wxt.config.ts` fails the build when code from any
-other npm package would ship (`CREDITED_PACKAGES`), and
-`tests/unit/third-party.test.ts` checks that this file and the shipped `.txt`
-name every package on it. None of these contains network code; the
+other npm package would ship (`CREDITED_PACKAGES`, kept in
+`scripts/credited-packages.mjs`), `tests/unit/third-party.test.ts` checks that
+this file and the shipped `.txt` name every package on it, and
+`npm run check:licenses` holds each of them to a permissive licence. None of these contains network code; the
 extension's Content-Security-Policy forbids it anyway (`docs/08 §3`).
 
 Build-time tooling (WXT's CLI, Vite, TypeScript, Biome, Knip, Vitest,
-svelte-check) is not distributed with the extension and is not listed here.
-All of it is MIT/Apache-2.0/ISC licensed and compatible with GPL-3.0-or-later.
+svelte-check and what they depend on) is not distributed with the extension and
+is not listed here. Its licences are checked on every build by
+`npm run check:licenses`: permissive (MIT, Apache-2.0, ISC, BSD, 0BSD, MIT-0,
+BlueOak, CC0) or, for one CSS tool under Vite (`lightningcss`), the
+file-level copyleft MPL-2.0 — none of which reaches the extension.
 
 Licensing questions: **copyright@poli0981.dev**.
 

@@ -117,8 +117,8 @@ npm run dev
 ```
 
 `npm run verify` is the gate everything else answers to — lint, type-check
-(svelte-check on the TypeScript 6 API, then `tsc` 7), knip, the grep gate and
-the test suite, in that order. It must be green before every commit;
+(svelte-check on the TypeScript 6 API, then `tsc` 7), knip, the grep gate, the
+licence gate and the test suite, in that order. It must be green before every commit;
 `npm run verify:full` adds coverage, the build and the built-manifest check,
 and must be green before anything release-bearing.
 

@@ -29,11 +29,12 @@
     "knip": "knip",
     "guard": "node scripts/guard.mjs",
     "check:manifest": "node scripts/check-manifest.mjs",
+    "check:licenses": "node scripts/check-licenses.mjs",
     "icons": "node scripts/gen-icons.mjs",
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run test",
+    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run check:licenses && npm run test",
     "verify:full": "npm run verify && npm run coverage && npm run build && npm run check:manifest"
   },
   "devDependencies": {

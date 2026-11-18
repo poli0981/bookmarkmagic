@@ -1,4 +1,5 @@
 import { defineConfig } from 'wxt';
+import { CREDITED_PACKAGES } from './scripts/credited-packages.mjs';
 
 /**
  * WXT configuration.
@@ -51,15 +52,6 @@ const EXTENSION_PAGE_CSP = [
   "base-uri 'none'",
 ].join('; ');
 
-/**
- * Every npm package the build compiles into the extension, each credited in
- * `legal/THIRD_PARTY_NOTICES.md` and the shipped `THIRD_PARTY_NOTICES.txt`
- * (docs/14 §5). `tests/unit/third-party.test.ts` checks both files name each
- * one. Until v1.1.0 the notices said "none" while Svelte's runtime, its `clsx`
- * dependency and WXT's browser shim all shipped — nothing could notice.
- */
-const CREDITED_PACKAGES = ['svelte', 'clsx', '@wxt-dev/browser', 'wxt'];
-
 /** The npm package a module id lives in, or undefined for our own code. */
 function packageOf(id: string): string | undefined {
   const at = id.lastIndexOf('node_modules');
@@ -76,7 +68,10 @@ interface BundleLike {
 /**
  * Fail the build when code from an uncredited package ships. Only modules that
  * actually render count — a package imported and then tree-shaken away is not
- * in the extension and needs no notice.
+ * in the extension and needs no notice. The list is `CREDITED_PACKAGES` in
+ * `scripts/credited-packages.mjs`, shared with the notices test and the licence
+ * gate (docs/14 §5). Until v1.1.0 the notices said "none" while Svelte's
+ * runtime, its `clsx` dependency and WXT's browser shim all shipped.
  */
 const thirdPartyGate = {
   name: 'bookmarkmagic:third-party-gate',
@@ -97,7 +92,8 @@ const thirdPartyGate = {
     if (uncredited.length > 0) {
       this.error(
         `third-party code ships without a notice: ${uncredited.join(', ')} — add it to ` +
-          'CREDITED_PACKAGES, legal/THIRD_PARTY_NOTICES.md and src/public/THIRD_PARTY_NOTICES.txt',
+          'CREDITED_PACKAGES (scripts/credited-packages.mjs), legal/THIRD_PARTY_NOTICES.md ' +
+          'and src/public/THIRD_PARTY_NOTICES.txt',
       );
     }
   },
