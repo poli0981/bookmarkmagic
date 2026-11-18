@@ -111,15 +111,16 @@ jobs:
           name: qodana-report
           path: qodana-report
 
-      - name: Find the SARIF file
-        id: sarif
+      # The artifact holds one zip, qodana-report.zip, whose entries carry
+      # absolute names ("/qodana.sarif.json"). Take only the report, by its
+      # exact name, to a fixed path — nothing else is unpacked.
+      - name: Extract the SARIF report
         run: |
           set -euo pipefail
-          file=$(find qodana-report -name 'qodana.sarif.json' -print -quit)
-          test -n "$file" || { echo "::error::no qodana.sarif.json in the qodana-report artifact"; exit 1; }
-          echo "file=$file" >> "$GITHUB_OUTPUT"
+          unzip -p qodana-report/qodana-report.zip /qodana.sarif.json > qodana.sarif.json
+          test -s qodana.sarif.json || { echo "::error::no qodana.sarif.json in the report"; exit 1; }
 
       - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
         with:
-          sarif_file: ${{ steps.sarif.outputs.file }}
+          sarif_file: qodana.sarif.json
           category: qodana

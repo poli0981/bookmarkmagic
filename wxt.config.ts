@@ -56,7 +56,7 @@ const EXTENSION_PAGE_CSP = [
 function packageOf(id: string): string | undefined {
   const at = id.lastIndexOf('node_modules');
   if (at === -1) return undefined;
-  const parts = id.slice(at + 'node_modules'.length + 1).split(/[/]/);
+  const parts = id.slice(at + 'node_modules'.length + 1).split('/');
   return parts[0]?.startsWith('@') === true ? `${parts[0]}/${parts[1] ?? ''}` : parts[0];
 }
 
