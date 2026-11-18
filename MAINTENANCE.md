@@ -69,7 +69,10 @@ the never list in [`docs/15`](docs/15_ROADMAP.md).
 
 A **patch** ships when there is something to fix: a file that will not import,
 a data-integrity defect or a dead end, an accessibility barrier, a batch of
-translation fixes, or a dependency advisory. A **minor** carries a roadmap
+translation fixes, or a security problem that reaches what ships. (The
+extension has no runtime dependencies, so an advisory against the build tools
+is fixed in the repository and needs no release unless it changed the
+built extension.) A **minor** carries a roadmap
 feature, a new UI language or a change to the permissions
 ([`docs/12 §4`](docs/12_CI_CD.md)). There is no fixed schedule.
 

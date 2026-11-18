@@ -144,7 +144,7 @@ patch: it is a minor (`12 §4`).
 | Automated CWS publishing | Flip `CWS_AUTOPUBLISH=true`; `wxt submit` in release workflow (`12 §3`). |
 | ✔ Import Chrome's internal `Bookmarks` JSON file | **Shipped in v1.1.0** (`04 §2a`). |
 | ✔ Import Firefox `.json` backup | **Shipped in v1.1.0** (`04 §2b`). The compressed automatic backups (`.jsonlz4`) are a separate item: a ~80-line pure-TS LZ4 block decoder, no dependency. |
-| "Export all formats as .zip" | First runtime dep decision: `fflate` (gated, `01 §4`; About/THIRD_PARTY updates per `14 §5`). |
+| "Export all formats as .zip" | First runtime dep decision: `fflate` (gated, `01 §4`; About/THIRD_PARTY updates per `14 §5`). **Not planned in maintenance mode** (2026-11-18): it would end "zero runtime dependencies" for a convenience. |
 | Aggressive-dedupe toggle | Optional `www.`/`utm_*` stripping in normalize (off by default). |
 | ✔ Sort folder A→Z action | **Shipped in v1.1.0** — a row action and a toolbar button, planned first and confirmed with a count (`03 §3`). |
 
@@ -158,14 +158,14 @@ patch: it is a minor (`12 §4`).
    block decoder, no dependency. Also: capture a real Chrome HTML + `Bookmarks`
    pair to sit beside the hand-built `chrome-156-*` fixtures, and the JA native
    review.
-3. **v1.3 — the aggressive-dedupe toggle** (deferred this round), a
+3. **v1.4 — the aggressive-dedupe toggle** (deferred this round), a
    session-scoped import undo, Biome linting of `.svelte` files, and true
    virtualization of the edit tree if 500-row chunks prove too coarse. These
    were the v1.2 plan until 2026-11-06, when real installs in Chinese and
-   Romanian made two languages the next minor instead (see below).
-4. **v1.3+ — automated CWS publishing** once the owner creates the `CHROME_*`
-   secrets; Edge Add-ons and Firefox AMO listings through WXT's multi-target
-   build (each a separate go/no-go).
+   Romanian made two languages the next minor instead (see below), and the
+   v1.3 plan until 2026-11-18, when Firefox and Edge took that number.
+4. **v1.3 — Firefox (AMO) and Edge Add-ons, and automated publishing to all
+   three stores** — **GO 2026-11-18** (decision log; the section below).
 
 ### Backlog carried from the v1.1.0 audit
 
@@ -249,13 +249,21 @@ the same dashboard evidence. Russian, Polish and Arabic also need plural forms
 beyond `few`; the guard test in `dictionaries.test.ts` fails first if one is
 attempted.
 
-## v1.3 — resilience (was v1.2 until 2026-11-06)
+## v1.3 — Firefox and Edge (GO 2026-11-18)
 
-- **Scheduled local snapshots**: periodic JSON backup. ⚠️ Requires `alarms`
-  permission + a background service worker + `downloads` (or OPFS storage)
-  → permission-story change ⇒ minor version, docs 08/09 update, privacy tab
-  re-review. Decide deliberately; OPFS-based silent snapshots may avoid
-  `downloads`.
+The last "reach" item, taken out of the v2.0 table below on the owner's
+decision the day maintenance mode began (decision log). The roadmap's own
+wording was right: it is not "the same zip" for Firefox — the bookmark roots,
+separators and the move index all differ — so it is a minor, built docs-first.
+Edge takes the Chromium package unchanged. Scope and status live in the
+decision log and `CLAUDE.md` Phase 10.
+
+## v1.4 — resilience (was v1.3 until 2026-11-18, v1.2 until 2026-11-06)
+
+- ~~**Scheduled local snapshots**~~ — **not planned in maintenance mode**
+  (2026-11-18). It needs the `alarms` permission and a background service
+  worker, and `/MAINTENANCE.md` puts anything that needs a new permission out
+  of scope, as `CLAUDE.md` hard rule 1 always did.
 - Import "undo" (session-scoped): remember created ids → one-click revert.
 - Virtualized tree rendering if >100k real-world demand appears.
 
@@ -263,11 +271,11 @@ attempted.
 
 | Candidate | Consideration |
 |---|---|
-| Firefox Add-ons (AMO) release | WXT multi-target already builds it (`wxt -b firefox`); needs AMO listing, `browser_specific_settings.gecko.id`, separate signing flow. |
-| Edge Add-ons store | Same zip usually passes; Partner Center account needed. |
+| ~~Firefox Add-ons (AMO) release~~ | **GO 2026-11-18 → v1.3** (above). |
+| ~~Edge Add-ons store~~ | **GO 2026-11-18 → v1.3** (above). |
 | Dead-link checker | Needs `host_permissions: <all_urls>` → destroys the minimal-permission story. If ever done: **separate companion extension**, not this one. |
-| Duplicate auto-merge assistant | Merge metadata (keep oldest addDate) + folder-aware suggestions. |
-| Bookmarklet/notes fields | Only if a lossless place exists in Chrome's model (likely not — avoid schema lies). |
+| Duplicate auto-merge assistant | Merge metadata (keep oldest addDate) + folder-aware suggestions. **Not planned in maintenance mode.** |
+| Bookmarklet/notes fields | Only if a lossless place exists in Chrome's model (likely not — avoid schema lies). **Not planned in maintenance mode.** |
 
 ## Explicit "never" list (re-affirm before any pivot)
 
@@ -276,6 +284,9 @@ attempted.
 - Analytics/telemetry of any kind.
 - Ads, sponsored bookmarks, affiliate link rewriting.
 - Collecting or transmitting bookmark content.
+- Any permission beyond `bookmarks` and `storage` (`CLAUDE.md` hard rule 1),
+  which is what keeps the dead-link checker a separate extension and the
+  scheduled snapshots off the roadmap.
 
 ## Decision log
 
@@ -405,3 +416,6 @@ attempted.
 | 2026-11-18 | **A high advisory with no fix is recorded, not worked around.** `npm audit` reports 14 high findings, all `picomatch` GHSA-fc5q-39xc-vjpf, every version affected, nothing to upgrade to. It is the toolchain's glob engine, matching patterns this repository writes, and never ships. The `deepmerge` row left: GitHub withdrew that advisory on 2026-11-16 | `09 §3.1` |
 | 2026-11-18 | **A licence gate over the whole lockfile** (`scripts/check-licenses.mjs`): shipped packages must be permissive and GPL-3.0-compatible, tooling may also be MPL-2.0 and a few other non-copyleft licences; anything else fails until a person adds it on purpose. One shared `CREDITED_PACKAGES` list (`scripts/credited-packages.mjs`) now feeds the build gate, the notices test and this gate. `dependency-review-action` was considered and not used: PR-only, ClearlyDefined rather than the lockfile, runtime scope by default, not runnable locally. `legal/THIRD_PARTY_NOTICES.md` had called the tooling all MIT/Apache-2.0/ISC; corrected, **not a `LEGAL_VERSION` bump** — it describes tooling that never ships | `09 §3.2`, `14 §3.1` |
 | 2026-11-18 | **Dependabot #39–#41 merged and synced by hand**, as the 2026-11-10 row requires: `biome.json`'s `$schema` to 2.6.6, `01 §2`, the scan action's pin in `12 §2.5`, and for the jsdom 31 major a new column in `11 §6` (2 484 ms median) beside the jsdom 29 figure | `01 §2`, `11 §6` |
+| 2026-11-18 | **GO for Firefox (AMO) and Microsoft Edge Add-ons, as v1.3.** The owner's decision, recorded here before any code because the maintenance announcement names it. Settled with the owner: gecko id `bookmarkmagic@poli0981.dev` — permanent after the first AMO upload, an id and not a mailbox, shown nowhere in the UI; desktop only, because Firefox for Android has no `bookmarks` API; MV3 everywhere (WXT defaults Firefox to MV2); and Firefox separators shown, protected and warned about rather than written into any file format. An audit found why it is a minor and not a CI change: Firefox's roots are GUIDs with a fourth (Bookmarks Menu) root, so `getRoots`' position fallback maps the Menu to the toolbar; separators come back as `data:` bookmarks; and a same-folder `move` counts its index after removal | `00 §7`, `15 §v1.3` |
+| 2026-11-18 | **Qodana beside SonarCloud**, at the owner's request (Ultimate licence, `QODANA_TOKEN`). Its own, never-required workflow, in two jobs: `scan` installs the dev dependencies — `qodana-js` needs them — with a read-only `GITHUB_TOKEN`; `publish` installs nothing and uploads the SARIF to code scanning, instead of the PR comments and annotations the vendor's snippet asks `contents: write` for. Sharing a runner with dependency code is a recorded exception to the Sonar rule, accepted because the token can only upload reports | `12 §2.7` |
+| 2026-11-18 | **The roadmap pruned to what maintenance mode allows.** Scheduled snapshots need `alarms` and are off the roadmap; the permission rule joins the never list, where the feature form had already put it. The `fflate` zip export (a runtime dependency), the duplicate auto-merge assistant and bookmarklet notes are not planned. The old v1.3 "resilience" becomes v1.4 | `15` |
