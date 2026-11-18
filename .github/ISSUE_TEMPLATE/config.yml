@@ -6,6 +6,13 @@
 blank_issues_enabled: false
 
 contact_links:
+  - name: An idea, to talk through first
+    url: https://github.com/poli0981/bookmarkmagic/discussions/categories/ideas
+    about: >-
+      BookmarkMagic is in maintenance mode (MAINTENANCE.md). A new idea is
+      welcome here, where it can be discussed without an issue that has to be
+      accepted or refused.
+
   - name: Security vulnerability
     url: https://github.com/poli0981/bookmarkmagic/security/advisories/new
     about: Report privately, never as a public issue. See SECURITY.md.

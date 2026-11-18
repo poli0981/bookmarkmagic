@@ -220,6 +220,34 @@ Added 2026-10-28, replacing SonarCloud's Automatic Analysis so the project gets
 Snyk is connected only as a GitHub App (the `security/snyk (poli0981)` PR
 check); there is no `SNYK_TOKEN` and no Snyk step in any workflow.
 
+### 2.6 `triage.yml` — maintenance-mode triage
+
+Added 2026-11-18 with `/MAINTENANCE.md`. On `issues: [opened, labeled]` and
+`pull_request_target: [opened]` it runs `scripts/triage.mjs`, which reads the
+runner's event file and prints a decision, then carries it out with the `gh`
+CLI the runner ships — no third-party action ever holds its write token
+(`issues: write`, `pull-requests: write`, `contents: read`).
+
+- **The decision is code with tests**, not shell: `decide()` is a pure
+  function (`tests/unit/scripts/triage.test.ts`) — a feature-form issue
+  answering "Something new" is labelled `maintenance-mode`, commented and
+  closed *not planned*; the two in-policy answers get `needs-triage`; an
+  `enhancement` label added by hand closes the issue the same way; an outside
+  pull request titled `feat…` is closed. The owner's own issues, members,
+  collaborators, bots and anything labelled `roadmap` are exempt. The test also
+  pins the dropdown's wording against `feature_request.yml`, which is the only
+  thing the decision parses.
+- ⚠️ **`pull_request_target` holds a write token for fork pull requests.** The
+  checkout is the base branch — the event's default — and nothing from the
+  pull request runs. Titles and bodies reach the script as the event file and
+  are only compared with constants; the shell reads back an action from a fixed
+  set, an integer, a label from a fixed list and a comment the script wrote, and
+  validates the first two before using them.
+- **Idempotent.** The feature form fires `opened` and `labeled` for one new
+  issue. `concurrency` runs them one at a time per number and the second
+  re-reads the live labels and state before acting.
+- The labels must exist (`§5`); `gh … --add-label` fails on a missing one.
+
 ## 3. Chrome Web Store publishing automation
 
 WXT ships publishing built-in: **`wxt submit`** (wrapping
@@ -308,6 +336,10 @@ means "unknown", not "not done".
       (matching `.npmrc` `min-release-age=7`, `09 §3.1`); WXT is excluded from
       the group so every WXT bump arrives alone and gets its built-manifest
       diff; majors of the TypeScript pair and `@types/node` are ignored.
+- [x] Labels the forms and `triage.yml` apply — `maintenance-mode`,
+      `needs-triage`, `roadmap` (new with `MAINTENANCE.md`) and `parser`, `i18n`
+      (named by the parser and translation forms since 2026-08-03, and missing
+      until 2026-11-18: a form silently drops a label that does not exist).
 - [x] Issue templates: `.github/ISSUE_TEMPLATE/` — bug, parser report (requires
       a sanitized sample), translation, feature, plus a `config.yml` chooser.
       Landed 2026-08-03; `13 §6` had asserted they existed since before launch.

@@ -1,20 +1,50 @@
 name: Suggest a feature
-description: An idea for something BookmarkMagic should do.
+description: BookmarkMagic is in maintenance mode — read what that means before asking for something new.
 title: '[feature] '
 labels: [enhancement]
 body:
   - type: markdown
     attributes:
       value: |
-        Before writing: this project has a short, deliberate
-        [never list](https://github.com/poli0981/bookmarkmagic/blob/main/docs/15_ROADMAP.md).
-        Cloud sync, accounts, analytics of any kind, and anything that would
-        require new browser permissions are out of scope permanently — not
-        because they are hard, but because "offline, two permissions, no
-        network" is the entire point of the extension.
+        **BookmarkMagic is in maintenance mode**
+        ([MAINTENANCE.md](https://github.com/poli0981/bookmarkmagic/blob/main/MAINTENANCE.md)).
+        A feature is added only when it is already on the
+        [roadmap](https://github.com/poli0981/bookmarkmagic/blob/main/docs/15_ROADMAP.md),
+        or when it is genuinely needed to fix a defect or remove a barrier.
 
-        Everything else is genuinely open. The roadmap in that same file lists
-        what is already planned.
+        **The first question below decides what happens to this issue.** A
+        request for something new is closed automatically and labelled
+        `maintenance-mode` — not deleted, and read; the
+        [Ideas discussions](https://github.com/poli0981/bookmarkmagic/discussions/categories/ideas)
+        are the place to talk one through. The other two answers keep the issue
+        open for the maintainer.
+
+        Out of scope permanently, whatever the mode: cloud sync, accounts,
+        analytics of any kind, and anything that would need a new browser
+        permission. "Offline, two permissions, no network" is the point of the
+        extension.
+
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Which kind of change is this?
+      description: See MAINTENANCE.md. Please answer honestly — a mislabelled request is closed by hand.
+      options:
+        - Something already on the roadmap (docs/15)
+        - Needed to fix a bug, a UI/UX defect or an accessibility barrier
+        - Something new — not on the roadmap
+    validations:
+      required: true
+
+  - type: input
+    id: reference
+    attributes:
+      label: Which roadmap item, or which defect?
+      description: >-
+        The line in docs/15, or the issue or behaviour it fixes. Leave empty
+        for something new.
+    validations:
+      required: false
 
   - type: textarea
     id: problem
@@ -52,5 +82,5 @@ body:
             permission, and does not involve a server, an account, or sending
             data anywhere.
           required: true
-        - label: I checked the roadmap and the never list.
-          required: false
+        - label: I read MAINTENANCE.md and checked the roadmap and the never list.
+          required: true

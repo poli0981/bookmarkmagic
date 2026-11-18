@@ -189,7 +189,11 @@ actually shows and correct the files, not the dashboard.
   that is not fixed at once goes into its Known limitations.
 - Discord servers (`#support` in the OSS server) — pin an FAQ post.
   ⚠️ The invite URL is not recorded anywhere in the repo.
-- Review flow for feature requests: label → roadmap doc PR → milestone.
+- Feature requests, in maintenance mode (`/MAINTENANCE.md`): `triage.yml`
+  closes a request for something new and labels the two in-policy answers
+  `needs-triage` (`12 §2.6`). Read every `needs-triage` issue and every closed
+  one; one that fits goes into `15` by pull request and gets the `roadmap`
+  label, which the automation leaves alone. Ideas live in Discussions › Ideas.
 
 The three recurring questions are already answered in prose and make the FAQ
 seed: favicons cannot be imported; imported bookmarks carry today's date (the

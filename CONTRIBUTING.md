@@ -7,6 +7,16 @@ stop reading here — the forms ask for what is needed.
 
 Security problems go through [`SECURITY.md`](SECURITY.md), never a public issue.
 
+**The project is in maintenance mode** ([`MAINTENANCE.md`](MAINTENANCE.md)).
+What it takes: bug, UI/UX and accessibility fixes; translation fixes (wording
+wrong for a language or region, misleading spelling); dependency and security
+updates; major platform upgrades; and features that are already on the
+roadmap or genuinely needed. A feature request for something new, or a pull
+request titled `feat…` from outside the project, is closed automatically and
+labelled `maintenance-mode` — read, not deleted, and reopened if it fits.
+Ideas belong in
+[Discussions › Ideas](https://github.com/poli0981/bookmarkmagic/discussions/categories/ideas).
+
 If something is hard or impossible to use — with a keyboard, a screen reader, a
 contrast theme, zoom — that is a defect, and it has its own form.
 [`ACCESSIBILITY.md`](ACCESSIBILITY.md) says what is already known and how a

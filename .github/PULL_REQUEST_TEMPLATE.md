@@ -7,6 +7,13 @@ a translation fix does not need the parser section, and vice versa.
 
 <!-- What changes, and what problem it solves. Link the issue if there is one. -->
 
+**Kind of change** ([MAINTENANCE.md](https://github.com/poli0981/bookmarkmagic/blob/main/MAINTENANCE.md) — the project
+is in maintenance mode): <!-- bug fix · UI/UX fix · accessibility · translation
+· dependency or security update · roadmap item (which?) -->
+
+A pull request titled `feat…` from outside the project is closed automatically
+unless its feature is on the roadmap — open a feature request first.
+
 ## Checklist
 
 - [ ] `npm run verify` is green. (Release-bearing? `npm run verify:full` —

@@ -263,7 +263,9 @@ them is tested where it lives:
   `sanitize-bookmarks.test.ts` — `09 §6`). New in Phase 10:
   `check-licenses.test.ts` (SPDX expressions, the shipped list held stricter
   than the toolchain's, a missing or custom licence refused, the repository's
-  own lockfile passing — `09 §3.2`).
+  own lockfile passing — `09 §3.2`) and `triage.test.ts` (every branch of the
+  maintenance-mode decision, the feature form's dropdown wording, and no event
+  text interpolated into the workflow's shell — `12 §2.6`).
 
 ## 5. Manual QA checklist (run before every store submission)
 
