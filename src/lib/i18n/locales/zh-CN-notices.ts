@@ -36,8 +36,8 @@ export const warnings = {
     other: '{n} 个条目的地址无法存入浏览器，因此已跳过。',
   },
   PLACE_QUERIES_SKIPPED: {
-    one: '已跳过 {n} 个 Firefox 智能书签（已保存的搜索，而非网页）——在这里它会成为失效链接。',
-    other: '已跳过 {n} 个 Firefox 智能书签（已保存的搜索，而非网页）——在这里它们会成为失效链接。',
+    one: '已跳过 {n} 个 Firefox 智能书签（已保存的搜索，而非网页）。',
+    other: '已跳过 {n} 个 Firefox 智能书签（已保存的搜索，而非网页）。',
   },
   EXTRA_ROOTS_SKIPPED: {
     one: '浏览器专用文件夹（例如 Opera 的快速拨号或回收站）中的 {n} 个书签未导入。',
@@ -46,6 +46,14 @@ export const warnings = {
   UNREADABLE_ENTRIES: {
     one: '此文件中有 {n} 个条目无法读取，已跳过。',
     other: '此文件中有 {n} 个条目无法读取，已跳过。',
+  },
+  SEPARATORS_SKIPPED: {
+    one: '已略去 {n} 条分隔线——BookmarkMagic 保存书签和文件夹，不保存分隔线。',
+    other: '已略去 {n} 条分隔线——BookmarkMagic 保存书签和文件夹，不保存分隔线。',
+  },
+  URL_TOO_LONG: {
+    one: '已跳过 {n} 个书签：其地址超过了此浏览器接受的 65,536 个字符。',
+    other: '已跳过 {n} 个书签：其地址超过了此浏览器接受的 65,536 个字符。',
   },
 } satisfies Dict['warnings'];
 

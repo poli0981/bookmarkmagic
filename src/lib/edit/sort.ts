@@ -22,11 +22,9 @@ function sortKey(node: EditNode): string {
   return node.title.trim() === '' && node.url !== undefined ? node.url : node.title;
 }
 
-/** The children in sorted order, without moving anything. */
-export function sortedOrder(children: readonly EditNode[], locale: string): EditNode[] {
-  const collator = new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
-  return children
-    .map((node, position) => ({ node, position }))
+/** One run of children between separators, sorted: folders first, then by name. */
+function sortRun(run: readonly { node: EditNode; position: number }[], collator: Intl.Collator) {
+  return [...run]
     .sort((a, b) => {
       const aFolder = a.node.url === undefined;
       const bFolder = b.node.url === undefined;
@@ -34,6 +32,34 @@ export function sortedOrder(children: readonly EditNode[], locale: string): Edit
       return collator.compare(sortKey(a.node), sortKey(b.node)) || a.position - b.position;
     })
     .map(({ node }) => node);
+}
+
+/**
+ * The children in sorted order, without moving anything.
+ *
+ * Firefox's separators split a folder into runs the user made on purpose, so
+ * each run is sorted on its own and every separator keeps its place (docs/05
+ * §10). Chromium has no separators: one run, as before.
+ */
+export function sortedOrder(children: readonly EditNode[], locale: string): EditNode[] {
+  const collator = new Intl.Collator(locale, { numeric: true, sensitivity: 'base' });
+  const out: EditNode[] = [];
+  // A loop, not push(...spread): a folder can hold 100k children.
+  const flush = (items: readonly { node: EditNode; position: number }[]): void => {
+    for (const node of sortRun(items, collator)) out.push(node);
+  };
+  let run: { node: EditNode; position: number }[] = [];
+  for (const [position, node] of children.entries()) {
+    if (node.separator === true) {
+      flush(run);
+      out.push(node);
+      run = [];
+    } else {
+      run.push({ node, position });
+    }
+  }
+  flush(run);
+  return out;
 }
 
 /**

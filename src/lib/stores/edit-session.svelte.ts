@@ -96,7 +96,14 @@ export class EditSession extends EditCommands {
       record({ kind: 'edit', action: 'sort', count: moves.length });
       const outcome = await applySort(
         moves,
-        (step) => this.api.move(step.id, { parentId: folder.id, index: step.index }),
+        // Every sort move goes LEFT, where both browsers' index rules agree
+        // (docs/05 §10): the same number serves as both.
+        async (step) => {
+          await this.api.move(step.id, {
+            parentId: folder.id,
+            position: { api: step.index, local: step.index },
+          });
+        },
         (step) => {
           this.roots = moveNode(this.roots, step.id, folder.id, step.index);
         },

@@ -191,11 +191,19 @@
     open={confirmingReplace}
     danger
     title={t('import.replaceConfirmTitle')}
-    body={t('import.replaceConfirmBody', {
-      current: counts(prepared?.current.bookmarks ?? 0, prepared?.current.folders ?? 0),
-      incoming: counts(forecast?.stats.bookmarkCount ?? 0, forecast?.stats.folderCount ?? 0),
-      name: session.filename,
-    })}
+    body={[
+      t('import.replaceConfirmBody', {
+        current: counts(prepared?.current.bookmarks ?? 0, prepared?.current.folders ?? 0),
+        incoming: counts(forecast?.stats.bookmarkCount ?? 0, forecast?.stats.folderCount ?? 0),
+        name: session.filename,
+      }),
+      // Firefox only: separators go with the rest, and nothing brings them back.
+      (prepared?.current.separators ?? 0) > 0
+        ? tPlural('import.replaceSeparators', prepared?.current.separators ?? 0)
+        : '',
+    ]
+      .filter((sentence) => sentence !== '')
+      .join(' ')}
     confirmLabel={t('import.replaceConfirm')}
     cancelLabel={t('common.cancel')}
     onconfirm={() => void start(session.filename)}

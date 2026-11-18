@@ -8,15 +8,10 @@
  */
 
 import { getGeneratorVersion } from '../browser/app-info';
-import {
-  getRootChildren,
-  getRoots,
-  type LiveNode,
-  rootMarkersOf,
-  type ToNodesOptions,
-  toBookmarkNodes,
-} from '../browser/bookmarks';
+import { getRootChildren, type LiveNode } from '../browser/bookmarks';
 import { sanitizeFilename, timestampSuffix, triggerDownload } from '../browser/download';
+import { countLive, type ToNodesOptions, toBookmarkNodes } from '../browser/live-tree';
+import { getRoots, rootMarkersOf } from '../browser/roots';
 import type { ExportFormat } from '../browser/storage';
 import type { CsvDelimiter } from '../core/csv-dialect';
 import { filterBySelection } from '../core/select';
@@ -75,15 +70,8 @@ export function countSelected(
   selection: ReadonlySet<string> | undefined,
 ): number {
   const scoped = selection === undefined ? roots : filterBySelection(roots, selection);
-  let total = 0;
-  const walk = (nodes: readonly LiveNode[]): void => {
-    for (const node of nodes) {
-      if (node.url !== undefined) total++;
-      walk(node.children ?? []);
-    }
-  };
-  walk(scoped);
-  return total;
+  // Separators (Firefox) carry a url too, "data:" — never a bookmark here.
+  return countLive(scoped).bookmarks;
 }
 
 /** Serialize a scoped tree. Split out from the download so it is testable. */

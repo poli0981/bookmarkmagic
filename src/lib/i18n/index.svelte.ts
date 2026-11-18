@@ -83,7 +83,7 @@ export function tPlural(
 
 function interpolate(raw: string, params?: Record<string, string | number>): string {
   if (params === undefined) return raw;
-  return raw.replace(/\{(\w+)\}/g, (match, token: string) =>
+  return raw.replace(/\{(\w+)}/g, (match, token: string) =>
     Object.hasOwn(params, token) ? String(params[token]) : match,
   );
 }

@@ -41,7 +41,13 @@ export const importTab = {
   replaceConfirmBody:
     '{current} in this browser will be deleted, after a safety backup is saved. Then {incoming} from {name} are written.',
   replaceConfirm: 'Back up and replace',
-  target: { bar: 'bar', unfiled: 'Other', mobile: 'Mobile' },
+  // Firefox only (docs/03 §1): Replace deletes separators and no file keeps one.
+  replaceSeparators: {
+    one: '{n} separator line will be deleted too, and cannot come back — the backup, like every file BookmarkMagic writes, cannot hold one.',
+    other:
+      '{n} separator lines will be deleted too, and cannot come back — the backup, like every file BookmarkMagic writes, cannot hold one.',
+  },
+  target: { bar: 'bar', unfiled: 'Other', mobile: 'Mobile', menu: 'Menu' },
   targetNote:
     'In Merge and Replace, this folder’s contents go straight into that browser folder instead of a copy of it.',
   reused: {
@@ -67,7 +73,7 @@ export const importTab = {
   cancelledAfterClear:
     'You cancelled after your existing bookmarks had already been deleted, so what is left is only the part that was rebuilt.',
   dateNotice:
-    'Imported bookmarks are dated today. Chrome does not let an extension set a bookmark’s original date — your exported files keep the real ones.',
+    'Imported bookmarks are dated today. The browser does not let an extension set a bookmark’s original date — your exported files keep the real ones.',
   partialCreated: {
     one: '{n} item had already been created before this failed, and was left in place.',
     other: '{n} items had already been created before this failed, and were left in place.',

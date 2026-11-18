@@ -171,8 +171,12 @@ export class EditView {
     if (index === -1) return undefined;
     // Skip the node's own descendants, which disappear with it.
     const depth = this.rows[index]?.depth ?? 0;
-    const after = this.rows.slice(index + 1).find((row) => row.depth <= depth);
-    return after?.node.id ?? this.rows[index - 1]?.node.id;
+    // Separators (Firefox) take no focus, so they are never the neighbour.
+    const after = this.rows
+      .slice(index + 1)
+      .find((row) => row.depth <= depth && row.node.separator !== true);
+    const before = this.rows.slice(0, index).findLast((row) => row.node.separator !== true);
+    return after?.node.id ?? before?.node.id;
   };
 
   dispose = (): void => {

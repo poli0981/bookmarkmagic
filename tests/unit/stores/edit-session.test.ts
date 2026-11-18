@@ -15,7 +15,7 @@ function api(f: FakeBookmarks) {
     getChildren: async (id: string) => f.children(id),
     create: f.create,
     update: f.update,
-    move: f.move,
+    move: f.moveTo,
     remove: f.remove,
     removeTree: f.removeTree,
   };
@@ -89,7 +89,7 @@ describe('EditSession — sort A→Z', () => {
     const move = fake.move;
     fake.move = async (...args) => {
       if (++calls === 2) throw new Error('refused');
-      await move(...args);
+      return move(...args);
     };
     session = new EditSession(api(fake), () => 'en');
     await session.load();
@@ -187,7 +187,7 @@ describe('EditSession — Alt+↑ / Alt+↓ (v1.2.1)', () => {
     const move = fake.move;
     fake.move = async (...args) => {
       await gate;
-      await move(...args);
+      return move(...args);
     };
     session = new EditSession(api(fake), () => 'en');
     await session.load();
@@ -371,7 +371,7 @@ describe('EditSession — one bulk command at a time (v1.1.0 review)', () => {
     const move = fake.move;
     fake.move = async (...args) => {
       await gate;
-      await move(...args);
+      return move(...args);
     };
     session = new EditSession(api(fake), () => 'en');
     await session.load();

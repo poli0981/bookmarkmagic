@@ -13,6 +13,8 @@ export interface SearchableNode {
   id: string;
   title: string;
   url?: string;
+  /** A Firefox separator: shown, never a match — its url is "data:" (docs/03 §3). */
+  separator?: true;
   children?: SearchableNode[];
 }
 
@@ -50,7 +52,7 @@ export function searchTree(roots: readonly SearchableNode[], query: string): Sea
   const walk = (nodes: readonly SearchableNode[], ancestors: readonly string[]): boolean => {
     let anyHere = false;
     for (const node of nodes) {
-      const self = matches(node, needle);
+      const self = node.separator !== true && matches(node, needle);
       const trail = [...ancestors, node.id];
       const below = walk(node.children ?? [], trail);
 

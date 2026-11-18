@@ -11,7 +11,7 @@ import {
   ISSUES_URL,
   LEGAL_URLS,
   REPO_URL,
-  STORE_URL,
+  storeUrlFor,
 } from '@/lib/links';
 
 /** Vitest runs with cwd at the project root, which is where `legal/` lives. */
@@ -103,10 +103,25 @@ describe('store listing', () => {
   it('is the published item, and is the only in-product route to a review', () => {
     // docs/13 §6 counts store ratings as a post-launch channel; before this
     // there was no way to reach the listing from inside the extension at all.
-    expect(STORE_URL.startsWith('https://chromewebstore.google.com/detail/')).toBe(true);
+    const cws = storeUrlFor({ firefox: false, extensionId: 'eghnciphhegekmnofffpgbdfefckdhmg' });
+    expect(cws.startsWith('https://chromewebstore.google.com/detail/')).toBe(true);
     // The item id doubles as the CHROME_EXTENSION_ID secret (docs/00 §9), so a
     // typo here is a typo in two places.
-    expect(STORE_URL).toContain('eghnciphhegekmnofffpgbdfefckdhmg');
+    expect(cws).toContain('eghnciphhegekmnofffpgbdfefckdhmg');
+  });
+
+  it('sends each install to the listing it came from (docs/06 §3.5)', () => {
+    // Firefox: AMO, by the gecko id — percent-encoded, so no address-shaped
+    // string sits in src/ (the next test).
+    const amo = storeUrlFor({ firefox: true, extensionId: 'anything' });
+    expect(amo).toBe('https://addons.mozilla.org/firefox/addon/bookmarkmagic%40poli0981.dev/');
+    expect(decodeURIComponent(amo)).toContain('bookmarkmagic@poli0981.dev');
+    // A Chromium copy with any other id — Edge Add-ons assigns its own, an
+    // unpacked build gets a random one — goes to the list of every store.
+    expect(storeUrlFor({ firefox: false, extensionId: 'abcdefghijklmnopabcdefghijklmnop' })).toBe(
+      `${REPO_URL}#install`,
+    );
+    expect(storeUrlFor({ firefox: false, extensionId: '' })).toBe(`${REPO_URL}#install`);
   });
 
   it('puts no email address on any in-product surface', () => {

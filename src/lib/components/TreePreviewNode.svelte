@@ -36,7 +36,11 @@
           ? 'unfiled'
           : node.root === 'mobile'
             ? 'mobile'
-            : undefined,
+            : // Only Firefox has a Bookmarks Menu to unwrap into; elsewhere a
+              // menu folder stays a folder, so it gets no pill (docs/03 §1).
+              node.root === 'menu' && import.meta.env.FIREFOX
+              ? 'menu'
+              : undefined,
   );
 </script>
 

@@ -179,7 +179,7 @@ export default {
     issues: '問題を報告',
     changelog: 'リリースと変更履歴',
     accessibility: 'アクセシビリティ',
-    store: 'Chrome ウェブストアのページ',
+    store: 'ストアのページ',
     thirdParty: 'サードパーティのコード',
     thirdPartyNote:
       '実行時の依存関係はインストールされません。MIT ライセンスの小さなコード（Svelte のランタイムとその clsx ヘルパー、WXT の 1 行のブラウザ互換層）が拡張機能に組み込まれています。パッケージ内の THIRD_PARTY_NOTICES.txt をご覧ください。',

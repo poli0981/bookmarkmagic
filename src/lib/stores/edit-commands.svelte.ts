@@ -15,6 +15,7 @@ import {
   getChildren,
   getRootChildren,
   type LiveNode,
+  type MoveDestination,
   move,
   remove,
   removeTree,
@@ -41,7 +42,8 @@ export interface EditApi {
   getChildren: (id: string) => Promise<LiveNode[]>;
   create: (details: { parentId: string; title: string }) => Promise<LiveNode>;
   update: (id: string, changes: { title?: string }) => Promise<void>;
-  move: (id: string, destination: { parentId?: string; index?: number }) => Promise<void>;
+  /** Resolves to the index the browser reports the node now has (`browser/bookmarks.ts`). */
+  move: (id: string, destination: MoveDestination) => Promise<number | undefined>;
   remove: (id: string) => Promise<void>;
   removeTree: (id: string) => Promise<void>;
 }
@@ -229,13 +231,22 @@ export class EditCommands extends EditView {
     if (node === undefined || !this.isEditable(node)) return false;
     if (!canMoveInto(this.roots, id, plan.parentId)) return false;
     const { parentId, position } = plan;
-    return this.guard(async () => {
+    let landed: number | undefined;
+    const moved = await this.guard(async () => {
       this.roots = moveNode(this.roots, id, parentId, position?.local);
-      await this.api.move(
+      landed = await this.api.move(
         id,
-        position === undefined ? { parentId } : { parentId, index: position.api },
+        position === undefined ? { parentId } : { parentId, position },
       );
     });
+    // The browser says where the node really went. If that is not where the
+    // tree put it, the two disagree — re-read rather than show a wrong order
+    // (docs/03 §3). The adapter already sends each browser its own index, so
+    // this only fires if a browser changes its rule.
+    if (moved && position !== undefined && landed !== undefined && landed !== position.local) {
+      await this.load();
+    }
+    return moved;
   };
 
   /**

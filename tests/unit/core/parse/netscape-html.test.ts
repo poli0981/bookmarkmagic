@@ -75,7 +75,7 @@ describe('parseNetscapeHtml — tolerated shapes', () => {
     expect(roots[0]?.children?.[0]?.url).toBe('https://sibling.example/');
   });
 
-  it('skips <HR> separators silently and keeps both neighbours (docs/04 §1.2)', () => {
+  it('skips <HR> separators, counts them, and keeps both neighbours (docs/04 §1.2)', () => {
     const withHr = `<!DOCTYPE NETSCAPE-Bookmark-file-1>
 <DL><p>
     <DT><A HREF="https://a.example/">A</A>
@@ -84,7 +84,8 @@ describe('parseNetscapeHtml — tolerated shapes', () => {
 </DL><p>`;
     const { roots, warnings } = parseNetscapeHtml(withHr);
     expect(roots.map((r) => r.url)).toEqual(['https://a.example/', 'https://b.example/']);
-    expect(warnings).toEqual([]);
+    // Counted since v1.3.0: once Firefox users import, a silent loss is not acceptable.
+    expect(warnings).toEqual([{ code: 'SEPARATORS_SKIPPED', count: 1 }]);
   });
 
   it('looks past a <DD> that has no nested <DL> to a later sibling list', () => {

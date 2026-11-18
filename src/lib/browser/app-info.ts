@@ -25,6 +25,15 @@ export function getAppVersion(): string {
   }
 }
 
+/** This install's extension id, or `''` when it cannot be read. Never throws. */
+export function getExtensionId(): string {
+  try {
+    return browser.runtime.id;
+  } catch {
+    return '';
+  }
+}
+
 /**
  * The `generator` string written into exported and backup BM JSON.
  *

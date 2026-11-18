@@ -11,14 +11,7 @@
  *   is written, downloaded or deleted.
  */
 import { getGeneratorVersion } from '../browser/app-info';
-import {
-  type BookmarkRoots,
-  clearRoots,
-  getRoots,
-  type LiveNode,
-  rootMarkersOf,
-  toBookmarkNodes,
-} from '../browser/bookmarks';
+import { clearRoots, type LiveNode, MAX_URL_LENGTH } from '../browser/bookmarks';
 import { record } from '../browser/diagnostics';
 import {
   discardTarget,
@@ -30,17 +23,19 @@ import {
   writeToTarget,
 } from '../browser/download';
 import { BmAborted, BmBackupError } from '../browser/errors';
+import { countLive, toBookmarkNodes, withoutSeparators } from '../browser/live-tree';
+import { type BookmarkRoots, getRoots, rootMarkersOf } from '../browser/roots';
 import type { ImportMode } from '../browser/storage';
 import { withWriteLock } from '../browser/write-lock';
 import { type WriteProgress, writeTree } from '../browser/write-queue';
 import { textCapsBreach, treeCapsBreach } from '../core/caps';
 import { buildUrlIndex } from '../core/dedupe';
 import { diffAgainstBrowser, type NodeStatus } from '../core/diff';
+import { capUrlLength } from '../core/href';
 import { MAX_FILE_BYTES, MAX_WRITE_DEPTH } from '../core/limits';
 import {
   BmParseError,
   type BookmarkNode,
-  computeStats,
   type FileFormat,
   type ImportPlan,
   type MergeMode,
@@ -63,8 +58,12 @@ export interface PreparedImport {
   browserIndex: Set<string>;
   /** The live roots at preview time — what the Start button's preview plan is built against. */
   destinations: PlanDestinations;
-  /** Everything inside the writable roots: what Replace would delete (docs/09 T4). */
-  current: { bookmarks: number; folders: number };
+  /**
+   * Everything inside the writable roots: what Replace would delete (docs/09
+   * T4). Separators (Firefox) are counted apart — never as bookmarks — so the
+   * confirmation can say they will not come back (docs/03 §1).
+   */
+  current: { bookmarks: number; folders: number; separators: number };
 }
 
 export interface PrepareOptions {
@@ -90,7 +89,11 @@ export async function prepareImport(
 
   // Blob.text() is UTF-8 decode, which consumes a leading BOM for us.
   const text = await file.text();
-  const { format, result } = parseBookmarkFile(text, options);
+  const parsed = parseBookmarkFile(text, options);
+  const { format } = parsed;
+  // What this browser would refuse for its length goes before the preview, so
+  // the counts the user confirms already leave it out (docs/04 §1.2).
+  const result = capUrlLength(parsed.result, MAX_URL_LENGTH);
   record({
     kind: 'import',
     phase: 'parsed',
@@ -101,9 +104,9 @@ export async function prepareImport(
   // One read: getRoots walks the whole tree, so the index and the counts come
   // from the same snapshot instead of a second getTree().
   const roots = await getRoots();
-  const browserIndex = buildUrlIndex(roots.all);
+  const browserIndex = buildUrlIndex(withoutSeparators(roots.all));
   const { existsCount, status } = diffAgainstBrowser(result.roots, browserIndex);
-  const inside = computeStats(roots.writable.flatMap((root) => root.children ?? []));
+  const inside = countLive(roots.writable.flatMap((root) => root.children ?? []));
 
   return {
     format,
@@ -112,7 +115,11 @@ export async function prepareImport(
     status,
     browserIndex,
     destinations: destinationsOf(roots),
-    current: { bookmarks: inside.bookmarks, folders: inside.folders },
+    current: {
+      bookmarks: inside.bookmarks,
+      folders: inside.folders,
+      separators: inside.separators,
+    },
   };
 }
 
@@ -169,6 +176,7 @@ function destinationsOf(roots: BookmarkRoots): PlanDestinations {
     toolbar: roots.toolbar,
     other: roots.other,
     ...(roots.mobile !== undefined && { mobile: roots.mobile }),
+    ...(roots.menu !== undefined && { menu: roots.menu }),
   };
 }
 
@@ -233,7 +241,8 @@ async function writeAll(
     mode,
     dedupe,
     // Fresh, not the preview's: anything bookmarked since must not be added twice.
-    browserIndex: dedupe && mode !== 'replace' ? buildUrlIndex(roots.all) : new Set(),
+    browserIndex:
+      dedupe && mode !== 'replace' ? buildUrlIndex(withoutSeparators(roots.all)) : new Set(),
     destinations: destinationsOf(roots),
     newFolderTitle,
   });
@@ -244,7 +253,7 @@ async function writeAll(
   if (plan.stats.writeDepth > MAX_WRITE_DEPTH) {
     throw new BmParseError(
       'TOO_DEEP',
-      `the import would nest folders ${plan.stats.writeDepth} deep; Chrome stores at most ${MAX_WRITE_DEPTH}`,
+      `the import would nest folders ${plan.stats.writeDepth} deep; at most ${MAX_WRITE_DEPTH} are written, in every browser (Chrome's own storage limit)`,
     );
   }
 
@@ -282,6 +291,9 @@ async function backUpThenFreeze(
   backup: BackupState,
   first: BookmarkRoots,
 ): Promise<LiveNode[]> {
+  // Separators are not in the snapshot (no format holds one), so a change
+  // that only moves or adds separators is not seen here; Replace deletes them
+  // and says so before it starts (docs/03 §1).
   const snapshotOf = (roots: BookmarkRoots) =>
     toBookmarkNodes(roots.replaceable, rootMarkersOf(roots));
   let roots = first;

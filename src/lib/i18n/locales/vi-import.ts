@@ -37,7 +37,12 @@ export const importTab = {
   replaceConfirmBody:
     '{current} trong trình duyệt này sẽ bị xóa, sau khi bản sao lưu an toàn được lưu. Sau đó {incoming} từ {name} sẽ được ghi vào.',
   replaceConfirm: 'Sao lưu rồi thay thế',
-  target: { bar: 'thanh dấu trang', unfiled: 'Khác', mobile: 'Di động' },
+  replaceSeparators: {
+    one: '{n} đường phân cách cũng sẽ bị xóa và không thể khôi phục — bản sao lưu, như mọi tệp BookmarkMagic ghi ra, không lưu được đường phân cách.',
+    other:
+      '{n} đường phân cách cũng sẽ bị xóa và không thể khôi phục — bản sao lưu, như mọi tệp BookmarkMagic ghi ra, không lưu được đường phân cách.',
+  },
+  target: { bar: 'thanh dấu trang', unfiled: 'Khác', mobile: 'Di động', menu: 'Menu dấu trang' },
   targetNote:
     'Ở chế độ Gộp và Thay thế, nội dung thư mục này được đưa thẳng vào thư mục tương ứng của trình duyệt, không tạo bản sao của nó.',
   reused: {
@@ -56,7 +61,7 @@ export const importTab = {
   cancelledAfterClear:
     'Bạn đã hủy sau khi bookmark cũ đã bị xóa, nên những gì còn lại chỉ là phần đã được tạo lại.',
   dateNotice:
-    'Bookmark được nhập vào sẽ mang ngày hôm nay. Chrome không cho phép tiện ích đặt lại ngày tạo gốc của bookmark — các tệp bạn xuất ra vẫn giữ ngày thật.',
+    'Bookmark được nhập vào sẽ mang ngày hôm nay. Trình duyệt không cho phép tiện ích đặt lại ngày tạo gốc của bookmark — các tệp bạn xuất ra vẫn giữ ngày thật.',
   partialCreated: {
     one: '{n} mục đã được tạo trước khi lỗi xảy ra và vẫn được giữ lại.',
     other: '{n} mục đã được tạo trước khi lỗi xảy ra và vẫn được giữ lại.',

@@ -26,6 +26,8 @@ export interface PlanDestinations {
   other: LiveFolderLike;
   /** Absent when the profile has none; Mobile-marked folders then land under Other. */
   mobile?: LiveFolderLike;
+  /** Firefox's Bookmarks Menu; absent in every Chromium browser (docs/03 §1). */
+  menu?: LiveFolderLike;
 }
 
 export interface BuildPlanOptions {
@@ -70,8 +72,12 @@ function planSplit(
   destinations: PlanDestinations,
   mode: 'merge' | 'replace',
 ): { segments: PlanSegment[]; reusedFolders: number } {
-  const routed = routeTopLevel(nodes, { hasMobileRoot: destinations.mobile !== undefined });
+  const routed = routeTopLevel(nodes, {
+    hasMobileRoot: destinations.mobile !== undefined,
+    hasMenuRoot: destinations.menu !== undefined,
+  });
   const targets: [BookmarkNode[], LiveFolderLike | undefined][] = [
+    [routed.menu, destinations.menu],
     [routed.toolbar, destinations.toolbar],
     [routed.other, destinations.other],
     [routed.mobile, destinations.mobile],

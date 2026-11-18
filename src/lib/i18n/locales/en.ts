@@ -193,7 +193,7 @@ const dict = {
     issues: 'Report an issue',
     changelog: 'Releases and changelog',
     accessibility: 'Accessibility',
-    store: 'Chrome Web Store listing',
+    store: 'Store listing',
     thirdParty: 'Third-party code',
     thirdPartyNote:
       'No runtime dependencies are installed. A few small MIT-licensed pieces are compiled into the extension: the Svelte runtime with its clsx helper, and WXT’s one-line browser shim — see THIRD_PARTY_NOTICES.txt in the package.',

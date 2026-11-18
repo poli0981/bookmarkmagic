@@ -175,7 +175,7 @@ export default {
     issues: '报告问题',
     changelog: '版本发布与更新日志',
     accessibility: '无障碍',
-    store: 'Chrome 网上应用店页面',
+    store: '商店页面',
     thirdParty: '第三方代码',
     thirdPartyNote:
       '未安装任何运行时依赖项。扩展程序中编译了几个采用 MIT 许可的小组件：Svelte 运行时及其 clsx 辅助函数，以及 WXT 的一行浏览器适配代码——详见软件包中的 THIRD_PARTY_NOTICES.txt。',

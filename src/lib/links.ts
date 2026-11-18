@@ -27,11 +27,30 @@ export const CHANGELOG_URL = `${REPO_URL}/blob/main/CHANGELOG.md`;
  */
 export const ACCESSIBILITY_URL = `${REPO_URL}/blob/main/ACCESSIBILITY.md`;
 
+/** The Chrome Web Store item id (docs/00 §9) — also the CHROME_EXTENSION_ID secret. */
+const CWS_ITEM_ID = 'eghnciphhegekmnofffpgbdfefckdhmg';
+
+/** The published Chrome Web Store listing. */
+const CWS_URL = `https://chromewebstore.google.com/detail/bookmarkmagic/${CWS_ITEM_ID}`;
+
 /**
- * The published Chrome Web Store listing (item id — docs/00 §9).
+ * The Firefox Add-ons listing, addressed by the gecko id, which AMO resolves
+ * (docs/13 §8). The "@" is percent-encoded on purpose: AMO decodes it, and the
+ * source then holds nothing that reads as an email address (see below).
+ */
+const AMO_URL = 'https://addons.mozilla.org/firefox/addon/bookmarkmagic%40poli0981.dev/';
+
+/** Every store, listed: the README's install section. */
+const INSTALL_URL = `${REPO_URL}#install`;
+
+/**
+ * The listing this copy was installed from — docs/06 §3.5.
  *
  * The only route from inside the product to rating or reviewing it, which
- * docs/13 §6 lists as a post-launch channel.
+ * docs/13 §6 lists as a post-launch channel. One Chromium package serves the
+ * Chrome Web Store and Edge Add-ons, so the Chromium choice is made at run
+ * time, by extension id: the Chrome Web Store's own id gets its listing, any
+ * other (an Edge Add-ons install, an unpacked build) the install section.
  *
  * There is deliberately **no support email here.** Putting an address on an
  * in-product surface invites users to mail their real bookmarks file, which is
@@ -40,8 +59,10 @@ export const ACCESSIBILITY_URL = `${REPO_URL}/blob/main/ACCESSIBILITY.md`;
  * SECURITY.md, CONTRIBUTING.md and the privacy policy, where it arrives with
  * the instruction to sanitize first (docs/15 decision log, 2026-08-03).
  */
-export const STORE_URL =
-  'https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg';
+export function storeUrlFor(install: { firefox: boolean; extensionId: string }): string {
+  if (install.firefox) return AMO_URL;
+  return install.extensionId === CWS_ITEM_ID ? CWS_URL : INSTALL_URL;
+}
 
 export interface LabelledLink {
   labelKey: string;

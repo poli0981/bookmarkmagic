@@ -3,60 +3,20 @@
  *
  * Purpose: the single audited surface where the extension talks to the
  *   bookmarks API. Components never call `chrome.*` directly.
- * Inputs / guarantees: raw rejections are mapped to `BmBrowserError`; the live
- *   tree is converted into the pure `BookmarkNode` file model here, including
- *   the millisecond→second conversion (`chrome.bookmarks` reports `dateAdded`
- *   in ms; `BookmarkNode.addDate` is seconds — docs/05 §4).
+ * Inputs / guarantees: raw rejections are mapped to `BmBrowserError`. The
+ *   pure half — the node shape, separators, counts and the conversion into the
+ *   `BookmarkNode` file model — is `live-tree.ts`; which folders are the roots
+ *   is `roots.ts`. Firefox's API differs from Chromium's in ways this file
+ *   absorbs (docs/02 §4): its move index (below) and its missing events.
  */
 import { browser } from 'wxt/browser';
-import type { BookmarkNode } from '../core/model';
-import { millisToSeconds } from '../core/timestamps';
-import { BmAborted, BmBrowserError, BmEnvError, BmPartialWrite } from './errors';
+import { BmAborted, BmBrowserError, BmPartialWrite } from './errors';
+import { type LiveNode, type MoveDestination, type MoveIndexRule, moveIndexFor } from './live-tree';
 
-/** The live-tree node. Unlike `BookmarkNode` it carries browser identity. */
-export interface LiveNode {
-  id: string;
-  parentId?: string;
-  index?: number;
-  title: string;
-  url?: string;
-  dateAdded?: number;
-  dateGroupModified?: number;
-  /** Set by Chrome on policy-managed nodes; such nodes reject writes. */
-  unmodifiable?: string;
-  /**
-   * Chrome 134+: which permanent folder a root is ('bookmarks-bar', 'other',
-   * 'mobile', 'managed'), and whether it is in the signed-in account's storage
-   * rather than this device's. Both exist from the 136 floor up.
-   */
-  folderType?: string;
-  syncing?: boolean;
-  children?: LiveNode[];
-}
-
-export interface BookmarkRoots {
-  /** Bookmarks Bar. */
-  toolbarId: string;
-  /** Other Bookmarks. */
-  otherId: string;
-  /** Mobile Bookmarks, when the profile has one. */
-  mobileId: string | undefined;
-  /** The same three roots as nodes, children included — Merge matches inside them. */
-  toolbar: LiveNode;
-  other: LiveNode;
-  mobile: LiveNode | undefined;
-  /** Writable top-level folders, in tree order, excluding managed ones. */
-  writable: LiveNode[];
-  /**
-   * The roots Replace backs up and empties: exactly the destinations above.
-   * Never an account-storage root this import does not write back into —
-   * deleting one would sync the deletion to every device, and the restore
-   * would land its bookmarks in local storage.
-   */
-  replaceable: LiveNode[];
-  /** Every top-level folder, managed ones included — what "already in this browser" means. */
-  all: LiveNode[];
-}
+// The node shape and the move-index rule live with the pure helpers
+// (live-tree.ts); re-exported so the adapter stays the one import for code
+// that talks to the browser.
+export type { LiveNode, MoveDestination } from './live-tree';
 
 async function guard<T>(operation: string, run: () => Promise<T>): Promise<T> {
   try {
@@ -70,139 +30,6 @@ async function guard<T>(operation: string, run: () => Promise<T>): Promise<T> {
 export async function getRootChildren(): Promise<LiveNode[]> {
   const tree = await guard('bookmarks.getTree', () => browser.bookmarks.getTree());
   return (tree[0]?.children ?? []) as LiveNode[];
-}
-
-const FOLDER_IDS = { 'bookmarks-bar': '1', other: '2', mobile: '3' } as const;
-
-/**
- * Desktop Chrome leaves an EMPTY Mobile root out of `getTree()`, so a restore
- * into a fresh profile found no Mobile root and nested those bookmarks under
- * Other. The node still exists, and accepts writes; ask for it by id.
- */
-async function hiddenMobileRoot(): Promise<LiveNode | undefined> {
-  try {
-    const [node] = (await browser.bookmarks.get(FOLDER_IDS.mobile)) as LiveNode[];
-    const usable =
-      node !== undefined &&
-      node.url === undefined &&
-      node.unmodifiable === undefined &&
-      node.syncing !== true &&
-      (node.folderType === undefined || node.folderType === 'mobile');
-    return usable ? { ...node, children: node.children ?? [] } : undefined;
-  } catch {
-    return undefined;
-  }
-}
-
-/**
- * Resolve the destination roots.
- *
- * By `folderType` first — Chrome 134+ can list a signed-in account's own bar,
- * Other and Mobile beside this device's, and the old by-id-then-by-position
- * rule mixed the two sets up. This device's roots are the destinations;
- * account roots are never written to or emptied. The ids "1"/"2"/"3" and then
- * position remain as fallbacks for a browser without `folderType`. Nodes
- * carrying `unmodifiable` (the enterprise "Managed bookmarks" folder) are
- * excluded everywhere — writing to or removing them rejects.
- */
-export async function getRoots(): Promise<BookmarkRoots> {
-  const children = await getRootChildren();
-  const writable = children.filter((node) => node.unmodifiable === undefined);
-  const local = writable.filter((node) => node.syncing !== true);
-  const typed = local.some((node) => node.folderType !== undefined);
-
-  const pick = (type: keyof typeof FOLDER_IDS): LiveNode | undefined =>
-    local.find((node) => node.folderType === type) ??
-    local.find((node) => node.id === FOLDER_IDS[type]);
-  const toolbar = pick('bookmarks-bar') ?? (typed ? undefined : local[0]);
-  const other = pick('other') ?? (typed ? undefined : local.find((n) => n !== toolbar));
-  const mobile =
-    pick('mobile') ??
-    (typed ? undefined : local.find((n) => n !== toolbar && n !== other)) ??
-    (await hiddenMobileRoot());
-
-  if (toolbar === undefined || other === undefined) {
-    // Not a BmBrowserError: nothing refused anything. Every root this profile
-    // has is policy-managed, so there is nowhere an extension may write, and
-    // "the browser refused a bookmark operation" would be actively misleading.
-    throw new BmEnvError('NO_WRITABLE_ROOTS', `${children.length} root(s), none writable`);
-  }
-
-  return {
-    toolbarId: toolbar.id,
-    otherId: other.id,
-    mobileId: mobile?.id,
-    toolbar,
-    other,
-    mobile,
-    writable,
-    replaceable: mobile === undefined ? [toolbar, other] : [toolbar, other, mobile],
-    all: children,
-  };
-}
-
-export interface ToNodesOptions {
-  /**
-   * Id of the Bookmarks Bar. The matching node is marked `toolbar: true`.
-   *
-   * Without this the marker is lost, and re-importing the file (including the
-   * Replace safety backup) lands the entire toolbar under Other Bookmarks —
-   * `03 §1` routes purely on that flag.
-   */
-  toolbarId?: string;
-  /**
-   * Ids of Other and Mobile Bookmarks, marked `root: 'other'`/`'mobile'` for
-   * the same reason: without them a restore nested both one level too deep.
-   */
-  otherId?: string;
-  mobileId?: string;
-}
-
-/** The marker ids for a whole-tree conversion — what an export or backup passes. */
-export function rootMarkersOf(roots: BookmarkRoots): ToNodesOptions {
-  return {
-    toolbarId: roots.toolbarId,
-    otherId: roots.otherId,
-    ...(roots.mobileId !== undefined && { mobileId: roots.mobileId }),
-  };
-}
-
-function markerOf(id: string, options: ToNodesOptions): Pick<BookmarkNode, 'toolbar' | 'root'> {
-  if (id === options.toolbarId) return { toolbar: true };
-  if (id === options.otherId) return { root: 'other' };
-  if (id === options.mobileId) return { root: 'mobile' };
-  return {};
-}
-
-/** Convert the live tree into the pure file model (ms → s, ids dropped). */
-export function toBookmarkNodes(
-  nodes: readonly LiveNode[],
-  options: ToNodesOptions = {},
-): BookmarkNode[] {
-  return nodes.map((node) => {
-    const addDate = millisToSeconds(node.dateAdded);
-    const isFolderNode = node.url === undefined;
-    // dateGroupModified is a FOLDER field — Chrome does not set it on
-    // bookmarks, and our HTML serializer only emits LAST_MODIFIED on <H3>.
-    const lastModified = isFolderNode ? millisToSeconds(node.dateGroupModified) : undefined;
-    return {
-      title: node.title,
-      ...(node.url !== undefined && { url: node.url }),
-      ...(addDate !== undefined && { addDate }),
-      ...(lastModified !== undefined && { lastModified }),
-      ...(isFolderNode && markerOf(node.id, options)),
-      ...(isFolderNode && { children: toBookmarkNodes(node.children ?? [], options) }),
-    };
-  });
-}
-
-/** Flatten a live tree, parents before children. Used by dedupe and #edit. */
-export function flattenLive(nodes: readonly LiveNode[], into: LiveNode[] = []): LiveNode[] {
-  for (const node of nodes) {
-    into.push(node);
-    if (node.children !== undefined) flattenLive(node.children, into);
-  }
-  return into;
 }
 
 /** The current children of one folder — what a bulk command re-plans from. */
@@ -226,11 +53,33 @@ export async function update(id: string, changes: { title?: string; url?: string
   await guard('bookmarks.update', () => browser.bookmarks.update(id, changes));
 }
 
+const MOVE_INDEX_RULE: MoveIndexRule = import.meta.env.FIREFOX ? 'firefox' : 'chromium';
+
+/**
+ * The longest address this browser accepts in a bookmark, or `undefined` for
+ * none. Firefox refuses anything over 65 536 characters (Places'
+ * `MAX_URL_LENGTH`) — mid-write, so the import drops such addresses up front
+ * (docs/04 §1.2); Chromium has no limit an import can reach.
+ */
+export const MAX_URL_LENGTH: number | undefined = import.meta.env.FIREFOX ? 65_536 : undefined;
+
+/**
+ * Move a node. Resolves to the index the browser says the node now has, which
+ * the caller compares with `position.local` — a disagreement means the tree on
+ * screen no longer matches the browser's, and it is re-read (docs/03 §3).
+ */
 export async function move(
   id: string,
-  destination: { parentId?: string; index?: number },
-): Promise<void> {
-  await guard('bookmarks.move', () => browser.bookmarks.move(id, destination));
+  destination: MoveDestination,
+  rule: MoveIndexRule = MOVE_INDEX_RULE,
+): Promise<number | undefined> {
+  const { parentId, position } = destination;
+  const details = {
+    ...(parentId !== undefined && { parentId }),
+    ...(position !== undefined && { index: moveIndexFor(position, rule) }),
+  };
+  const moved = await guard('bookmarks.move', () => browser.bookmarks.move(id, details));
+  return (moved as { index?: number } | undefined)?.index;
 }
 
 /** Remove a single bookmark. Folders need `removeTree`. */

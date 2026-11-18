@@ -73,7 +73,7 @@ beforeEach(async () => {
       getChildren: async (id: string) => fake.children(id),
       create: fake.create,
       update: fake.update,
-      move: fake.move,
+      move: fake.moveTo,
       remove: fake.remove,
       removeTree: fake.removeTree,
     },

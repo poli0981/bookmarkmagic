@@ -9,18 +9,12 @@
  *   by shape), plus display titles for the roots Firefox names only by key.
  * Guarantees: emits the same tree Firefox's own HTML export describes for the
  *   same profile (docs/04 §2b parity rule), with the Mobile root added.
- *   Separators are skipped silently, as `<HR>` is; `place:` smart bookmarks
+ *   Separators are skipped and counted, as `<HR>` is; `place:` smart bookmarks
  *   are skipped and counted; the tags root is dropped, because it is a view
  *   over bookmarks the other roots already hold.
  */
 import { classifyHref } from '../href';
-import {
-  BmParseError,
-  type BookmarkNode,
-  computeStats,
-  type ParseResult,
-  type RootMarker,
-} from '../model';
+import { BmParseError, type BookmarkNode, computeStats, type ParseResult } from '../model';
 import { microsToSeconds } from '../timestamps';
 import { bookmarkTitle, isRecord, NodeBudget, type RootTitles, WarningBag } from './shared';
 
@@ -141,6 +135,8 @@ function readNode(raw: unknown, depth: number, ctx: ReadContext): BookmarkNode |
     case 'bookmark':
       return readBookmark(raw, ctx);
     case 'separator':
+      // No format BookmarkMagic writes holds one; counted, as <HR> is (docs/04 §2b).
+      ctx.warnings.add('SEPARATORS_SKIPPED');
       return null;
     case 'unknown':
       ctx.warnings.add('UNREADABLE_ENTRIES');
@@ -162,7 +158,7 @@ function countBookmarks(root: unknown): number {
 }
 
 /** A Map, not an object literal: `root: "toString"` must not find a prototype method. */
-const ROOT_KEYS = new Map<unknown, 'toolbar' | RootMarker>([
+const ROOT_KEYS = new Map<unknown, 'toolbar' | 'other' | 'mobile'>([
   ['toolbarFolder', 'toolbar'],
   ['unfiledBookmarksFolder', 'other'],
   ['mobileFolder', 'mobile'],
@@ -180,7 +176,7 @@ function readPlacesRoot(
   ctx: ReadContext,
 ): BookmarkNode[] {
   const menu: BookmarkNode[] = [];
-  const special: Partial<Record<'toolbar' | RootMarker, BookmarkNode>> = {};
+  const special: Partial<Record<'toolbar' | 'other' | 'mobile', BookmarkNode>> = {};
 
   for (const child of children) {
     if (!isRecord(child)) {

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { describeError } from '@/lib/browser/describe-error';
 import {
+  browserOf,
   clearDiagnostics,
   errorName,
   installCrashHooks,
@@ -29,14 +30,25 @@ describe('diagnostics', () => {
   it('puts the context first and nothing personal anywhere', () => {
     const report = JSON.parse(snapshot(CONTEXT));
     expect(report).toMatchObject({ app: 'BookmarkMagic', ...CONTEXT });
-    expect(Object.keys(report)).toEqual([
-      'app',
-      'version',
-      'locale',
-      'theme',
-      'chromeMajor',
-      'events',
-    ]);
+    expect(Object.keys(report)).toEqual(['app', 'version', 'locale', 'theme', 'browser', 'events']);
+  });
+
+  it.each([
+    [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:160.0) Gecko/20100101 Firefox/160.0',
+      'Firefox 160',
+    ],
+    [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36 Edg/142.0.0.0',
+      'Edge 142',
+    ],
+    [
+      'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/142.0.0.0 Safari/537.36',
+      'Chrome 142',
+    ],
+    ['', 'unknown'],
+  ])('names the browser from %j', (userAgent, expected) => {
+    expect(browserOf(userAgent)).toBe(expected);
   });
 
   it('logs every described failure by code — never by its detail text', () => {

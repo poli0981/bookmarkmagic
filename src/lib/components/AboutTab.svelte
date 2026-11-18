@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { getAppVersion } from '../browser/app-info';
+  import { getAppVersion, getExtensionId } from '../browser/app-info';
   import { dateTime, t } from '../i18n/index.svelte';
   import {
     ACCESSIBILITY_URL,
@@ -8,7 +8,7 @@
     ISSUES_URL,
     LEGAL_URLS,
     REPO_URL,
-    STORE_URL,
+    storeUrlFor,
   } from '../links';
   import { copyToClipboard } from '../browser/clipboard';
   import { snapshot } from '../browser/diagnostics';
@@ -19,6 +19,9 @@
   import Icon from './icons/Icon.svelte';
 
   const version = getAppVersion();
+  // The listing this copy came from (docs/06 §3.5): AMO for the Firefox build,
+  // the Chrome Web Store for its own id, the install page for anything else.
+  const storeUrl = storeUrlFor({ firefox: import.meta.env.FIREFOX, extensionId: getExtensionId() });
   const acceptance = $derived(getAcceptance());
   // undefined when acceptedAt is missing or unparseable — storage coerces a
   // missing timestamp to '', and formatting that would throw inside the render.
@@ -60,7 +63,7 @@
         {t('about.accessibility')}<Icon name="external" size={12} />
       </a>
     </li>
-    <li><a href={STORE_URL} target="_blank" rel="noopener noreferrer">{t('about.store')}<Icon name="external" size={12} /></a></li>
+    <li><a href={storeUrl} target="_blank" rel="noopener noreferrer">{t('about.store')}<Icon name="external" size={12} /></a></li>
   </ul>
 
   <h2 class="eyebrow">{t('about.thirdParty')}</h2>

@@ -47,7 +47,9 @@ function readDate(value: unknown, warnings: WarningBag): number | undefined {
 
 function readRootMarker(raw: Record<string, unknown>): RootMarker | undefined {
   if (raw.toolbar === true) return undefined; // the toolbar wins
-  return raw.root === 'other' || raw.root === 'mobile' ? raw.root : undefined;
+  return raw.root === 'other' || raw.root === 'mobile' || raw.root === 'menu'
+    ? raw.root
+    : undefined;
 }
 
 function readNode(

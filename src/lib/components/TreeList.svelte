@@ -110,18 +110,27 @@
     onfocus={onFocus}
   >
     {#each shown as row (row.node.id)}
-      <li
-        id="node-{row.node.id}"
-        data-node-id={row.node.id}
-        role="treeitem"
-        aria-level={row.depth}
-        aria-setsize={row.setSize}
-        aria-posinset={row.posInSet}
-        aria-expanded={row.expandable ? row.expanded : undefined}
-        aria-selected={session.focusedId === row.node.id}
-      >
-        <TreeRow {row} {session} {onopen} {oncopy} {onsort} />
-      </li>
+      {#if row.node.separator === true}
+        <!-- A Firefox separator (docs/06 §5): a line, and aria-hidden, so it is
+             outside the accessibility tree and the tree still owns only
+             treeitems. It takes no focus and no drop. -->
+        <li class="separator" aria-hidden="true" style:--depth={row.depth - 1}>
+          <span class="rule"></span>
+        </li>
+      {:else}
+        <li
+          id="node-{row.node.id}"
+          data-node-id={row.node.id}
+          role="treeitem"
+          aria-level={row.depth}
+          aria-setsize={row.setSize}
+          aria-posinset={row.posInSet}
+          aria-expanded={row.expandable ? row.expanded : undefined}
+          aria-selected={session.focusedId === row.node.id}
+        >
+          <TreeRow {row} {session} {onopen} {oncopy} {onsort} />
+        </li>
+      {/if}
     {/each}
   </ul>
 
@@ -154,6 +163,21 @@
     min-height: 160px;
     max-height: min(62vh, 620px);
     overflow: auto;
+  }
+
+  /* Indented like a row: 18px per level, plus the row's own inset and a
+     disclosure-sized gap, so the line starts where its siblings' titles do. */
+  .separator {
+    display: flex;
+    align-items: center;
+    height: 12px;
+    padding-left: calc(var(--depth) * 18px + var(--sp-1) + 18px);
+    padding-right: var(--sp-2);
+  }
+
+  .separator .rule {
+    flex: 1;
+    border-top: 1px solid var(--border-strong);
   }
 
   .tree:focus-visible {

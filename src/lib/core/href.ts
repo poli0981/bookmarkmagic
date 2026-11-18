@@ -8,6 +8,8 @@
  *   censor; they are never rendered as links).
  */
 
+import { type BookmarkNode, computeStats, isFolder, type ParseResult } from './model';
+
 export type HrefVerdict = 'ok' | 'missing' | 'invalid' | 'place-query';
 
 /**
@@ -30,4 +32,43 @@ export function classifyHref(raw: string | null | undefined): HrefVerdict {
   if (!URL.canParse(trimmed)) return 'invalid';
   if (/^place:/i.test(trimmed)) return 'place-query';
   return 'ok';
+}
+
+/** Bookmarks under `nodes` whose address is longer than `max`, removed. */
+function withoutLongUrls(
+  nodes: readonly BookmarkNode[],
+  max: number,
+  dropped: { count: number },
+): BookmarkNode[] {
+  const out: BookmarkNode[] = [];
+  for (const node of nodes) {
+    if (!isFolder(node)) {
+      if ((node.url ?? '').length > max) dropped.count++;
+      else out.push(node);
+      continue;
+    }
+    out.push({ ...node, children: withoutLongUrls(node.children ?? [], max, dropped) });
+  }
+  return out;
+}
+
+/**
+ * Drop the bookmarks a browser would refuse for their length — docs/04 §1.2.
+ *
+ * Firefox refuses an address longer than 65 536 characters, and refuses it in
+ * the middle of a write, possibly after a Replace has cleared the tree. The
+ * browser layer passes its limit; Chromium has none and passes `undefined`,
+ * which returns the result untouched. Applied once after parsing, so every
+ * format meets one rule, and before the preview, so its counts include it.
+ */
+export function capUrlLength(result: ParseResult, max: number | undefined): ParseResult {
+  if (max === undefined) return result;
+  const dropped = { count: 0 };
+  const roots = withoutLongUrls(result.roots, max, dropped);
+  if (dropped.count === 0) return result;
+  return {
+    roots,
+    stats: computeStats(roots),
+    warnings: [...result.warnings, { code: 'URL_TOO_LONG', count: dropped.count }],
+  };
 }
