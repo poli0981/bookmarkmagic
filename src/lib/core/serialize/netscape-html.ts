@@ -78,10 +78,23 @@ function writeNode(node: BookmarkNode, depth: number, out: string[]): void {
   );
 }
 
-/** Serialize a tree to Netscape bookmark HTML (UTF-8, LF line endings). */
+/**
+ * Serialize a tree to Netscape bookmark HTML (UTF-8, LF line endings).
+ *
+ * Firefox's Bookmarks Menu has no attribute in this format: Firefox writes the
+ * menu's entries as the file's top level and reads loose top-level entries
+ * back into the menu. A top-level `root: 'menu'` folder is therefore
+ * unwrapped here, its children written in its place (docs/04 §1.1).
+ */
 export function serializeNetscapeHtml(roots: readonly BookmarkNode[]): string {
   const out: string[] = ['<DL><p>'];
-  for (const node of roots) writeNode(node, 1, out);
+  for (const node of roots) {
+    if (node.root === 'menu' && node.toolbar !== true && !isBookmark(node)) {
+      for (const child of node.children ?? []) writeNode(child, 1, out);
+    } else {
+      writeNode(node, 1, out);
+    }
+  }
   out.push('</DL><p>');
   return `${HEADER}${out.join('\n')}\n`;
 }

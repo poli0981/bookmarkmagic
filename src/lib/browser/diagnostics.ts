@@ -102,14 +102,28 @@ export interface DiagnosticsContext {
   theme: string;
 }
 
+/**
+ * The browser and its major version from the user agent: "Firefox 160",
+ * "Edge 142", "Chrome 142", or "unknown". Edge's agent also says Chrome, so it
+ * is read first. Since v1.3.0 — until then the report carried `chromeMajor`,
+ * which said "unknown" on Firefox.
+ */
+export function browserOf(userAgent: string): string {
+  for (const [name, pattern] of [
+    ['Firefox', /Firefox\/(\d+)/],
+    ['Edge', /Edg\/(\d+)/],
+    ['Chrome', /Chrome\/(\d+)/],
+  ] as const) {
+    const major = pattern.exec(userAgent)?.[1];
+    if (major !== undefined) return `${name} ${major}`;
+  }
+  return 'unknown';
+}
+
 /** The report the About tab copies: context first, then the events, oldest first. */
 export function snapshot(context: DiagnosticsContext): string {
-  const chrome = /Chrome\/(\d+)/.exec(globalThis.navigator?.userAgent ?? '')?.[1] ?? 'unknown';
-  return JSON.stringify(
-    { app: 'BookmarkMagic', ...context, chromeMajor: chrome, events: entries },
-    null,
-    2,
-  );
+  const browser = browserOf(globalThis.navigator?.userAgent ?? '');
+  return JSON.stringify({ app: 'BookmarkMagic', ...context, browser, events: entries }, null, 2);
 }
 
 /** Test teardown — module state outlives a single `it()`. */

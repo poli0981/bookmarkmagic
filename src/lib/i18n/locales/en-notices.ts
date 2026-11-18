@@ -46,9 +46,8 @@ export const warnings = {
     other: '{n} entries have addresses the browser cannot store, so they were skipped.',
   },
   PLACE_QUERIES_SKIPPED: {
-    one: '{n} Firefox smart bookmark (a saved search, not a web page) was skipped — here it would be a dead link.',
-    other:
-      '{n} Firefox smart bookmarks (saved searches, not web pages) were skipped — here they would be dead links.',
+    one: '{n} Firefox smart bookmark (a saved search, not a web page) was skipped.',
+    other: '{n} Firefox smart bookmarks (saved searches, not web pages) were skipped.',
   },
   EXTRA_ROOTS_SKIPPED: {
     one: '{n} bookmark in a browser-specific folder (such as Opera’s Speed Dial or Trash) was not imported.',
@@ -58,6 +57,16 @@ export const warnings = {
   UNREADABLE_ENTRIES: {
     one: '{n} entry in this file could not be read and was skipped.',
     other: '{n} entries in this file could not be read and were skipped.',
+  },
+  SEPARATORS_SKIPPED: {
+    one: '{n} separator line was left out — BookmarkMagic keeps bookmarks and folders, not separators.',
+    other:
+      '{n} separator lines were left out — BookmarkMagic keeps bookmarks and folders, not separators.',
+  },
+  URL_TOO_LONG: {
+    one: '{n} bookmark was skipped: its address is longer than the 65,536 characters this browser accepts.',
+    other:
+      '{n} bookmarks were skipped: their addresses are longer than the 65,536 characters this browser accepts.',
   },
 };
 

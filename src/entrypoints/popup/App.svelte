@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { getAppVersion } from '@/lib/browser/app-info';
   import { getRootChildren } from '@/lib/browser/bookmarks';
+  import { countLive } from '@/lib/browser/live-tree';
   import { type ManagerRoute, openManager } from '@/lib/browser/open-manager';
   import Icon, { type IconName } from '@/lib/components/icons/Icon.svelte';
   import { num, t, tPlural } from '@/lib/i18n/index.svelte';
@@ -27,21 +28,10 @@
    */
   async function countTree(): Promise<void> {
     try {
-      let bookmarks = 0;
-      let folders = 0;
-      const stack: { url?: string; children?: unknown[] }[] = [];
-      for (const root of await getRootChildren()) {
-        // A loop, not push(...spread): Other Bookmarks can hold 100k children.
-        for (const child of root.children ?? []) stack.push(child);
-      }
-      while (stack.length > 0) {
-        const node = stack.pop();
-        if (node === undefined) break;
-        if (node.url === undefined) folders++;
-        else bookmarks++;
-        // SAFETY: children of a LiveNode are LiveNodes, which have this shape.
-        for (const child of (node.children ?? []) as typeof stack) stack.push(child);
-      }
+      // Inside the roots, separators (Firefox) apart: a separator's url is
+      // "data:", and counting by url called every one a bookmark.
+      const inside = (await getRootChildren()).flatMap((root) => root.children ?? []);
+      const { bookmarks, folders } = countLive(inside);
       counts = { bookmarks, folders };
     } catch {
       counts = undefined;

@@ -49,10 +49,9 @@ export const warnings = {
     other: '{n} de intrări au adrese pe care browserul nu le poate stoca, așa că au fost omise.',
   },
   PLACE_QUERIES_SKIPPED: {
-    one: '{n} marcaj inteligent Firefox (o căutare salvată, nu o pagină web) a fost omis — aici ar fi un link nefuncțional.',
-    few: '{n} marcaje inteligente Firefox (căutări salvate, nu pagini web) au fost omise — aici ar fi linkuri nefuncționale.',
-    other:
-      '{n} de marcaje inteligente Firefox (căutări salvate, nu pagini web) au fost omise — aici ar fi linkuri nefuncționale.',
+    one: '{n} marcaj inteligent Firefox (o căutare salvată, nu o pagină web) a fost omis.',
+    few: '{n} marcaje inteligente Firefox (căutări salvate, nu pagini web) au fost omise.',
+    other: '{n} de marcaje inteligente Firefox (căutări salvate, nu pagini web) au fost omise.',
   },
   EXTRA_ROOTS_SKIPPED: {
     one: '{n} marcaj dintr-un dosar specific unui browser (cum ar fi Speed Dial sau Coșul de gunoi din Opera) nu a fost importat.',
@@ -64,6 +63,18 @@ export const warnings = {
     one: '{n} intrare din acest fișier nu a putut fi citită și a fost omisă.',
     few: '{n} intrări din acest fișier nu au putut fi citite și au fost omise.',
     other: '{n} de intrări din acest fișier nu au putut fi citite și au fost omise.',
+  },
+  SEPARATORS_SKIPPED: {
+    one: '{n} linie de separare a fost omisă — BookmarkMagic păstrează marcaje și dosare, nu separatoare.',
+    few: '{n} linii de separare au fost omise — BookmarkMagic păstrează marcaje și dosare, nu separatoare.',
+    other:
+      '{n} de linii de separare au fost omise — BookmarkMagic păstrează marcaje și dosare, nu separatoare.',
+  },
+  URL_TOO_LONG: {
+    one: '{n} marcaj a fost omis: adresa lui depășește cele 65.536 de caractere acceptate de acest browser.',
+    few: '{n} marcaje au fost omise: adresele lor depășesc cele 65.536 de caractere acceptate de acest browser.',
+    other:
+      '{n} de marcaje au fost omise: adresele lor depășesc cele 65.536 de caractere acceptate de acest browser.',
   },
 } satisfies Dict['warnings'];
 

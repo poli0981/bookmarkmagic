@@ -36,9 +36,8 @@ export const warnings = {
     other: '{n} mục có địa chỉ mà trình duyệt không lưu được nên đã bị bỏ qua.',
   },
   PLACE_QUERIES_SKIPPED: {
-    one: 'Đã bỏ qua {n} bookmark thông minh của Firefox (một truy vấn đã lưu, không phải trang web) — ở đây nó sẽ là liên kết hỏng.',
-    other:
-      'Đã bỏ qua {n} bookmark thông minh của Firefox (truy vấn đã lưu, không phải trang web) — ở đây chúng sẽ là liên kết hỏng.',
+    one: 'Đã bỏ qua {n} bookmark thông minh của Firefox (một truy vấn đã lưu, không phải trang web).',
+    other: 'Đã bỏ qua {n} bookmark thông minh của Firefox (truy vấn đã lưu, không phải trang web).',
   },
   EXTRA_ROOTS_SKIPPED: {
     one: '{n} bookmark nằm trong thư mục riêng của trình duyệt (như Speed Dial hay Thùng rác của Opera) nên không được nhập.',
@@ -48,6 +47,15 @@ export const warnings = {
   UNREADABLE_ENTRIES: {
     one: '{n} mục trong tệp không đọc được và đã bị bỏ qua.',
     other: '{n} mục trong tệp không đọc được và đã bị bỏ qua.',
+  },
+  SEPARATORS_SKIPPED: {
+    one: 'Đã bỏ qua {n} đường phân cách — BookmarkMagic giữ bookmark và thư mục, không giữ đường phân cách.',
+    other:
+      'Đã bỏ qua {n} đường phân cách — BookmarkMagic giữ bookmark và thư mục, không giữ đường phân cách.',
+  },
+  URL_TOO_LONG: {
+    one: 'Đã bỏ qua {n} bookmark: địa chỉ dài hơn 65.536 ký tự mà trình duyệt này chấp nhận.',
+    other: 'Đã bỏ qua {n} bookmark: địa chỉ dài hơn 65.536 ký tự mà trình duyệt này chấp nhận.',
   },
 } satisfies Dict['warnings'];
 

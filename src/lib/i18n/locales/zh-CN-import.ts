@@ -36,7 +36,12 @@ export const importTab = {
   replaceConfirmBody:
     '保存安全备份后，将删除此浏览器中的 {current}。然后写入 {name} 中的 {incoming}。',
   replaceConfirm: '备份并替换',
-  target: { bar: '书签栏', unfiled: '其他书签', mobile: '移动设备书签' },
+  replaceSeparators: {
+    one: '还会删除 {n} 条分隔线，且无法恢复——备份与 BookmarkMagic 写出的其他文件一样，无法保存分隔线。',
+    other:
+      '还会删除 {n} 条分隔线，且无法恢复——备份与 BookmarkMagic 写出的其他文件一样，无法保存分隔线。',
+  },
+  target: { bar: '书签栏', unfiled: '其他书签', mobile: '移动设备书签', menu: '书签菜单' },
   targetNote:
     '在合并和替换模式下，此文件夹中的内容会直接放入对应的浏览器文件夹，而不是创建它的副本。',
   reused: {
@@ -55,7 +60,7 @@ export const importTab = {
   },
   cancelledAfterClear: '您是在现有书签已被删除之后取消的，因此剩下的只有已重建的部分。',
   dateNotice:
-    '导入的书签日期均为今天。Chrome 不允许扩展程序设置书签的原始日期——您导出的文件会保留真实日期。',
+    '导入的书签日期均为今天。浏览器不允许扩展程序设置书签的原始日期——您导出的文件会保留真实日期。',
   partialCreated: {
     one: '操作失败前已创建 {n} 项，这些项保持原样。',
     other: '操作失败前已创建 {n} 项，这些项保持原样。',

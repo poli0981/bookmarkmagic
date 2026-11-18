@@ -42,7 +42,13 @@ export const importTab = {
   replaceConfirmBody:
     'Vor fi șterse din acest browser: {current}, după salvarea unei copii de rezervă de siguranță. Apoi se scrie conținutul din {name}: {incoming}.',
   replaceConfirm: 'Salvați copia și înlocuiți',
-  target: { bar: 'bară', unfiled: 'Alte marcaje', mobile: 'Mobile' },
+  replaceSeparators: {
+    one: 'Va fi ștearsă și {n} linie de separare, care nu mai poate fi restaurată — copia de rezervă, ca orice fișier scris de BookmarkMagic, nu poate păstra separatoare.',
+    few: 'Vor fi șterse și {n} linii de separare, care nu mai pot fi restaurate — copia de rezervă, ca orice fișier scris de BookmarkMagic, nu poate păstra separatoare.',
+    other:
+      'Vor fi șterse și {n} de linii de separare, care nu mai pot fi restaurate — copia de rezervă, ca orice fișier scris de BookmarkMagic, nu poate păstra separatoare.',
+  },
+  target: { bar: 'bară', unfiled: 'Alte marcaje', mobile: 'Mobile', menu: 'Meniul de marcaje' },
   targetNote:
     'La îmbinare și la înlocuire, conținutul acestui dosar ajunge direct în dosarul respectiv al browserului, nu într-o copie a lui.',
   reused: {
@@ -65,7 +71,7 @@ export const importTab = {
   cancelledAfterClear:
     'Ați anulat după ce marcajele existente fuseseră deja șterse, așa că a rămas doar partea care a fost refăcută.',
   dateNotice:
-    'Marcajele importate poartă data de azi. Chrome nu permite unei extensii să seteze data originală a unui marcaj — fișierele exportate păstrează datele reale.',
+    'Marcajele importate poartă data de azi. Browserul nu permite unei extensii să seteze data originală a unui marcaj — fișierele exportate păstrează datele reale.',
   partialCreated: {
     one: '{n} element fusese deja creat înainte de eroare și a rămas pe loc.',
     few: '{n} elemente fuseseră deja create înainte de eroare și au rămas pe loc.',

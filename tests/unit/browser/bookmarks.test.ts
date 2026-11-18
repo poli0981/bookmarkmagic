@@ -19,9 +19,9 @@ vi.mock('wxt/browser', () => ({
   },
 }));
 
-const { clearRoots, flattenLive, getRoots, toBookmarkNodes } = await import(
-  '@/lib/browser/bookmarks'
-);
+const { clearRoots } = await import('@/lib/browser/bookmarks');
+const { flattenLive, toBookmarkNodes } = await import('@/lib/browser/live-tree');
+const { getRoots } = await import('@/lib/browser/roots');
 
 beforeEach(() => {
   current = new FakeBookmarks();

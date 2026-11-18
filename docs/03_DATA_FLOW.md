@@ -49,7 +49,7 @@
   never deleted (API forbids it). On Firefox the deletion includes the
   **separators** in those roots, and nothing restores them — no format
   BookmarkMagic writes keeps one — so the confirmation says how many will go
-  (`import.replace.separators`, shown only when there are any). The counts in
+  (`import.replaceSeparators`, shown only when there are any). The counts in
   that confirmation never include separators among the bookmarks.
 - **Root routing** (`core/route.ts`), top-level nodes only — deeper, markers
   are data. A folder that *is* a browser root is **unwrapped**: its children go

@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { LiveNode } from '../browser/bookmarks';
+  import { isSeparator } from '../browser/live-tree';
   import type { CheckState } from '../core/select';
   import { num, t, tPlural } from '../i18n/index.svelte';
   import Disclosure from './Disclosure.svelte';
@@ -24,7 +25,10 @@
 
   /** Only folders are pickable — a bookmark travels with its parent. */
   const folders = $derived((node.children ?? []).filter((child) => child.url === undefined));
-  const bookmarks = $derived((node.children ?? []).filter((child) => child.url !== undefined).length);
+  // A Firefox separator has a url ("data:") but is not a bookmark (docs/02 §4).
+  const bookmarks = $derived(
+    (node.children ?? []).filter((child) => child.url !== undefined && !isSeparator(child)).length,
+  );
   const shown = $derived(folders.length > limit ? folders.slice(0, limit) : folders);
 
   let input: HTMLInputElement | undefined = $state();

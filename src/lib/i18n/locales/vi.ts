@@ -177,7 +177,7 @@ export default {
     issues: 'Báo lỗi',
     changelog: 'Bản phát hành và nhật ký thay đổi',
     accessibility: 'Hỗ trợ tiếp cận',
-    store: 'Trang trên Chrome Web Store',
+    store: 'Trang trên cửa hàng',
     thirdParty: 'Mã của bên thứ ba',
     thirdPartyNote:
       'Không cài thêm thư viện nào khi chạy. Vài phần mã nhỏ theo giấy phép MIT được biên dịch vào tiện ích: bộ chạy của Svelte cùng hàm trợ giúp clsx của nó, và lớp tương thích trình duyệt một dòng của WXT — xem THIRD_PARTY_NOTICES.txt trong gói.',

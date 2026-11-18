@@ -19,6 +19,11 @@ export interface EditNode {
   url?: string;
   dateAdded?: number;
   unmodifiable?: string;
+  /**
+   * A Firefox separator (docs/03 §3): a row of its own that no command touches.
+   * It keeps its `url` ("data:"), so every "no url ⇒ folder" test stays right.
+   */
+  separator?: true;
   children?: EditNode[];
 }
 

@@ -17,7 +17,9 @@ export interface VisibleRow {
   /**
    * Position among the visible siblings, 1-based, and how many there are. The
    * rows render flat, so the browser cannot count siblings itself — without
-   * these, a screen reader announced "1 of 1" on every row.
+   * these, a screen reader announced "1 of 1" on every row. Separators
+   * (Firefox) are rows but not items: they are not counted, and their own
+   * values mean nothing (docs/06 §5).
    */
   posInSet: number;
   setSize: number;
@@ -44,17 +46,20 @@ export function visibleRows(
   const rows: VisibleRow[] = [];
   const walk = (nodes: readonly EditNode[], depth: number, parentId: string | undefined): void => {
     const shown = visible === undefined ? nodes : nodes.filter((node) => visible.has(node.id));
-    for (const [index, node] of shown.entries()) {
+    const setSize = shown.filter((node) => node.separator !== true).length;
+    let position = 0;
+    for (const node of shown) {
       const children = node.children ?? [];
       const isOpen = expanded.has(node.id);
+      if (node.separator !== true) position++;
       rows.push({
         node,
         depth,
         parentId,
         expandable: node.url === undefined && children.length > 0,
         expanded: isOpen,
-        posInSet: index + 1,
-        setSize: shown.length,
+        posInSet: position,
+        setSize,
       });
       if (isOpen) walk(children, depth + 1, node.id);
     }
@@ -73,8 +78,10 @@ export function visibleRows(
 export function resolveKey(
   key: string,
   focusedId: string | undefined,
-  rows: readonly VisibleRow[],
+  allRows: readonly VisibleRow[],
 ): TreeAction {
+  // Separators take no focus, so every key moves over the rows that can.
+  const rows = allRows.filter((row) => row.node.separator !== true);
   if (rows.length === 0) return NONE;
   const index = rows.findIndex((row) => row.node.id === focusedId);
   const current = index === -1 ? undefined : rows[index];
@@ -123,6 +130,8 @@ export function resolveKey(
  * The VISIBLE siblings: under a search only the matches count, because the
  * user places the row relative to one they can see, exactly as a drag does. A
  * collapsed neighbour's children are not rows, so they are skipped for free.
+ * A separator IS a neighbour: stepping past one is one place, as a drag beside
+ * it would be — skipping it would move the row two places at once.
  *
  * @returns the neighbour's id, or `undefined` at either end of the folder.
  */

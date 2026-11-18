@@ -6,7 +6,7 @@
  * Inputs: `EditNode` trees, plus `LiveNode`s straight from the bookmarks API.
  * Guarantees: pure — no `chrome.*`, no Svelte, no mutation of the input.
  */
-import type { LiveNode } from '../browser/bookmarks';
+import { isSeparator, type LiveNode } from '../browser/live-tree';
 import type { EditNode } from './patch-tree';
 
 /**
@@ -17,13 +17,18 @@ import type { EditNode } from './patch-tree';
  * folders, which is what makes `url === undefined` a reliable folder test.
  */
 export function toEditNode(node: LiveNode): EditNode {
+  const separator = isSeparator(node);
+  // A separator keeps a url — Firefox sends "data:" — so that no "no url ⇒
+  // folder" test anywhere mistakes it for an empty folder.
+  const url = separator ? (node.url ?? 'data:') : node.url;
   return {
     id: node.id,
     ...(node.parentId !== undefined && { parentId: node.parentId }),
     title: node.title,
-    ...(node.url !== undefined && { url: node.url }),
-    ...(node.url === undefined && { children: (node.children ?? []).map(toEditNode) }),
+    ...(url !== undefined && { url }),
+    ...(url === undefined && { children: (node.children ?? []).map(toEditNode) }),
     ...(node.unmodifiable !== undefined && { unmodifiable: node.unmodifiable }),
+    ...(separator && { separator: true as const }),
   };
 }
 
@@ -45,6 +50,8 @@ export function flattenTree(nodes: readonly EditNode[], into: EditNode[] = []): 
  */
 export function isEditable(roots: readonly EditNode[], node: EditNode): boolean {
   if (node.unmodifiable !== undefined) return false;
+  // Separators are shown and left alone: none of the row commands applies.
+  if (node.separator === true) return false;
   return !roots.some((root) => root.id === node.id);
 }
 
@@ -87,10 +94,13 @@ export function hostOf(url: string | undefined): string {
   return new URL(url).host;
 }
 
-/** How many nodes sit inside `node`. Drives the delete confirmation's count. */
+/**
+ * How many bookmarks and folders sit inside `node` — the delete confirmation's
+ * count. Separators (Firefox) go too, but are not "items" to anyone reading it.
+ */
 export function countDescendants(node: EditNode | undefined): number {
   if (node === undefined) return 0;
-  return flattenTree(node.children ?? []).length;
+  return flattenTree(node.children ?? []).filter((child) => child.separator !== true).length;
 }
 
 /** Ids to delete so one copy of each duplicated link survives. */

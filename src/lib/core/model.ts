@@ -11,8 +11,11 @@
  * OMITTING absent keys, never by assigning `undefined`.
  */
 
-/** A top-level folder that stands for a browser root other than the bar (docs/04 §1.1, §2). */
-export type RootMarker = 'other' | 'mobile';
+/**
+ * A top-level folder that stands for a browser root other than the bar
+ * (docs/04 §1.1, §2). `menu` is Firefox's Bookmarks Menu (since v1.3.0).
+ */
+export type RootMarker = 'other' | 'mobile' | 'menu';
 
 export interface BookmarkNode {
   title: string;
@@ -56,6 +59,8 @@ export const PARSE_WARNING_CODES = [
   'PLACE_QUERIES_SKIPPED',
   'EXTRA_ROOTS_SKIPPED',
   'UNREADABLE_ENTRIES',
+  'SEPARATORS_SKIPPED',
+  'URL_TOO_LONG',
 ] as const;
 
 export type ParseWarningCode = (typeof PARSE_WARNING_CODES)[number];

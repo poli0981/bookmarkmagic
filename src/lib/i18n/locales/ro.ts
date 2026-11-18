@@ -210,7 +210,7 @@ export default {
     issues: 'Raportați o problemă',
     changelog: 'Versiuni și jurnalul modificărilor',
     accessibility: 'Accesibilitate',
-    store: 'Pagina din Magazinul Chrome Web',
+    store: 'Pagina din magazin',
     thirdParty: 'Cod terț',
     thirdPartyNote:
       'Nu este instalată nicio dependență de rulare. Câteva componente mici cu licență MIT sunt compilate în extensie: runtime-ul Svelte cu utilitarul său clsx și adaptorul de browser de o linie al WXT — consultați THIRD_PARTY_NOTICES.txt din pachet.',

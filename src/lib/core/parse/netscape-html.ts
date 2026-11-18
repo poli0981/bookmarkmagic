@@ -128,9 +128,9 @@ function walkDl(dl: Element, depth: number, ctx: WalkContext): BookmarkNode[] {
   const out: BookmarkNode[] = [];
   for (const child of entryElements(dl)) {
     const tag = tagOf(child);
-    // <HR> separators (Firefox) are skipped silently — docs/04 §1.2. The HTML
-    // parser usually nests them inside the preceding <DT>; either way they
-    // are never read as an entry.
+    // <HR> separators (Firefox) are never read as an entry — docs/04 §1.2.
+    // The HTML parser usually nests them inside the preceding <DT>, so they
+    // are counted once for the whole document instead (SEPARATORS_SKIPPED).
     if (tag === 'dd') ctx.warnings.add('DESCRIPTIONS_DROPPED');
     if (tag !== 'dt') continue;
     // Checked per entry, not per list: an EMPTY list one level past the cap is
@@ -287,6 +287,9 @@ export function parseNetscapeHtml(text: string): ParseResult {
   }
 
   const ctx: WalkContext = { warnings: new WarningBag(), budget: new NodeBudget() };
+  // The file model has no separator (docs/04 §1.2): count what is left out.
+  const separators = doc.getElementsByTagName('hr').length;
+  if (separators > 0) ctx.warnings.add('SEPARATORS_SKIPPED', separators);
   let roots = body === null || !hasEntries ? [] : collectRoots(body, ctx);
   if (roots.length === 0 && hasEntries) roots = outermostLists(doc, ctx);
 
