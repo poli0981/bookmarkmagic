@@ -50,7 +50,10 @@
   **separators** in those roots, and nothing restores them — no format
   BookmarkMagic writes keeps one — so the confirmation says how many will go
   (`import.replaceSeparators`, shown only when there are any). The counts in
-  that confirmation never include separators among the bookmarks.
+  that confirmation never include separators among the bookmarks, and they
+  cover exactly what Replace deletes: the roots it empties, never a signed-in
+  Chrome account's own roots (`syncing: true`, `02 §4`), which it leaves
+  alone (fixed in v1.3.0 — they used to be counted).
 - **Root routing** (`core/route.ts`), top-level nodes only — deeper, markers
   are data. A folder that *is* a browser root is **unwrapped**: its children go
   into that root and the folder itself is never written.
@@ -67,7 +70,10 @@
     everywhere else. Firefox's own HTML export leaves the menu's contents loose
     at the top level, and Firefox's own import puts loose entries back into
     the menu; doing the same is what makes a Firefox file round-trip in
-    Firefox. New-folder mode is not routing and stays the same on every
+    Firefox. It also means a **Chrome** HTML export's Other and Mobile
+    contents, which Chrome writes loose (`04 §1.2`), land in the Menu in
+    Firefox — as they do with Firefox's own import. BookmarkMagic's exports
+    mark every root, so they are not affected. New-folder mode is not routing and stays the same on every
     browser: `Other Bookmarks/Imported <date>/…`.
 
   The markers come from our own exports and backups (`04 §1.1`, §2), from

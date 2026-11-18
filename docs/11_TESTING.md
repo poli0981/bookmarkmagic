@@ -197,10 +197,16 @@ behaves the way Firefox's source says its API does
 all four always present; no `folderType`; separators as
 `{ type: 'separator', url: 'data:' }`; a same-folder `move` that takes the
 final position; no `onChildrenReordered` or `onImport*`; `get('3')`
-rejected; addresses over 65 536 characters refused. The root, separator, move,
-Replace and export suites run over both flavours (`describe.each`) — which is
-also how the position fallback in `getRoots`, never reached by the Chromium
-fake, got its first test. ⚠️ The fake is built from reading Firefox's source;
+rejected; addresses over 65 536 characters refused. Firefox has suites of its own rather than
+a second pass of the Chromium ones: `firefox-import.test.ts` (roots by GUID;
+Merge, New-folder and Replace — all four roots emptied, the backup restored
+twice; export), `edit-firefox.test.ts` (the edit model, keyboard positions,
+Sort A→Z around separators, drops and Alt+↑/↓ at Firefox's index, the re-read
+when the browser reports another landing place), `live-tree.test.ts`
+(separators, counts, the Menu marker, each browser's move index) and the pure
+`firefox-menu.test.ts`. The position fallback in `getRoots`, which neither
+fake reaches — both have known ids — is tested in `bookmarks.test.ts` with
+hand-built roots of unknown ids, including a Menu listed first. ⚠️ The fake is built from reading Firefox's source;
 a sanitized `getTree()` dump from a real Firefox 140+ profile, committed as a
 fixture the fake is checked against, would turn that reading into evidence
 (`00 §10`).

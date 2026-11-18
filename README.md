@@ -107,6 +107,10 @@ Full policy: [`legal/PRIVACY.md`](legal/PRIVACY.md).
   deletes them with everything else — tells you so before it starts.
 - Firefox refuses bookmark addresses longer than 65,536 characters (they are
   skipped, and counted) and shortens titles longer than 4,096.
+- On Firefox, entries a file leaves loose at its top level go into the
+  **Bookmarks Menu**, where Firefox's own import puts them. For an HTML file
+  exported by Chrome itself, that means Chrome's Other and Mobile bookmarks;
+  BookmarkMagic's own exports name every root and land where they came from.
 - CSV is a flattened view: empty folders and "which folder is the toolbar" are
   not preserved. Use HTML or JSON for a faithful backup.
 - Markdown is share-only — BookmarkMagic cannot read it back.

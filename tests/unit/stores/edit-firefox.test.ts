@@ -111,6 +111,40 @@ describe('keyboard and positions', () => {
   });
 });
 
+describe('a folder of separators is not a folder of items', () => {
+  const onlySeparators: EditNode = {
+    id: 'f',
+    title: 'F',
+    children: [
+      { id: 's1', title: '', url: 'data:', separator: true, parentId: 'f' },
+      { id: 'x', title: 'x', url: 'https://x/', parentId: 'f' },
+      { id: 's2', title: '', url: 'data:', separator: true, parentId: 'f' },
+    ],
+  };
+
+  it('is not expandable when it holds nothing but separators', () => {
+    const empty: EditNode = {
+      ...onlySeparators,
+      children: [onlySeparators.children?.[0] as EditNode],
+    };
+    expect(visibleRows([empty], new Set())[0]?.expandable).toBe(false);
+    expect(visibleRows([onlySeparators], new Set())[0]?.expandable).toBe(true);
+  });
+
+  it('cannot be sorted with a single item between separators', async () => {
+    await session.load();
+    expect(session.canSort(onlySeparators)).toBe(false);
+    const two: EditNode = {
+      ...onlySeparators,
+      children: [
+        ...(onlySeparators.children ?? []),
+        { id: 'y', title: 'y', url: 'https://y/', parentId: 'f' },
+      ],
+    };
+    expect(session.canSort(two)).toBe(true);
+  });
+});
+
 describe('Sort A→Z with separators', () => {
   const node = (id: string, separator = false): EditNode =>
     separator

@@ -59,8 +59,8 @@ export interface PreparedImport {
   /** The live roots at preview time — what the Start button's preview plan is built against. */
   destinations: PlanDestinations;
   /**
-   * Everything inside the writable roots: what Replace would delete (docs/09
-   * T4). Separators (Firefox) are counted apart — never as bookmarks — so the
+   * Everything inside the roots Replace empties — exactly what it would
+   * delete (docs/09 T4); a signed-in Chrome's account roots are not among them. Separators (Firefox) are counted apart — never as bookmarks — so the
    * confirmation can say they will not come back (docs/03 §1).
    */
   current: { bookmarks: number; folders: number; separators: number };
@@ -106,7 +106,7 @@ export async function prepareImport(
   const roots = await getRoots();
   const browserIndex = buildUrlIndex(withoutSeparators(roots.all));
   const { existsCount, status } = diffAgainstBrowser(result.roots, browserIndex);
-  const inside = countLive(roots.writable.flatMap((root) => root.children ?? []));
+  const inside = countLive(roots.replaceable.flatMap((root) => root.children ?? []));
 
   return {
     format,

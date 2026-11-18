@@ -28,6 +28,8 @@
   const focused = $derived(session.focusedId === node.id);
   const renaming = $derived(session.renamingId === node.id && editable);
   const domain = $derived(hostOf(node.url));
+  // Bookmarks and folders only: a Firefox separator is not an item (docs/03 §3).
+  const itemCount = $derived((node.children ?? []).filter((c) => c.separator !== true).length);
   const blocked = $derived(!isFolder && isBlockedUrl(node.url));
 
   /** Which part of this row a drag is over, when the drop there is legal. */
@@ -118,7 +120,7 @@
   {:else}
     <span class="title" class:untitled={node.title === ''}>{node.title === '' ? (node.url ?? '') : node.title}</span>
     {#if domain !== ''}<span class="domain">{domain}</span>{/if}
-    {#if isFolder}<span class="count">{node.children?.length ?? 0}</span>{/if}
+    {#if isFolder}<span class="count">{itemCount}</span>{/if}
     {#if blocked}
       <!-- docs/09 T3: a javascript:/data: bookmark must not look like an
            ordinary link that merely does nothing when clicked. -->

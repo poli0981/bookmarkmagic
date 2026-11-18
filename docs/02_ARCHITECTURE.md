@@ -103,6 +103,8 @@ bookmarkmagic/
 │   │   │   └── limits.ts            # MAX_FILE_BYTES, MAX_NODES, MAX_DEPTH, LEGAL_VERSION
 │   │   ├── browser/
 │   │   │   ├── bookmarks.ts         # getTree/create/move/update/remove wrappers
+│   │   │   ├── roots.ts             # getRoots: which live folders are the roots (§4)
+│   │   │   ├── live-tree.ts         # live → file model; separators, counts, move index (§4)
 │   │   │   ├── write-queue.ts       # sequential tree writer + progress + abort
 │   │   │   ├── storage.ts           # typed settings/legal accessors
 │   │   │   ├── download.ts          # Blob → <a download>
@@ -234,14 +236,18 @@ one `done` counter for the whole import (`05 §6`). Every node is accounted for:
 and it has a fourth root Chromium lacks, the **Bookmarks Menu**. `getRoots()`
 tries those GUIDs after the Chromium ids and before position, so the position
 fallback (which on Firefox would take the Menu for the bar) is never reached,
-and returns the Menu as a fourth destination that Replace also empties.
+and returns the Menu as a fourth destination that Replace also empties. The
+position fallback itself never takes the Menu either: it is left out of the
+candidates, so roots with unknown ids still map the bar, Other and Mobile
+(tested with hand-built roots in `bookmarks.test.ts` — neither fake reaches
+that path).
 **Separators** exist only in Firefox's live tree: `type: "separator"` and, for
 historical reasons, `url: "data:"`. They are recognised by `type`, never by
 the url; `toBookmarkNodes` drops them, so the file model never holds one, and
 `#edit` shows them as lines no command can touch (`03 §3`). Counting helpers
-in `browser/bookmarks.ts` keep them out of every bookmark count.
+in `browser/live-tree.ts` keep them out of every bookmark count.
 
-Chrome root mapping: `browser/bookmarks.ts` `getRoots()` resolves the three
+Chrome root mapping: `browser/roots.ts` `getRoots()` resolves the three
 destinations by `folderType` (`bookmarks-bar`, `other`, `mobile`, Chrome
 134+), among this device's roots only — a signed-in account's own roots
 (`syncing: true`, Chrome 134+) are listed but never written to or emptied.
@@ -335,7 +341,11 @@ the hash for a new tab, or via the broadcast for an open one.
   `NEWER_VERSION`, `EMPTY_TITLE`, and since v1.1.0 `INVALID_URL` (an address
   `chrome.bookmarks.create` would reject), `PLACE_QUERIES_SKIPPED` (Firefox smart
   bookmarks), `EXTRA_ROOTS_SKIPPED` (vendor roots in a browser JSON file) and
-  `UNREADABLE_ENTRIES` (a `<DT>` with no readable `<A>` or `<H3>`).
+  `UNREADABLE_ENTRIES` (a `<DT>` with no readable `<A>` or `<H3>`), and since
+  v1.3.0 `SEPARATORS_SKIPPED` (separators an HTML file or a Firefox backup
+  holds — no format keeps one) and `URL_TOO_LONG` (an address longer than the
+  browser accepts, 65 536 characters in Firefox — added by the import from
+  the browser layer's limit, not by a parser).
 - `browser/` adds `BmBackupError { code }` for the forced safety backup
   (`03 §1` step 6b) — `BACKUP_SERIALIZE_FAILED`, `BACKUP_EXCEEDS_LIMITS` (since
   v1.1.0: the backup would be refused by the import's own caps, so it is no

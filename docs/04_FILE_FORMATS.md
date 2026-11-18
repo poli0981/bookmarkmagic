@@ -93,7 +93,10 @@ is therefore written to HTML by unwrapping it — its children appear at the
 top level, before the marked roots — and reading that file in Firefox puts
 them back where they were (`03 §1`). Chromium has no menu root, so in Chrome
 or Edge those entries land in Other Bookmarks, as they do from Firefox's own
-export.
+export. The other way round, Chrome's own export writes Other's and Mobile's
+contents loose (§1.2), so in Firefox they land in the Bookmarks Menu, exactly
+as Firefox's own import places them; our exports mark both roots and land
+where they came from.
 
 ### 1.2 Parse tolerance (import)
 
