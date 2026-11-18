@@ -1,0 +1,125 @@
+# Qodana — docs/12 §2.7.
+#
+# A separate workflow, like SonarCloud's: a Qodana outage or opinion must never
+# change the colour of CI, which is what branch protection reads. Not a
+# required check.
+#
+# Two jobs, least privilege first:
+#   - `scan` runs the analysis. qodana-js resolves types through node_modules,
+#     so the dev dependencies are installed here (install scripts off) — which
+#     means they share a runner with QODANA_TOKEN. That is the documented
+#     exception to docs/12 §2.5's "a token job installs nothing": the token
+#     only uploads reports to one Qodana Cloud project (rotate it in
+#     qodana.cloud if a dependency is ever found compromised), and this job's
+#     GITHUB_TOKEN is read-only — no PR comments, no check runs from here.
+#   - `publish` installs and runs nothing: it takes the SARIF report from
+#     `scan` and uploads it to GitHub code scanning, where the findings appear
+#     beside CodeQL's under "Security and quality" and on pull requests.
+name: Qodana
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 15 * * 1' # weekly, Monday — an hour after CodeQL
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qodana-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  scan:
+    name: Qodana for JS
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      ran: ${{ steps.token.outputs.present }}
+    steps:
+      # Dependabot and fork pull requests get no repository secrets: skip with
+      # a notice instead of failing, before installing anything.
+      - name: Check for QODANA_TOKEN
+        id: token
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+        run: |
+          if [ -n "$QODANA_TOKEN" ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::Qodana skipped — QODANA_TOKEN is not available to this run (Dependabot or fork PR)."
+          fi
+
+      # The default ref — on a pull request, its merge commit — which is the
+      # commit code scanning attributes an upload from this run to.
+      - uses: actions/checkout@v7
+        if: steps.token.outputs.present == 'true'
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - uses: actions/setup-node@v7
+        if: steps.token.outputs.present == 'true'
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+
+      # --ignore-scripts: no dependency runs code at install time (docs/12 §2).
+      - if: steps.token.outputs.present == 'true'
+        run: npm ci --ignore-scripts
+      - if: steps.token.outputs.present == 'true'
+        run: npx --no-install wxt prepare
+
+      - name: Qodana scan
+        if: steps.token.outputs.present == 'true'
+        # Pinned to a commit, not the moving `v2026.2` branch the vendor's
+        # snippet uses: this step holds a token. v2026.2.2 rather than the
+        # newest tag, which is younger than the repo's 7-day cooldown.
+        uses: JetBrains/qodana-action@3e8d76ff0e0241618abd808682f426afe84bab3f # v2026.2.2
+        with:
+          # Whole project every time — it is small, and a PR that touches only
+          # docs would otherwise scan nothing.
+          pr-mode: false
+          # Both need write permissions this job deliberately does not have;
+          # `publish` reports the findings through code scanning instead.
+          post-pr-comment: false
+          use-annotations: false
+          # The SARIF report as the `qodana-report` artifact.
+          upload-result: true
+        env:
+          QODANA_TOKEN: ${{ secrets.QODANA_TOKEN }}
+          QODANA_ENDPOINT: 'https://qodana.cloud'
+
+  publish:
+    name: Findings to code scanning
+    needs: scan
+    if: needs.scan.outputs.ran == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: qodana-report
+          path: qodana-report
+
+      - name: Find the SARIF file
+        id: sarif
+        run: |
+          set -euo pipefail
+          file=$(find qodana-report -name 'qodana.sarif.json' -print -quit)
+          test -n "$file" || { echo "::error::no qodana.sarif.json in the qodana-report artifact"; exit 1; }
+          echo "file=$file" >> "$GITHUB_OUTPUT"
+
+      - uses: github/codeql-action/upload-sarif@33d7b85da1a04171e211befe2c739303b9a4c066 # v4.39.3
+        with:
+          sarif_file: ${{ steps.sarif.outputs.file }}
+          category: qodana

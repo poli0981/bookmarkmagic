@@ -232,7 +232,7 @@ CLI the runner ships — no third-party action ever holds its write token
   function (`tests/unit/scripts/triage.test.ts`) — a feature-form issue
   answering "Something new" is labelled `maintenance-mode`, commented and
   closed *not planned*; the two in-policy answers get `needs-triage`; an
-  `enhancement` label added by hand closes the issue the same way; an outside
+  `enhancement` label the owner adds by hand closes the issue the same way; an outside
   pull request titled `feat…` is closed. The owner's own issues, members,
   collaborators, bots and anything labelled `roadmap` are exempt. The test also
   pins the dropdown's wording against `feature_request.yml`, which is the only
@@ -247,6 +247,44 @@ CLI the runner ships — no third-party action ever holds its write token
   issue. `concurrency` runs them one at a time per number and the second
   re-reads the live labels and state before acting.
 - The labels must exist (`§5`); `gh … --add-label` fails on a missing one.
+- **Order: comment and close first, label last.** The label is what a re-run
+  reads as "done", so it must not exist before the work it stands for.
+- **A hand label closes only when the owner adds it.** An `enhancement` issue
+  with no answer to the form's question is the owner's one-touch close when
+  the owner labelled it; from anyone else, or on `opened`, it goes to
+  `needs-triage` instead of being closed on a guess.
+- `actions/checkout` and `actions/setup-node` are **pinned to commits here**,
+  unlike the other workflows, because this one runs them with a write token
+  on events anyone can trigger; and setup-node has no `cache:`.
+
+### 2.7 `qodana.yml` — Qodana for JS
+
+Added 2026-11-18. `qodana-js` (JetBrains' JavaScript/TypeScript linter,
+which needs the Ultimate licence `QODANA_TOKEN` carries) on push to `main`,
+pull requests, a weekly schedule and `workflow_dispatch`. Configuration is
+`qodana.yaml`: native mode (`withinDocker: false`), profile
+`qodana.recommended`, fixtures and generated output excluded.
+
+- **Its own workflow, never required**, for the reason Sonar has one (§2.5).
+- **Two jobs.** `scan` has a read-only `GITHUB_TOKEN`, installs the dev
+  dependencies (install scripts off) because `qodana-js` resolves types
+  through `node_modules`, runs the action with PR comments and annotations
+  off, and keeps the SARIF report as the `qodana-report` artifact.
+  `publish` installs and runs nothing: it uploads that SARIF to code
+  scanning (`category: qodana`), so the findings sit beside CodeQL's under
+  Security and quality and on pull requests.
+- ⚠️ **The documented exception to §2.5.** Sonar's token never shares a
+  runner with dependency code; Qodana's cannot avoid it, since the analysis
+  needs the dependencies. The token only uploads reports to one Qodana
+  Cloud project. If a dependency is ever found compromised, rotate it in
+  qodana.cloud.
+- The action is **pinned to the commit of v2026.2.2**, not the vendor's
+  moving `v2026.2` branch: it holds a token, and the newest tag was younger
+  than the 7-day cooldown when it was added. Dependabot proposes updates.
+- `pr-mode: false`: the whole project every time. It is small, and a pull
+  request that touches only docs would otherwise scan nothing.
+- Dependabot and fork pull requests have no secrets; the scan is skipped
+  with a notice and `publish` does not run.
 
 ## 3. Chrome Web Store publishing automation
 
@@ -318,6 +356,8 @@ means "unknown", not "not done".
       names the reusable does not read; `release.yml` maps them, §2.3).
       `DISCORD_PING_ROLE_ID` is optional and unset.
 - [x] `SONAR_TOKEN` — set 2026-10-28, used only by `sonarcloud.yml` (§2.5).
+- [x] `QODANA_TOKEN` — set by the owner 2026-11-18 (the Qodana Cloud project
+      token, Ultimate), used only by `qodana.yml`'s `scan` job (§2.7).
 - [ ] ⚠️ SonarCloud **Automatic Analysis OFF** (SonarCloud → bookmarkmagic →
       Administration → Analysis Method). Required for §2.5; with it on, the CI
       scan errors out. The owner agreed to switch it off on 2026-10-28.

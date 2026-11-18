@@ -114,16 +114,32 @@ describe('decide — issues', () => {
     });
   });
 
-  it('closes an issue the maintainer labelled enhancement by hand', () => {
-    const event = issueEvent({
-      action: 'labeled',
-      label: LABEL.feature,
-      body: '### What happened?\n\nx',
-    });
+  it('closes an issue the owner labelled enhancement by hand', () => {
+    const event = {
+      ...(issueEvent({
+        action: 'labeled',
+        label: LABEL.feature,
+        body: '### What happened?\n\nx',
+      }) as object),
+      sender: { login: 'poli0981' },
+      repository: { owner: { login: 'poli0981' } },
+    };
     expect(decide('issues', event)).toMatchObject({
       action: 'close',
       reason: 'labelled enhancement by hand',
     });
+  });
+
+  it.each([
+    ['labelled by someone else', 'labeled', 'someone'],
+    ['opened with the label but no answer', 'opened', 'poli0981'],
+  ])('sends an issue with no answer to a human when %s', (_case, action, sender) => {
+    const event = {
+      ...(issueEvent({ action, label: LABEL.feature, body: 'edited away' }) as object),
+      sender: { login: sender },
+      repository: { owner: { login: 'poli0981' } },
+    };
+    expect(decide('issues', event)).toMatchObject({ action: 'label', label: LABEL.triage });
   });
 
   it.each([
