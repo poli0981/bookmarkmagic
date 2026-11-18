@@ -18,10 +18,12 @@
  *   3. the bundle: none of the network identifiers `npm run guard` bans in the
  *      source, anywhere in the shipped JavaScript.
  *
- * Usage: node scripts/check-manifest.mjs — checks <repo>/.output/chrome-mv3,
- * resolved from this file, not the cwd. It takes no arguments on purpose: a
- * path from the command line flowed straight into file reads (SonarCloud
- * S8707). Its tests call `checkExtension(dir)` directly instead.
+ * Usage: node scripts/check-manifest.mjs [--browser chrome|firefox] — checks
+ * <repo>/.output/chrome-mv3 (the default) or <repo>/.output/firefox-mv3 (since
+ * v1.3.0, docs/08 §9), resolved from this file, not the cwd. It takes no path:
+ * one from the command line flowed straight into file reads (SonarCloud
+ * S8707), so `--browser` only picks an entry of a fixed table. Its tests call
+ * `checkExtension(dir, target)` directly instead.
  */
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { join, relative, resolve } from 'node:path';
@@ -54,7 +56,10 @@ const EXPECTED_CSP =
  *
  * Adding a key here is a deliberate act. Check docs/08 §1 first.
  */
-const EXPECTED_KEYS = [
+/** @param {string} a @param {string} b */
+const byName = (a, b) => a.localeCompare(b, 'en');
+
+const COMMON_KEYS = [
   'action',
   'content_security_policy',
   'default_locale',
@@ -62,12 +67,56 @@ const EXPECTED_KEYS = [
   'homepage_url',
   'icons',
   'manifest_version',
-  'minimum_chrome_version',
   'name',
   'options_ui',
   'permissions',
   'version',
 ];
+
+/**
+ * Firefox's block, exactly (docs/08 §9). The id is permanent once on AMO; the
+ * floor is the first Firefox that accepts `data_collection_permissions`.
+ */
+const FIREFOX_SETTINGS = {
+  gecko: {
+    id: 'bookmarkmagic@poli0981.dev',
+    strict_min_version: '140.0',
+    data_collection_permissions: { required: ['none'] },
+  },
+};
+
+/**
+ * The two packages (docs/08 §1): where each is built, its exact key set, and
+ * how its floor reads in the log. Edge Add-ons takes the Chrome package.
+ *
+ * @type {Record<string, { dir: string, keys: string[], label: string }>}
+ */
+export const TARGETS = {
+  chrome: {
+    dir: 'chrome-mv3',
+    keys: [...COMMON_KEYS, 'minimum_chrome_version'].sort(byName),
+    label: `Chrome ≥${CHROME_FLOOR}`,
+  },
+  firefox: {
+    dir: 'firefox-mv3',
+    keys: [...COMMON_KEYS, 'browser_specific_settings'].sort(byName),
+    label: 'Firefox ≥140, gecko id pinned',
+  },
+};
+
+/**
+ * A value's JSON with object keys sorted, so key order never decides equality.
+ * @param {unknown} value
+ * @returns {string}
+ */
+function canonical(value) {
+  if (Array.isArray(value)) return `[${value.map(canonical).join(',')}]`;
+  if (value !== null && typeof value === 'object') {
+    const entries = Object.entries(value).sort(([a], [b]) => byName(a, b));
+    return `{${entries.map(([k, v]) => `${JSON.stringify(k)}:${canonical(v)}`).join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'undefined';
+}
 
 /** Keys that would widen the extension's reach. None may be present. */
 const FORBIDDEN_KEYS = [
@@ -110,9 +159,6 @@ const NETWORK_IN_BUNDLE =
 /** `src`/`href` values in a built page. Vite writes them double-quoted. */
 const PAGE_REFS = /\b(?:src|href)="([^"]*)"/g;
 
-/** @param {string} a @param {string} b */
-const byName = (a, b) => a.localeCompare(b, 'en');
-
 /** @param {string} dir @returns {string[]} */
 function listFiles(dir) {
   return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
@@ -133,8 +179,13 @@ function readManifest(outDir) {
   }
 }
 
-/** @param {Record<string, unknown>} manifest @param {string[]} problems */
-function checkManifest(manifest, problems) {
+/**
+ * @param {Record<string, unknown>} manifest
+ * @param {string[]} problems
+ * @param {string} target - a key of TARGETS
+ */
+function checkManifest(manifest, problems, target) {
+  const expectedKeys = TARGETS[target]?.keys ?? [];
   if (manifest.manifest_version !== 3) {
     problems.push(`manifest_version is ${manifest.manifest_version}, expected 3`);
   }
@@ -152,14 +203,20 @@ function checkManifest(manifest, problems) {
   }
 
   const actualKeys = Object.keys(manifest);
-  const unexpected = actualKeys.filter((key) => !EXPECTED_KEYS.includes(key)).sort(byName);
-  const missing = EXPECTED_KEYS.filter((key) => !actualKeys.includes(key));
+  const unexpected = actualKeys.filter((key) => !expectedKeys.includes(key)).sort(byName);
+  const missing = expectedKeys.filter((key) => !actualKeys.includes(key));
   if (unexpected.length > 0) {
     problems.push(`unexpected top-level key(s): ${unexpected.join(', ')} — see docs/08 §1`);
   }
   if (missing.length > 0) problems.push(`missing expected top-level key(s): ${missing.join(', ')}`);
 
-  if (manifest.minimum_chrome_version !== CHROME_FLOOR) {
+  if (target === 'firefox') {
+    if (canonical(manifest.browser_specific_settings) !== canonical(FIREFOX_SETTINGS)) {
+      problems.push(
+        `browser_specific_settings is ${JSON.stringify(manifest.browser_specific_settings)}, expected exactly ${JSON.stringify(FIREFOX_SETTINGS)} (docs/08 §9)`,
+      );
+    }
+  } else if (manifest.minimum_chrome_version !== CHROME_FLOOR) {
     problems.push(
       `minimum_chrome_version is ${JSON.stringify(manifest.minimum_chrome_version)}, expected "${CHROME_FLOOR}" (docs/01 §1)`,
     );
@@ -235,15 +292,19 @@ function checkBundle(outDir, problems) {
  * Check one built extension directory.
  *
  * @param {string} outDir
+ * @param {string} [target] - a key of TARGETS; `chrome` when omitted
  * @returns {{ problems: string[], readError?: string }} no problems and no read
  *   error means the build is clean
  */
-export function checkExtension(outDir) {
+export function checkExtension(outDir, target = 'chrome') {
+  if (!Object.hasOwn(TARGETS, target)) {
+    return { problems: [], readError: `unknown target "${target}"` };
+  }
   const manifest = readManifest(outDir);
   if (typeof manifest === 'string') return { problems: [], readError: manifest };
   /** @type {string[]} */
   const problems = [];
-  checkManifest(manifest, problems);
+  checkManifest(manifest, problems, target);
   checkInventory(outDir, manifest, problems);
   checkBundle(outDir, problems);
   return { problems };
@@ -251,10 +312,19 @@ export function checkExtension(outDir) {
 
 /** @returns {number} the exit code */
 function main() {
+  const flag = process.argv.indexOf('--browser');
+  const target = flag === -1 ? 'chrome' : (process.argv[flag + 1] ?? '');
+  const profile = Object.hasOwn(TARGETS, target) ? TARGETS[target] : undefined;
+  if (profile === undefined) {
+    console.error(`check-manifest: --browser must be one of ${Object.keys(TARGETS).join(', ')}`);
+    return 1;
+  }
   const repo = resolve(fileURLToPath(new URL('..', import.meta.url)));
-  const { problems, readError } = checkExtension(join(repo, '.output', 'chrome-mv3'));
+  // The directory comes from the table, never from the command line.
+  const { problems, readError } = checkExtension(join(repo, '.output', profile.dir), target);
   if (readError !== undefined) {
-    console.error(`check-manifest: ${readError} — run \`npm run build\` first.`);
+    const build = target === 'chrome' ? 'npm run build' : `npm run build:${target}`;
+    console.error(`check-manifest: ${readError} — run \`${build}\` first.`);
     return 1;
   }
   if (problems.length > 0) {
@@ -268,7 +338,7 @@ function main() {
   // Constants only: the manifest has just passed every check, so its values ARE
   // these — and nothing read from a file is echoed into the log.
   console.warn(
-    `check-manifest: clean — MV3, permissions exactly ${ALLOWED_PERMISSIONS.join(' + ')}, Chrome ≥${CHROME_FLOOR}, CSP pinned, inventory complete, no network API in the bundle.`,
+    `check-manifest: clean (${target}) — MV3, permissions exactly ${ALLOWED_PERMISSIONS.join(' + ')}, ${profile.label}, CSP pinned, inventory complete, no network API in the bundle.`,
   );
   return 0;
 }

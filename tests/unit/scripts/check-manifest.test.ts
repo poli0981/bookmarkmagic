@@ -182,3 +182,76 @@ describe('check-manifest.mjs', () => {
     expect(output).not.toContain('/etc');
   });
 });
+
+describe('check-manifest.mjs — the Firefox package (docs/08 §9)', () => {
+  const { minimum_chrome_version: _chromeOnly, ...common } = MANIFEST;
+  const GECKO = {
+    id: 'bookmarkmagic@poli0981.dev',
+    strict_min_version: '140.0',
+    data_collection_permissions: { required: ['none'] },
+  };
+  const FIREFOX = { ...common, browser_specific_settings: { gecko: GECKO } };
+
+  function checkAs(dir: string, target: string): { status: number; output: string } {
+    const { problems, readError } = checkExtension(dir, target);
+    const failed = readError !== undefined || problems.length > 0;
+    return { status: failed ? 1 : 0, output: [readError ?? '', ...problems].join('\n') };
+  }
+
+  it('passes a correct Firefox build, in any key order', () => {
+    const reordered = {
+      ...FIREFOX,
+      browser_specific_settings: {
+        gecko: {
+          data_collection_permissions: { required: ['none'] },
+          strict_min_version: '140.0',
+          id: 'bookmarkmagic@poli0981.dev',
+        },
+      },
+    };
+    for (const manifest of [FIREFOX, reordered]) {
+      const { status, output } = checkAs(build(manifest), 'firefox');
+      expect(status, output).toBe(0);
+    }
+  });
+
+  it.each([
+    ['another add-on id', { ...GECKO, id: 'other@example.org' }],
+    ['the old Firefox floor', { ...GECKO, strict_min_version: '128.0' }],
+    ['no data-collection declaration', { id: GECKO.id, strict_min_version: '140.0' }],
+    [
+      'a data collection',
+      { ...GECKO, data_collection_permissions: { required: ['bookmarksInfo'] } },
+    ],
+  ])('fails on %s', (_label, gecko) => {
+    const { status, output } = checkAs(
+      build({ ...FIREFOX, browser_specific_settings: { gecko } }),
+      'firefox',
+    );
+    expect(status, output).toBe(1);
+    expect(output).toContain('browser_specific_settings is');
+  });
+
+  it('fails on a Chrome floor in the Firefox package', () => {
+    const { status, output } = checkAs(
+      build({ ...FIREFOX, minimum_chrome_version: '136' }),
+      'firefox',
+    );
+    expect(status, output).toBe(1);
+    expect(output).toContain('unexpected top-level key(s): minimum_chrome_version');
+  });
+
+  it('fails on a gecko block in the Chrome package', () => {
+    const { status, output } = check(
+      build({ ...MANIFEST, browser_specific_settings: { gecko: GECKO } }),
+    );
+    expect(status, output).toBe(1);
+    expect(output).toContain('unexpected top-level key(s): browser_specific_settings');
+  });
+
+  it('refuses a target it has no profile for', () => {
+    const { status, output } = checkAs(build(FIREFOX), 'safari');
+    expect(status).toBe(1);
+    expect(output).toContain('unknown target');
+  });
+});

@@ -89,7 +89,7 @@ describe('manifest', () => {
     // Float16Array) that throw on the oldest Chrome still allowed to install.
     expect(CONFIG).toMatch(/const CHROME_FLOOR = 136;/);
     expect(CONFIG).toMatch(/minimum_chrome_version:\s*String\(CHROME_FLOOR\)/);
-    expect(CONFIG).toMatch(/target:\s*`chrome\$\{CHROME_FLOOR\}`/);
+    expect(CONFIG).toMatch(/:\s*`chrome\$\{CHROME_FLOOR\}`/);
     // SAFETY: tsconfig.json is a committed file with exactly this shape; a
     // missing key fails the expectations below rather than passing silently.
     const tsconfig = JSON.parse(readFileSync(join(process.cwd(), 'tsconfig.json'), 'utf8')) as {
@@ -97,6 +97,21 @@ describe('manifest', () => {
     };
     expect(tsconfig.compilerOptions.target).toBe('ES2025');
     expect(tsconfig.compilerOptions.lib).toEqual(['ES2025', 'DOM', 'DOM.Iterable']);
+  });
+
+  it('gives Firefox its own floor and gecko block, and Chrome its own floor (docs/08 §9)', () => {
+    // The one key that differs between the two packages — chosen by the
+    // target browser, never both in one manifest.
+    expect(CONFIG).toMatch(/const FIREFOX_FLOOR = 140;/);
+    expect(CONFIG).toMatch(
+      /browser === 'firefox'\s*\?\s*\{ browser_specific_settings: FIREFOX_SETTINGS \}\s*:\s*\{ minimum_chrome_version: String\(CHROME_FLOOR\) \}/,
+    );
+    // The id is permanent once on AMO: a change here is a new add-on.
+    expect(CONFIG).toContain("id: 'bookmarkmagic@poli0981.dev'");
+    expect(CONFIG).toMatch(/strict_min_version:\s*`\$\{FIREFOX_FLOOR\}\.0`/);
+    // Firefox's own "collects nothing" — the CWS privacy tab's answer.
+    expect(CONFIG).toContain("data_collection_permissions: { required: ['none'] }");
+    expect(CONFIG).toMatch(/env\.browser === 'firefox' \? `firefox\$\{FIREFOX_FLOOR\}`/);
   });
 
   it('declares the extension-page CSP once, production-only, and only ever stricter', () => {
@@ -131,10 +146,12 @@ describe('manifest', () => {
     expect(csp.match(/default-src[^"]*/g)).toEqual(["default-src 'none'"]);
   });
 
-  it('keeps the manifest at v3 by not overriding WXT’s default', () => {
-    // WXT emits manifest_version 3 for the chrome-mv3 target. An explicit
-    // downgrade here would be the only way to lose it.
+  it('builds MV3 for every browser', () => {
+    // WXT defaults Firefox to MV2; `manifestVersion: 3` is what keeps the
+    // Firefox package on the manifest, CSP and review story of docs/08.
+    expect(CONFIG).toMatch(/manifestVersion:\s*3,/);
     expect(CONFIG).not.toMatch(/manifest_version\s*:\s*2/);
+    expect(CONFIG).not.toMatch(/manifestVersion:\s*2/);
   });
 
   it('still points default_locale at en, and ships a _locales entry per UI locale', () => {
