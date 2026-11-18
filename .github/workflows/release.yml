@@ -166,9 +166,21 @@ jobs:
         with:
           name: release-${{ github.ref_name }}
           path: dist
-      - name: Check the file against the published checksums
-        working-directory: dist
-        run: sha256sum -c --ignore-missing SHA256SUMS.txt
+      # Against the SHA256SUMS.txt of the published Release — not the copy that
+      # travelled in the same artifact — and by exact name, so a missing file
+      # fails here rather than passing a check that skipped it.
+      - name: Check against the published checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release download "$GITHUB_REF_NAME" --pattern SHA256SUMS.txt --dir published
+          cd dist
+          for file in "bookmarkmagic-${VERSION}-chrome.zip"; do
+            grep -F "  $file" ../published/SHA256SUMS.txt | sha256sum -c -
+          done
       - name: Submit
         env:
           # API v2: v1.1 was shut down on 2026-10-15. Set explicitly — the tool
@@ -205,9 +217,21 @@ jobs:
         with:
           name: release-${{ github.ref_name }}
           path: dist
-      - name: Check the files against the published checksums
-        working-directory: dist
-        run: sha256sum -c --ignore-missing SHA256SUMS.txt
+      # Against the SHA256SUMS.txt of the published Release — not the copy that
+      # travelled in the same artifact — and by exact name, so a missing file
+      # fails here rather than passing a check that skipped it.
+      - name: Check against the published checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release download "$GITHUB_REF_NAME" --pattern SHA256SUMS.txt --dir published
+          cd dist
+          for file in "bookmarkmagic-${VERSION}-firefox.zip" "bookmarkmagic-${VERSION}-sources.zip"; do
+            grep -F "  $file" ../published/SHA256SUMS.txt | sha256sum -c -
+          done
       - name: Submit
         env:
           FIREFOX_EXTENSION_ID: ${{ secrets.FIREFOX_EXTENSION_ID }}
@@ -245,9 +269,21 @@ jobs:
         with:
           name: release-${{ github.ref_name }}
           path: dist
-      - name: Check the file against the published checksums
-        working-directory: dist
-        run: sha256sum -c --ignore-missing SHA256SUMS.txt
+      # Against the SHA256SUMS.txt of the published Release — not the copy that
+      # travelled in the same artifact — and by exact name, so a missing file
+      # fails here rather than passing a check that skipped it.
+      - name: Check against the published checksums
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          VERSION="${GITHUB_REF_NAME#v}"
+          gh release download "$GITHUB_REF_NAME" --pattern SHA256SUMS.txt --dir published
+          cd dist
+          for file in "bookmarkmagic-${VERSION}-chrome.zip"; do
+            grep -F "  $file" ../published/SHA256SUMS.txt | sha256sum -c -
+          done
       - name: Submit
         env:
           # API v1.1 keys expire every 72 days (docs/12 §3).

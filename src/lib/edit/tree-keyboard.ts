@@ -56,7 +56,8 @@ export function visibleRows(
         node,
         depth,
         parentId,
-        expandable: node.url === undefined && children.length > 0,
+        // A folder holding only separators has nothing to step into.
+        expandable: node.url === undefined && children.some((child) => child.separator !== true),
         expanded: isOpen,
         posInSet: position,
         setSize,

@@ -99,7 +99,10 @@ jobs:
   publish:
     name: Findings to code scanning
     needs: scan
-    if: needs.scan.outputs.ran == 'true'
+    # !cancelled(), not the implicit success(): with failureConditions in
+    # qodana.yaml, a scan that FINDS something fails — and those are exactly
+    # the findings that must reach code scanning and the pull request.
+    if: ${{ !cancelled() && needs.scan.outputs.ran == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:

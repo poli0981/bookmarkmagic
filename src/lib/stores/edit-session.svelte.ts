@@ -51,9 +51,14 @@ export class EditSession extends EditCommands {
       : [],
   );
 
-  /** Any folder with two or more children that is not policy-managed, roots included. */
+  /**
+   * Any folder with two or more items that is not policy-managed, roots
+   * included. Separators (Firefox) are not items: they never move in a sort.
+   */
   canSort = (node: EditNode): boolean =>
-    node.url === undefined && node.unmodifiable === undefined && (node.children?.length ?? 0) > 1;
+    node.url === undefined &&
+    node.unmodifiable === undefined &&
+    (node.children ?? []).filter((child) => child.separator !== true).length > 1;
 
   keepFirst = async (): Promise<void> => {
     this.pendingKeepFirst = false;

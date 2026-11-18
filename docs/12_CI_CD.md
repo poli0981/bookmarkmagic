@@ -123,9 +123,9 @@ v1.3.0):
 
 | Job | Token | Does |
 |---|---|---|
-| `build` "Gate + package" | `contents: read` | install, **every CI gate again** (a tag skips the branch triggers, and must never ship what a PR would have blocked), `zip` and (since v1.3.0) `zip:firefox` — the Chrome/Edge package, the Firefox package and its sources archive — `check:manifest` on both packages, the tag ↔ manifest version check on both, `SHA256SUMS.txt` over all three files, each staged by its exact name so a missing one fails the run (a glob would pass with one of three); copies both files into a plain `dist/` and uploads that as the artifact `release-<tag>` — `upload-artifact` skips hidden paths such as `.output/` by default, which failed the first v1.1.0 tag run before any Release existed |
+| `build` "Gate + package" | `contents: read` | install, **every CI gate again** (a tag skips the branch triggers, and must never ship what a PR would have blocked), `zip` and (since v1.3.0) `zip:firefox` — the Chrome/Edge package, the Firefox package and its sources archive — `check:manifest` on both packages, the tag ↔ manifest version check on both, `SHA256SUMS.txt` over all three files, each staged by its exact name so a missing one fails the run (a glob would pass with one of three); copies the three files and `SHA256SUMS.txt` into a plain `dist/` and uploads that as the artifact `release-<tag>` — `upload-artifact` skips hidden paths such as `.output/` by default, which failed the first v1.1.0 tag run before any Release existed |
 | `publish` "GitHub Release" | `contents: write` | downloads the artifact, `sha256sum -c` it, creates the Release with `--verify-tag` (or re-uploads to an existing one). Installs nothing and runs no repository code — the only job that ever holds a write token |
-| `store-chrome`, `store-firefox`, `store-edge` | `contents: read` | since v1.3.0, one job per store, each only when its own repo variable is `'true'` (`CWS_AUTOPUBLISH`, `AMO_AUTOPUBLISH`, `EDGE_AUTOPUBLISH`) and each in its own GitHub **Environment** holding only that store's secrets (§3). They install `tools/publish/` — `publish-browser-extension` and its three dependencies, from their own lockfile, scripts off — instead of the whole dev toolchain, check the downloaded files against `SHA256SUMS.txt`, and run its `publish-extension` binary. Before v1.3.0 a single `store` job ran `wxt submit` after a full `npm ci`: four Chrome secrets shared a runner with ~320 packages |
+| `store-chrome`, `store-firefox`, `store-edge` | `contents: read` | since v1.3.0, one job per store, each only when its own repo variable is `'true'` (`CWS_AUTOPUBLISH`, `AMO_AUTOPUBLISH`, `EDGE_AUTOPUBLISH`) and each in its own GitHub **Environment** holding only that store's secrets (§3). They install `tools/publish/` — `publish-browser-extension` and its three dependencies, from their own lockfile, scripts off — instead of the whole dev toolchain, check the downloaded files by exact name against the `SHA256SUMS.txt` of the **published Release** (not the artifact's own copy), and run its `publish-extension` binary. Before v1.3.0 a single `store` job ran `wxt submit` after a full `npm ci`: four Chrome secrets shared a runner with ~320 packages |
 | `announce` | `contents: read` | Discord, only when `DISCORD_ANNOUNCE` is `'true'` |
 
 Before the split, one job ran `npm ci` — every dependency's install script plus
@@ -320,8 +320,12 @@ review.
 - **One job per store**, so a store's credentials never share a runner with
   another's, and one store refusing an upload does not stop the others.
 - **Environments** carry the secrets, not the repository, so nothing else in
-  any workflow can read them; give each one a required reviewer (the owner) to
-  approve every upload.
+  any workflow can read them. Give each one a required reviewer (the owner) to
+  approve every upload, **and** restrict its deployment branches and tags to
+  the tag pattern `v*`: an environment GitHub creates on first use has no
+  rule at all, so any branch with a workflow that names it — a pushed branch,
+  not only a release — could reach its secrets. The reviewer is the second
+  lock, not the only one.
 - **Chrome Web Store API v2.** v1.1 — what the old `store` job's
   client-id/secret/refresh-token secrets used — was shut down on 2026-10-15;
   that job would have failed the day `CWS_AUTOPUBLISH` was set. v2 takes a
@@ -391,13 +395,14 @@ means "unknown", not "not done".
 - [x] CodeQL **Default setup DISABLED** (Settings → Advanced Security) —
       confirmed 2026-07-26; `codeql.yml` uploads SARIF cleanly, which is only
       possible with it off (§2.2).
-- [ ] ⚠️ Store environments (§3), each with the owner as required reviewer and
-      only its own secrets: `chrome-web-store` (the four API v2 values;
+- [ ] ⚠️ Store environments (§3), each with the owner as required reviewer,
+      deployments limited to tags matching `v*`, and only its own secrets: `chrome-web-store` (the four API v2 values;
       `CHROME_EXTENSION_ID` is the item id in `00 §9`), `firefox-add-ons`
       (`FIREFOX_EXTENSION_ID` = `bookmarkmagic@poli0981.dev` and the AMO JWT
       pair), `edge-add-ons` (product id, Client ID, API key — rotate every 72
       days). GitHub creates an environment the first time a job names it, with
-      no protection; add the reviewer and secrets in Settings → Environments.
+      no protection; add the reviewer, the `v*` tag rule and the secrets in
+      Settings → Environments.
 - [x] Actions secrets for Discord notifications — **present as of 2026-10-28:**
       `DISCORD_CI_WEBHOOK`, `RELEASES_WEBHOOK`, `REPO_WEBHOOK` (the last two under
       names the reusable does not read; `release.yml` maps them, §2.3).

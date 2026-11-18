@@ -277,3 +277,30 @@ describe('Firefox backups', () => {
     ]);
   });
 });
+
+describe('the Replace confirmation counts what Replace deletes', () => {
+  it('leaves out a signed-in account’s roots, which Replace never empties', async () => {
+    current.seed('1', { title: 'mine', url: 'https://mine.example/' });
+    const tree = await current.getTree();
+    const account = {
+      id: '50',
+      title: 'Bookmarks bar',
+      folderType: 'bookmarks-bar',
+      syncing: true,
+      children: [
+        { id: '60', parentId: '50', title: 'theirs', url: 'https://theirs.example/' },
+        { id: '61', parentId: '50', title: 'theirs too', url: 'https://theirs-too.example/' },
+      ],
+    };
+    current.getTree = async () => [
+      { ...tree[0], id: '0', title: '', children: [account, ...(tree[0]?.children ?? [])] },
+    ];
+    const prepared = await prepareImport(
+      new File(
+        ['<!DOCTYPE NETSCAPE-Bookmark-file-1><DL><DT><A HREF="https://x.example/">x</A></DL>'],
+        'f',
+      ),
+    );
+    expect(prepared.current).toEqual({ bookmarks: 1, folders: 0, separators: 0 });
+  });
+});

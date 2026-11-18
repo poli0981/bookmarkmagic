@@ -141,6 +141,49 @@ describe('getRoots', () => {
     expect(roots.replaceable.map((r) => r.id)).toEqual(['1', '2', '3']);
     expect(roots.writable.map((r) => r.id)).toEqual(['50', '51', '1', '2']);
   });
+
+  it('falls back to position for roots with neither folderType nor a known id', async () => {
+    // The path that mapped Firefox's roots wrongly before v1.3.0: nothing
+    // else in the suite reaches it, since both fakes have known ids.
+    const folder = (id: string, title: string) => ({ id, parentId: 'r', title, children: [] });
+    current.getTree = async () => [
+      {
+        id: 'r',
+        title: '',
+        children: [folder('a', 'Bar'), folder('b', 'Other'), folder('c', 'Mobile')],
+      },
+    ];
+    const roots = await getRoots();
+    expect([roots.toolbarId, roots.otherId, roots.mobileId, roots.menuId]).toEqual([
+      'a',
+      'b',
+      'c',
+      undefined,
+    ]);
+  });
+
+  it('never takes a Bookmarks Menu by position, even when it is listed first', async () => {
+    const folder = (id: string, title: string) => ({ id, parentId: 'r', title, children: [] });
+    current.getTree = async () => [
+      {
+        id: 'r',
+        title: '',
+        children: [
+          folder('menu________', 'Bookmarks Menu'),
+          folder('x', 'Bar'),
+          folder('y', 'Other'),
+          folder('z', 'Mobile'),
+        ],
+      },
+    ];
+    const roots = await getRoots();
+    expect([roots.toolbarId, roots.otherId, roots.mobileId, roots.menuId]).toEqual([
+      'x',
+      'y',
+      'z',
+      'menu________',
+    ]);
+  });
 });
 
 describe('clearRoots', () => {

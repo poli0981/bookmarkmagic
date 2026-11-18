@@ -343,9 +343,10 @@ after `c` in `[a, b, c]` is `move(a, { index: 3 })`, and `onMoved` then reports
 index 2. **Firefox** (since v1.3.0) counts after removal in the call too —
 `move(a, { index: 2 })` — as Places stores the final position. A move to the
 left is the same number in both. `planDrop` returns both numbers; the adapter
-(`browser/bookmarks.ts` `move`) sends `api` to Chromium and `local` to Firefox,
-and compares the node's index in the call's reply with `local`, re-reading the
-tree on a mismatch (`03 §3`).
+(`browser/bookmarks.ts` `move`, through `moveIndexFor` in `live-tree.ts`)
+sends `api` to Chromium and `local` to Firefox and returns the index the
+browser reports; `moveTo` in `stores/edit-commands.svelte.ts` compares it with
+`local` and re-reads the tree on a mismatch (`03 §3`).
 
 **Separators** (Firefox) are children like any other here: they occupy
 indices, `planDrop` may place a node before or after one, and Alt+↑/↓ steps
