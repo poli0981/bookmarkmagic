@@ -24,3 +24,19 @@ exclude:
       - store
       - docs
       - legal
+  # Inspections switched off after the first run (2026-11-18), each because it
+  # contradicts a rule of this repository rather than finding a defect:
+  #
+  # Doc comments here are prose (docs/10 §6). `@param` tags appear only where a
+  # `// @ts-check` script needs a type, so "every parameter described" is not
+  # the convention — 22 of the first run's 27 findings.
+  - name: JSCommentMatchesSignature
+  # A CRC-32 table for PNG chunks is bitwise by definition.
+  - name: JSBitwiseOperatorUsage
+    paths:
+      - scripts/gen-icons.mjs
+  # The dark palette is declared twice on purpose: once under the
+  # prefers-color-scheme query, once for the explicit theme switch (docs/06 §1).
+  - name: DuplicatedCode
+    paths:
+      - src/styles/tokens.css

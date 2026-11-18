@@ -285,6 +285,17 @@ pull requests, a weekly schedule and `workflow_dispatch`. Configuration is
   request that touches only docs would otherwise scan nothing.
 - Dependabot and fork pull requests have no secrets; the scan is skipped
   with a notice and `publish` does not run.
+- The report artifact is a zip inside the artifact, with absolute entry
+  names; `publish` extracts the one entry `/qodana.sarif.json` by name. A
+  glob for the file found nothing on the first run.
+- **First run (2026-11-18): 27 findings, none a defect.** Three regular
+  expressions that could be simpler — fixed — and 24 that contradict a rule
+  of this repository, switched off in `qodana.yaml` with the reason beside
+  each: JSDoc completeness (doc comments here are prose, `10 §6`), bitwise
+  operators in the PNG CRC-32 of `gen-icons.mjs`, and the deliberately
+  doubled dark palette in `tokens.css`. A finding is fixed when it is a
+  defect and switched off, with its reason, when it is a convention; it is
+  never left standing to be ignored.
 
 ## 3. Chrome Web Store publishing automation
 

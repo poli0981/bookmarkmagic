@@ -107,7 +107,7 @@ export function makeTitleMapper() {
   const SCRIPTS = [
     [/[一-鿿぀-ヿ]/, '文字'],
     [/[֐-ࣿ]/, 'شيء'],
-    [/[\p{Extended_Pictographic}]/u, '🌸'],
+    [/\p{Extended_Pictographic}/u, '🌸'],
   ];
 
   return (raw) => {
