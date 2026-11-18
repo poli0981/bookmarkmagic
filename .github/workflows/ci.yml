@@ -59,6 +59,9 @@ jobs:
       # tabs/scripting/host_permissions that never appear in the config file.
       - run: npm run build
       - run: npm run check:manifest
+      # The second package (docs/08 §9), held to its own key set and floor.
+      - run: npm run build:firefox
+      - run: npm run check:manifest -- --browser firefox
 
   windows:
     # Not a required check. The owner develops on Windows, and the paths that

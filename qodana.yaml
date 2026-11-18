@@ -40,3 +40,10 @@ exclude:
   - name: DuplicatedCode
     paths:
       - src/styles/tokens.css
+
+# Clean since 2026-11-18 (docs/12 §2.7): any new finding turns this workflow
+# red, so it is fixed or switched off here with its reason — never left
+# standing to be ignored. Not a required check.
+failureConditions:
+  severityThresholds:
+    any: 0

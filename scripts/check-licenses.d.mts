@@ -7,7 +7,10 @@ export const TOOLCHAIN_LICENSES: readonly string[];
 export const EXCEPTIONS: Readonly<Record<string, string>>;
 export function satisfies(expression: string, allowed: readonly string[]): boolean;
 export function packageNameOf(key: string): string;
-export function checkLockfile(lock: unknown): {
+export function checkLockfile(
+  lock: unknown,
+  options?: { shipsCode?: boolean },
+): {
   problems: string[];
   checked: number;
   counts: Map<string, number>;

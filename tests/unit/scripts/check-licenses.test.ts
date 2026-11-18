@@ -134,6 +134,19 @@ describe('checkLockfile', () => {
     ]);
   });
 
+  it('expects no credited package in a lockfile that ships nothing (tools/publish)', () => {
+    const tools = { lockfileVersion: 3, packages: { 'node_modules/cac': { license: 'MIT' } } };
+    expect(checkLockfile(tools, { shipsCode: false }).problems).toEqual([]);
+    expect(checkLockfile(tools).problems).toHaveLength(4);
+  });
+
+  it('passes the publish tool lockfile', () => {
+    const lock: unknown = JSON.parse(
+      readFileSync(join(process.cwd(), 'tools/publish/package-lock.json'), 'utf8'),
+    );
+    expect(checkLockfile(lock, { shipsCode: false }).problems).toEqual([]);
+  });
+
   it('skips the root project and workspace links', () => {
     const lock = lockWith({
       'packages/local': { link: true },

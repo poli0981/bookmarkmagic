@@ -156,7 +156,10 @@ enters the tree through a reviewed change to the lists — or one `EXCEPTIONS`
 entry with its reason and a `15` decision-log row — never unnoticed inside a
 Dependabot bump. The gate trusts each package's own declaration, as any
 lockfile-based check must, and needs neither `node_modules` nor the network.
-It runs in `verify`, in CI's `quality` job and in the release build.
+It runs in `verify`, in CI's `quality` job and in the release build, over the
+root lockfile and, since v1.3.0, `tools/publish/package-lock.json` — the
+store-upload tool, which ships nothing, so it is held to the toolchain list
+(`12 §3`).
 
 Considered and not used: `actions/dependency-review-action`. It sees only
 what a pull request changes, reads licences from ClearlyDefined rather than
