@@ -6,7 +6,7 @@ page zoomed, or with animation switched off. This file says what that means
 today: what the goal is, what has actually been tested, what is known not to
 work well yet, and how to tell us about a barrier.
 
-**Last reviewed:** 2026-11-10, for version 1.2.1.
+**Last reviewed:** 2026-11-18, for version 1.3.0.
 
 ## The goal
 
@@ -34,8 +34,10 @@ The priorities, in order:
 |---|---|
 | Chrome 136 or later on Windows | Supported, and where the testing below was done |
 | Chrome 136 or later on macOS, Linux and ChromeOS | Supported; expected to work the same, not tested for accessibility |
-| Edge, Brave, Vivaldi and Opera (the same build) | Best effort — the extension runs there, and accessibility is untested |
+| Edge, Brave, Vivaldi and Opera (the same package as Chrome) | Best effort — the extension runs there, and accessibility is untested |
+| Firefox 140 or later on the desktop (since 1.3.0, its own package) | Best effort — the extension runs there, and accessibility is untested |
 | Chrome on Android or iOS | Not applicable: Chrome there does not run extensions |
+| Firefox for Android | Not applicable: it has no bookmarks API for extensions |
 
 ## What is in place
 
@@ -132,8 +134,8 @@ limitations below).
 | What 1.2.1 changed: focus, Alt+↑/↓, button sizes | A scripted keyboard run in Chrome — no screen reader | November 2026, version 1.2.1 |
 | Colour contrast of the theme colours, reduced motion, the tree's key handling | Automated tests, on every change | Continuous |
 
-**Not tested**, so we cannot tell you how well they work: anything on macOS,
-Linux or ChromeOS; NVDA, JAWS, VoiceOver, ChromeVox and Orca; voice control
+**Not tested**, so we cannot tell you how well they work: anything in Firefox
+or Edge; anything on macOS, Linux or ChromeOS; NVDA, JAWS, VoiceOver, ChromeVox and Orca; voice control
 (Dragon, Voice Access, Voice Control); switch access; screen magnifiers; and
 zoom at 200 %. Narrator has not yet been run over what 1.2.1 added.
 If you use one of these, a report of what you found — good or bad — is
@@ -158,6 +160,10 @@ These are known, and none of them is by design.
 - **Reordering with a pointer needs a drag.** There is a keyboard way
   (Alt+↑/↓) and Sort A→Z, but no click-only way to place one item before
   another.
+- **Separators in Firefox are only drawn.** A line in a Firefox folder is
+  shown in the tree, but a screen reader is not told it is there, and the
+  "position n of m" counts bookmarks and folders only — so Alt+↑ or Alt+↓ past
+  a separator moves the row without changing the position you hear.
 - **Alt+↑/↓ may not reach the page on a Chromebook**, where the system can turn
   those keys into Page Up and Page Down. On a Mac there is no Menu key (use
   Shift+F10), and the laptop's delete key is Backspace, which the tree does
@@ -203,7 +209,8 @@ accessibility report is treated as a defect, not a feature request.
 It helps to include:
 
 - what you were trying to do, and what happened instead;
-- the BookmarkMagic version (About tab, or `chrome://extensions`);
+- the BookmarkMagic version (About tab, `chrome://extensions`, or
+  `about:addons` in Firefox);
 - your browser and operating system;
 - the assistive technology you use and its version, if any — a screen reader,
   a contrast theme, zoom level, voice control;
@@ -224,8 +231,8 @@ guarantees:
 
 - A report is acknowledged within about a week.
 - A **blocking** barrier is fixed ahead of other work and shipped in its own
-  patch release; Chrome then updates installed copies by itself, usually
-  within days of the store's review.
+  patch release; your browser then updates installed copies by itself,
+  usually within days of the store's review.
 - Anything else is scheduled, and added to the list above until it is fixed,
   so the next person can see it is known.
 - If a fix is not possible or not planned, you will be told why.

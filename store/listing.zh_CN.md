@@ -54,3 +54,30 @@ https://github.com/poli0981/bookmarkmagic
 ```
 
 法律文件仅有英文版本（`docs/14`），隐私政策 URL 与英文版相同。
+
+## Firefox Add-ons 与 Microsoft Edge Add-ons（v1.3.0 起）
+
+使用上面的描述，并把提到 Chrome 的两条换成下面两条——原文在 Firefox 和 Edge 上并不成立（Edge 也不接受把自己介绍为 Chrome 扩展程序的页面）：
+
+```
+• 导入书签文件（HTML、JSON、CSV）——包括 Chromium 内核浏览器（Chrome、Edge、
+  Brave 等）个人资料文件夹中的“Bookmarks”文件和 Firefox 的 JSON 备份。写入
+  任何内容之前都会先完整预览：数量、文件夹和重复项一目了然。
+```
+
+```
+• 导入的书签日期为今天——浏览器不允许扩展程序设置书签的原始创建日期。
+  您导出的文件会保留真实日期。
+```
+
+仅 Firefox Add-ons：在“限制”中添加：
+
+```
+• Firefox 的分隔线不会保留：导出和备份都不包含分隔线，替换模式会删除它们
+  （事先会提示）。
+```
+
+**Firefox Add-ons：** 摘要 = 上面的摘要 · 类别 *Bookmarks* · 许可证
+*GNU General Public License v3.0* · 仅限 Firefox（桌面版）· 相同的隐私政策 URL。
+
+**Edge Add-ons：** 类别 *Productivity* · 相同的隐私政策 URL。

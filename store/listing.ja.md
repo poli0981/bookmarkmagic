@@ -60,3 +60,33 @@ https://github.com/poli0981/bookmarkmagic
 
 法的文書は英語のみです（`docs/14`）。プライバシーポリシーの URL は EN 版と
 同じものを使います。
+
+## Firefox Add-ons と Microsoft Edge Add-ons（v1.3.0 以降）
+
+上の説明文のうち、Chrome に触れている 2 項目を次のものに置き換えて使います（Firefox と Edge ではそのままでは正しくなく、Edge は Chrome 拡張機能として紹介するリスティングを受け付けません）：
+
+```
+• ブックマークファイル（HTML、JSON、CSV）をインポートします。Chromium 系
+  ブラウザ（Chrome、Edge、Brave など）のプロファイルフォルダにある
+  「Bookmarks」ファイルや Firefox の JSON バックアップにも対応。書き込む前に
+  必ずプレビューを表示し、件数・フォルダ・重複を先に確認できます。
+```
+
+```
+• インポートしたブックマークの日付は本日になります。拡張機能がブックマーク
+  の元の作成日を設定することをブラウザが許可していないためです。エクスポート
+  したファイルには本来の日付が残ります。
+```
+
+Firefox Add-ons のみ、「制限事項」に追加：
+
+```
+• Firefox の区切り線は保持されません。エクスポートとバックアップには含まれず、
+  置き換えでは削除されます（事前に表示されます）。
+```
+
+**Firefox Add-ons:** 概要 = 上の概要 · カテゴリ *Bookmarks* · ライセンス
+*GNU General Public License v3.0* · Firefox（デスクトップ）のみ · 同じ
+プライバシーポリシー URL。
+
+**Edge Add-ons:** カテゴリ *Productivity* · 同じプライバシーポリシー URL。
