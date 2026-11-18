@@ -37,7 +37,13 @@
 > here reaches installed users through a store review, so it needs a version
 > bump, a CHANGELOG entry and an update submission (`13 §1b`). Sequencing lives
 > in `/CLAUDE.md`; what is still open is in §10 below.
-> **Doc suite version:** 1.11 (2026-11-10 — v1.2.1 released on GitHub)
+>
+> **Since 2026-11-18 that is a written policy: maintenance mode**
+> (`/MAINTENANCE.md`). Dependency and security updates, major platform
+> upgrades, bug/UI/UX/accessibility/translation fixes, and features only when
+> they are on `15`'s roadmap or genuinely needed; requests for anything else
+> are closed by `triage.yml` (`12 §2.6`).
+> **Doc suite version:** 1.12 (2026-11-18 — maintenance mode)
 
 ---
 

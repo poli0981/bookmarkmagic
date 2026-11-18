@@ -1,5 +1,6 @@
 # BookmarkMagic
 
+[![Status: maintenance mode](https://img.shields.io/badge/status-maintenance%20mode-yellow.svg)](MAINTENANCE.md)
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![CI](https://github.com/poli0981/bookmarkmagic/actions/workflows/ci.yml/badge.svg)](https://github.com/poli0981/bookmarkmagic/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/poli0981/bookmarkmagic/actions/workflows/codeql.yml/badge.svg)](https://github.com/poli0981/bookmarkmagic/actions/workflows/codeql.yml)
@@ -13,6 +14,14 @@ no cloud sync, 100% offline.
 
 A Chrome (MV3) extension for importing, exporting and editing bookmarks and
 folder trees. English · Tiếng Việt · 日本語 · 简体中文 · Română.
+
+## Project status
+
+**Maintenance mode** since 2026-11-18 — see [`MAINTENANCE.md`](MAINTENANCE.md).
+Bug, UI/UX, accessibility and translation fixes, dependency and security
+updates, and features already on the roadmap still land; requests for new
+features beyond that are closed automatically. Ideas are welcome in
+[Discussions › Ideas](https://github.com/poli0981/bookmarkmagic/discussions/categories/ideas).
 
 ## Screenshots
 
@@ -134,7 +143,9 @@ code and docs disagree, the docs win. Start with [`CLAUDE.md`](CLAUDE.md), then
 
 Bug reports and translation fixes are welcome —
 [the issue forms](https://github.com/poli0981/bookmarkmagic/issues/new/choose)
-ask for what is needed, and none of them requires you to write code.
+ask for what is needed, and none of them requires you to write code. The
+project is in maintenance mode, so a request for a feature that is not on the
+roadmap is closed automatically ([`MAINTENANCE.md`](MAINTENANCE.md)).
 
 If a bookmark file will not import, that is the most useful report there is,
 because the sample becomes a permanent test. Sanitize it first:
@@ -167,9 +178,10 @@ a public issue.
 | Contributing and code of conduct | code@poli0981.dev |
 | Sponsorship · collaboration · press | sponsor@ · collab@ · press@poli0981.dev |
 
-Bugs and feature ideas are best as
-[issues](https://github.com/poli0981/bookmarkmagic/issues) — they help the next
-person too. The extension itself never shows or uses any of these addresses.
+Bugs are best as
+[issues](https://github.com/poli0981/bookmarkmagic/issues) and ideas as
+[Discussions](https://github.com/poli0981/bookmarkmagic/discussions/categories/ideas)
+— they help the next person too. The extension itself never shows or uses any of these addresses.
 
 ## Support development
 

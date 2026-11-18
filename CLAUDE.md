@@ -11,9 +11,14 @@ This file is the entry point; the `docs/` suite is the specification.
 > 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0 live,
 > confirmed on the listing 2026-11-10; v1.2.1 released on GitHub 2026-11-10,
 > ⚠️ not yet submitted).
-> Phases 0–9 are complete; the project is in **maintenance**.
+> Phases 0–9 are complete; since 2026-11-18 the project is in **maintenance
+> mode** — `/MAINTENANCE.md` is the policy (Phase 10 below).
 > That changes the rules of the game:
 >
+> - **New work must fit `/MAINTENANCE.md`**: dependency and security updates,
+>   major platform upgrades, bug/UI/UX/accessibility/translation fixes, and
+>   features only when they are on `docs/15`'s roadmap or genuinely needed. A
+>   feature that is not on the roadmap needs a decision-log row before code.
 > - Every change now reaches installed users through a store review. It needs a
 >   semver bump, a `CHANGELOG.md` entry and an update submission — `13 §1b`.
 > - Breaking something is no longer a local cost. The 1.0.0 → 1.0.x **upgrade
@@ -202,6 +207,21 @@ checksum-verified zip). Human-only ⚠️: the `11 §5` pass with the
 **1.2.0 → 1.2.1 upgrade over an existing profile**, a real Windows contrast
 theme and a screen-reader pass over Alt+↑/↓, the zip upload, and the native
 review of the two new strings.
+
+### Phase 10 — maintenance mode; Firefox and Edge → v1.3.0
+The owner put the project into maintenance mode and asked for the last
+roadmap item, the other two stores. In order: Dependabot #39–#41 and the
+hand sync they always need → the `picomatch` advisory recorded (no fix
+exists) → a licence gate over the lockfile (`check:licenses`) → the policy
+(`/MAINTENANCE.md`, a feature form that asks which kind of change it is, and
+`triage.yml`, which closes requests for something new) → Qodana (`qodana-js`,
+Ultimate) beside SonarCloud → then Firefox (AMO) and Edge: the docs first,
+then the port, then CI, review and 1.3.0.
+One thing to carry forward: **`triage.yml` runs on `pull_request_target`,
+with a write token, for pull requests from forks.** It checks out the base
+branch and only compares event text with constants. Never add a checkout of
+the pull request's head, a step that runs its code, or a `${{ }}` of a title
+or body inside a `run:` line to that file.
 
 ## Working style
 
