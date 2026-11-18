@@ -47,7 +47,7 @@
     "@vitest/coverage-v8": "^5.1.0",
     "@wxt-dev/module-svelte": "^2.0.5",
     "jsdom": "^31.0.0",
-    "knip": "^6.44.2",
+    "knip": "^6.45.1",
     "svelte": "^5.57.3",
     "svelte-check": "^4.7.8",
     "typescript": "npm:@typescript/typescript6@~6.0.2",
