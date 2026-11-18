@@ -1,7 +1,9 @@
 # 00 — Project Overview
 
 > **Project:** BookmarkMagic
-> **Type:** Chrome/Chromium MV3 browser extension (open source, Chrome Web Store)
+> **Type:** MV3 browser extension for Chromium browsers and, since v1.3.0,
+> Firefox (open source; Chrome Web Store — Firefox Add-ons and Edge Add-ons
+> pending their first review)
 > **Owner:** poli0981 (GitHub) / SkullMute
 > **Repo:** `poli0981/bookmarkmagic` ✔
 > **License:** GPL-3.0-or-later
@@ -33,6 +35,14 @@
 > the 1.2.0 → 1.2.1 upgrade over an existing profile, and a hand upload to
 > the store (`13 §1b`); until it clears review, installed users stay on 1.2.0.
 >
+> **v1.3.0 — Firefox and Edge — is RELEASED on GitHub, not yet on any store.**
+> Tagged and released 2026-11-18 (signed tag on `80c7190`, three
+> checksum-verified packages): a Firefox package (desktop, 140 or later), and
+> the Chrome package for Edge Add-ons as well, with 1.2.1 inside. ⚠️ Nothing
+> is submitted yet: the Chrome Web Store upload (in place of 1.2.1), the first
+> Firefox Add-ons version and the first Edge Add-ons submission are by hand,
+> after the owner's `11 §5` passes (§10 items 20–22).
+>
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
 > bump, a CHANGELOG entry and an update submission (`13 §1b`). Sequencing lives
@@ -43,7 +53,7 @@
 > upgrades, bug/UI/UX/accessibility/translation fixes, and features only when
 > they are on `15`'s roadmap or genuinely needed; requests for anything else
 > are closed by `triage.yml` (`12 §2.6`).
-> **Doc suite version:** 1.12 (2026-11-18 — maintenance mode)
+> **Doc suite version:** 1.13 (2026-11-18 — Firefox and Edge, v1.3.0)
 
 ---
 

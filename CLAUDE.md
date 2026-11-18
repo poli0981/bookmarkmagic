@@ -1,6 +1,7 @@
 # CLAUDE.md — Build Instructions (BookmarkMagic)
 
-A Chrome MV3 extension: offline bookmark import/export/edit.
+A Chrome MV3 extension — and since v1.3.0 a Firefox one, and on Edge Add-ons —
+for offline bookmark import/export/edit.
 This file is the entry point; the `docs/` suite is the specification.
 **When code and docs disagree, docs win — or stop and ask.**
 
@@ -10,7 +11,8 @@ This file is the entry point; the `docs/` suite is the specification.
 > (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
 > 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0 live,
 > confirmed on the listing 2026-11-10; v1.2.1 released on GitHub 2026-11-10,
-> ⚠️ not yet submitted).
+> ⚠️ not yet submitted; v1.3.0 — Firefox and Edge, 1.2.1 included — released
+> on GitHub 2026-11-18, ⚠️ not yet submitted to any of the three stores).
 > Phases 0–9 are complete; since 2026-11-18 the project is in **maintenance
 > mode** — `/MAINTENANCE.md` is the policy (Phase 10 below).
 > That changes the rules of the game:
@@ -41,7 +43,7 @@ This file is the entry point; the `docs/` suite is the specification.
 | docs/05_ALGORITHMS.md | Parser walk, normalize, dedupe, diff, write queue |
 | docs/06_UI.md | Tokens, layouts per tab, component inventory, a11y (§5 is the spec behind `/ACCESSIBILITY.md`) |
 | docs/07_I18N.md | chrome.i18n vs runtime store split, EN/VI/JA rules |
-| docs/08_MV3_COMPLIANCE.md | Manifest, permissions (bookmarks+storage ONLY), CWS rules |
+| docs/08_MV3_COMPLIANCE.md | Manifest, permissions (bookmarks+storage ONLY), CWS rules; Firefox §9, Edge §10 |
 | docs/09_SECURITY_PRIVACY.md | Threat model T1–T8, secure-coding bans |
 | docs/10_CODING_STANDARDS.md | Size limits, tsconfig, biome.json, knip.json, conventions |
 | docs/11_TESTING.md | Coverage gates, fixtures, suites, manual QA |
@@ -222,6 +224,19 @@ with a write token, for pull requests from forks.** It checks out the base
 branch and only compares event text with constants. Never add a checkout of
 the pull request's head, a step that runs its code, or a `${{ }}` of a title
 or body inside a `run:` line to that file.
+Two more, from the port. **There is no Firefox in CI**: the fake's Firefox
+flavour (`11 §4`) is a reading of Firefox's source, not evidence, so a change
+to roots, separators or move indices needs a real Firefox before an AMO
+upload. And **every change now ships in two packages**: `verify:full` builds
+and checks both (`build:firefox`, `check:manifest -- --browser firefox`), and a
+string that names Chrome is false in one of them.
+**Exit:** ✔ v1.3.0 tagged and released 2026-11-18 (signed tag on `80c7190`,
+three checksum-verified packages; PR #44 merged at the reviewed head).
+Human-only ⚠️ (`00 §10` items 19–26): the `11 §5` passes — Chrome with the
+**1.2.0 → 1.3.0 upgrade over an existing profile**, a real Firefox 140+, Edge
+signed in with sync on — then the Chrome Web Store upload of 1.3.0 in place
+of 1.2.1, the first Firefox Add-ons version and the first Edge submission by
+hand, the store environments if automation is wanted, and native review.
 
 ## Working style
 
