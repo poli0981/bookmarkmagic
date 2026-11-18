@@ -335,11 +335,22 @@ froze the tab.
 
 ## 10. Reordering — `edit/sort.ts`, `edit/move-target.ts`
 
-Both write through `chrome.bookmarks.move`, whose index has one trap: **within
-one parent, a move to the right counts the target index as if the node were
-still in place**, while `onMoved` — and `patch-tree`'s `moveNode` — count after
-its removal. Moving `a` after `c` in `[a, b, c]` is `move(a, { index: 3 })`, and
-`onMoved` then reports index 2. A move to the left needs no adjustment.
+Both write through `bookmarks.move`, whose index has one trap, and it is not
+the same trap in every browser. **Chromium**: within one parent, a move to the
+right counts the target index as if the node were still in place, while
+`onMoved` — and `patch-tree`'s `moveNode` — count after its removal. Moving `a`
+after `c` in `[a, b, c]` is `move(a, { index: 3 })`, and `onMoved` then reports
+index 2. **Firefox** (since v1.3.0) counts after removal in the call too —
+`move(a, { index: 2 })` — as Places stores the final position. A move to the
+left is the same number in both. `planDrop` returns both numbers; the adapter
+(`browser/bookmarks.ts` `move`) sends `api` to Chromium and `local` to Firefox,
+and compares the node's index in the call's reply with `local`, re-reading the
+tree on a mismatch (`03 §3`).
+
+**Separators** (Firefox) are children like any other here: they occupy
+indices, `planDrop` may place a node before or after one, and Alt+↑/↓ steps
+past one as a single place. They are never a drop target *into*, and Sort A→Z
+leaves them where they are and sorts each run between them on its own.
 
 **Sort A→Z** (`planSort`), planned before anything moves so the confirmation
 can state the number:
@@ -347,7 +358,9 @@ can state the number:
 ```
 sortedOrder(children, locale):
   collator = Intl.Collator(locale, { numeric: true, sensitivity: 'base' })
-  stable sort: folders before bookmarks, then collator.compare(key), then current position
+  split children into runs at each separator (Firefox; Chromium has none — one run)
+  each run: stable sort, folders before bookmarks, then collator.compare(key), then current position
+  result = run₀ sorted, separator₀, run₁ sorted, separator₁, … — every separator keeps its index
   key(node) = node.title — or the URL, for a bookmark whose title is blank (as Chrome shows it)
 
 planSort(children, locale):

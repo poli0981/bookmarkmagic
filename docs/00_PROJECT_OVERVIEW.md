@@ -126,6 +126,12 @@ v1.0's scope):
 - A redesigned UI with a self-drawn icon set, all motion behind
   `prefers-reduced-motion` (`06`).
 
+**v1.3.0 adds** two stores: **Firefox Add-ons** (its own package from the same
+source — the Bookmarks Menu as a fourth root, separators shown and protected,
+Firefox's own move-index rule, `02 §4`, `03`) and **Microsoft Edge Add-ons**
+(the Chromium package, unchanged). Release automation for all three stores,
+each off until its owner switches it on (`12 §3`).
+
 **v1.2.0 adds** two UI languages, chosen from the CWS dashboard's install and
 usage figures: **Simplified Chinese (`zh-CN`) and Romanian (`ro`)** — in the
 app, in the manifest and in the store listing (`07`). Traditional Chinese is
@@ -222,7 +228,10 @@ Derived identifiers (canonical across docs and code):
      the four is already known — `CHROME_EXTENSION_ID` is the item id in §9. The
      other three come from `npx wxt submit init` (`12 §3`). Note there is no
      dry-run: the first time that step executes it makes a real submission.
-7. **Untested:** `npm run dev:firefox`. No gate exercises it (Firefox is a
+7. ~~**Untested:** `npm run dev:firefox`.~~ Since v1.3.0 the Firefox package is
+   built and checked by CI and the release (`12 §2.1`, `12 §2.3`) and its logic
+   is tested against a Firefox-shaped fake (`11 §4`). Still ⚠️: nothing has run
+   it in a real Firefox until the owner's `11 §5` pass. Historical text: No gate exercises it (Firefox is a
    non-goal, §7). The `overrides` block that used to threaten it is gone
    (`09 §3.1`), but do not assume it works.
 8. **Unmeasured:** the 2 s parse budget on a real browser (`11 §6`). The

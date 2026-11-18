@@ -10,7 +10,8 @@
 
 | Item | Choice | Rationale |
 |---|---|---|
-| Browser | Chrome / Chromium, **Manifest V3** | MV2 is fully retired. Edge/Brave/Vivaldi/Opera work from the same build. |
+| Browser | Chrome / Chromium, **Manifest V3** — and since v1.3.0 **Firefox**, MV3 too | MV2 is fully retired. Edge/Brave/Vivaldi/Opera run the Chromium package; Edge Add-ons publishes that same package (`08 §10`). Firefox gets its own package from the same source (`wxt build -b firefox`, MV3 forced by `manifestVersion: 3`, `08 §9`). |
+| Min Firefox | `strict_min_version: "140.0"` (since v1.3.0) | The first Firefox that accepts `data_collection_permissions`, which AMO requires of new extensions; every ES2025 built-in is older (134). Vite targets `firefox140` for that package. Desktop only — Firefox for Android has no `bookmarks` API. |
 | Min Chrome | `minimum_chrome_version: "136"` (was `"120"` through v1.0.1) | The ES2025 floor: 136 is the first Chrome with every ES2025 built-in (`RegExp.escape` 136, `Float16Array` 135, `Promise.try` 128, iterator helpers and Set methods 122). The manifest floor, Vite's `build.target` (`chrome136`) and tsconfig's `lib: ["ES2025", …]` are one number stated three times — `wxt.config.ts` derives two of them from `CHROME_FLOOR`, and `tests/unit/manifest.test.ts` pins all three. Users on Chrome 120–135 keep the version they have and stop receiving updates; nothing is uninstalled. `scheduler.yield()` (129+) is now always present, though the write queue keeps its fallback because the test environment has no `scheduler`. |
 | Runtime deps | **0 (zero)** | `DOMParser`, `Blob`, `URL`, `showSaveFilePicker` and `navigator.clipboard` cover all needs. "Zero" means no npm `dependencies`: the compiled Svelte runtime still ships inside the bundle — see `legal/THIRD_PARTY_NOTICES.md`. |
 
@@ -60,7 +61,9 @@
   "scripts": {
     "postinstall": "wxt prepare",             // generates .wxt/tsconfig.json — 10 §2 extends it
     "dev": "wxt",
-    "dev:firefox": "wxt -b firefox",          // build sanity only, no store release
+    "dev:firefox": "wxt -b firefox",          // MV3 since v1.3.0 (manifestVersion: 3)
+    "build:firefox": "wxt build -b firefox",  // .output/firefox-mv3
+    "zip:firefox": "wxt zip -b firefox",      // the AMO package + its sources archive
     "build": "wxt build",
     "zip": "wxt zip",
     "check": "svelte-check --tsconfig ./tsconfig.json --fail-on-warnings && tsc --noEmit && tsc -p tsconfig.scripts.json",
@@ -76,7 +79,7 @@
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
     "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run check:licenses && npm run test",
-    "verify:full": "npm run verify && npm run coverage && npm run build && npm run check:manifest"
+    "verify:full": "npm run verify && npm run coverage && npm run build && npm run check:manifest && npm run build:firefox && npm run check:manifest -- --browser firefox"
   }
 }
 ```

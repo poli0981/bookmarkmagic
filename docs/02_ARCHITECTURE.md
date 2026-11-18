@@ -174,7 +174,7 @@ export interface BookmarkNode {
   addDate?: number;        // epoch SECONDS (normalized, see timestamps.ts)
   lastModified?: number;   // epoch SECONDS
   toolbar?: boolean;       // Netscape PERSONAL_TOOLBAR_FOLDER
-  root?: 'other' | 'mobile'; // folder IS that browser root (since v1.1.0; toolbar wins)
+  root?: 'other' | 'mobile' | 'menu'; // folder IS that browser root (since v1.1.0; 'menu' since v1.3.0; toolbar wins)
   children?: BookmarkNode[];
 }
 
@@ -220,7 +220,7 @@ Segment construction per mode — spelled out so it is not left to interpretatio
 | Mode | Segments |
 |---|---|
 | `new-folder` | Exactly one. `parentId` = Other Bookmarks; `nodes` = the single `Imported <date>` wrapper folder containing the whole parsed tree, root folders included. Markers are informational only (`03 §1`). |
-| `merge` | Top-level nodes are routed first (`core/route.ts`, `03 §1` step 7): a `toolbar` folder's children → the bar; a `root: "other"` folder's children → Other, in its place in the order; a `root: "mobile"` folder's children → Mobile (an ordinary folder under Other when the profile has no Mobile root); everything else → Other. Each root's list is then matched against that root's live children (`core/merge.ts`, `05 §5`): a folder with the exact title of a writable live child folder is **reused** — not created — and its children are matched one level down; everything else becomes a node in the segment of the live folder it lands in. One segment per live folder that receives anything, in first-use order. |
+| `merge` | Top-level nodes are routed first (`core/route.ts`, `03 §1` step 7): a `toolbar` folder's children → the bar; a `root: "other"` folder's children → Other, in its place in the order; a `root: "mobile"` folder's children → Mobile (an ordinary folder under Other when the profile has no Mobile root); a `root: "menu"` folder's children → the Bookmarks Menu (an ordinary folder under Other where there is none — every Chromium browser); everything else → the Bookmarks Menu where the browser has one (Firefox — what Firefox's own HTML import does with loose entries), else Other. Each root's list is then matched against that root's live children (`core/merge.ts`, `05 §5`): a folder with the exact title of a writable live child folder is **reused** — not created — and its children are matched one level down; everything else becomes a node in the segment of the live folder it lands in. One segment per live folder that receives anything, in first-use order. |
 | `replace` | As `merge`, but planned against **emptied** roots, so nothing matches and every node is created. |
 
 A root nothing is bound for gets no segment. `stats.toCreate` is the total
@@ -228,6 +228,18 @@ across all segments — progress and the final report keep one denominator and
 one `done` counter for the whole import (`05 §6`). Every node is accounted for:
 `toCreate + reusedFolders + unwrapped root folders` equals the deduped tree
 (asserted over 200 random trees in `merge.test.ts`).
+
+**Firefox (since v1.3.0).** Firefox has no `folderType`, its roots are GUIDs —
+`menu________`, `toolbar_____`, `unfiled_____`, `mobile______`, in that order —
+and it has a fourth root Chromium lacks, the **Bookmarks Menu**. `getRoots()`
+tries those GUIDs after the Chromium ids and before position, so the position
+fallback (which on Firefox would take the Menu for the bar) is never reached,
+and returns the Menu as a fourth destination that Replace also empties.
+**Separators** exist only in Firefox's live tree: `type: "separator"` and, for
+historical reasons, `url: "data:"`. They are recognised by `type`, never by
+the url; `toBookmarkNodes` drops them, so the file model never holds one, and
+`#edit` shows them as lines no command can touch (`03 §3`). Counting helpers
+in `browser/bookmarks.ts` keep them out of every bookmark count.
 
 Chrome root mapping: `browser/bookmarks.ts` `getRoots()` resolves the three
 destinations by `folderType` (`bookmarks-bar`, `other`, `mobile`, Chrome
@@ -239,6 +251,11 @@ and then to position. Desktop Chrome leaves an **empty** Mobile root out of
 that fails do Mobile-marked folders land under Other. Segment `parentId`s
 always come from that resolution or from live folders found in the same read,
 never a literal — but tests may rely on the ids.
+
+**Address length inside the browser.** Firefox refuses an address longer than
+65 536 characters (and shortens titles past 4 096). The import drops such
+addresses before planning, as `URL_TOO_LONG`, using a limit the browser layer
+passes in — Chromium has none, so nothing changes there (`03 §1`).
 
 **Depth inside the browser** is capped separately from the parse cap:
 `MAX_WRITE_DEPTH` (90 levels below a root). Chrome stores its bookmarks as JSON

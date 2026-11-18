@@ -189,6 +189,22 @@ Also in `tests/unit/browser/` (v1.1.0):
   code with its URL-bearing detail absent; crash hooks record names only, and
   stop after teardown.
 
+**Firefox flavour (since v1.3.0).** There is no Firefox in CI, so
+`tests/helpers/fake-bookmarks.ts` takes `{ flavour: 'firefox' }` and then
+behaves the way Firefox's source says its API does
+(`browser/components/extensions/parent/ext-bookmarks.js`, Places'
+`Bookmarks.sys.mjs`): GUID roots in the order Menu, Toolbar, Other, Mobile,
+all four always present; no `folderType`; separators as
+`{ type: 'separator', url: 'data:' }`; a same-folder `move` that takes the
+final position; no `onChildrenReordered` or `onImport*`; `get('3')`
+rejected; addresses over 65 536 characters refused. The root, separator, move,
+Replace and export suites run over both flavours (`describe.each`) — which is
+also how the position fallback in `getRoots`, never reached by the Chromium
+fake, got its first test. ⚠️ The fake is built from reading Firefox's source;
+a sanitized `getTree()` dump from a real Firefox 140+ profile, committed as a
+fixture the fake is checked against, would turn that reading into evidence
+(`00 §10`).
+
 ### #edit logic, stores, styles and scripts
 
 The components have no test framework (§1), so everything that can move out of
@@ -444,6 +460,42 @@ failure mode that would hit every installed user at once.
 - [ ] After the update goes live: install from the store on a clean profile and
       smoke it. This is the only check that the artifact users receive is the
       artifact that was tested (`13 §1b` step 10).
+
+### Firefox and Edge (since v1.3.0) — before the first submission to each
+
+Firefox (140 or later; about:debugging → Load Temporary Add-on →
+`.output/firefox-mv3/manifest.json`, on a profile you can afford to lose):
+
+- [ ] The four roots are where they belong: an import in Merge mode of a
+      BookmarkMagic HTML export puts the bar's entries in the **Bookmarks
+      Toolbar**, Other's in **Other Bookmarks**, loose entries in the
+      **Bookmarks Menu**; New-folder mode puts `Imported <date>` under Other
+      Bookmarks.
+- [ ] **Replace, then restore the safety backup with Replace twice**: menu,
+      toolbar, Other and Mobile come back in their own roots, never nested; the
+      confirmation counted the separators it was about to delete and said they
+      would not come back.
+- [ ] Export all four formats: no `data:` entry where a separator was; HTML
+      re-imports into Firefox with the menu restored; an import of Firefox's
+      own HTML export reports the separators it skipped.
+- [ ] #edit: separators are lines that ↑/↓ and type-ahead skip; Alt+↑/↓ steps
+      past one; a drag before/after a row lands exactly there (the move-index
+      rule, `05 §10`); Sort A→Z leaves separators where they are; the
+      duplicate panel never lists separators.
+- [ ] Replace's backup on Firefox goes through the **anchor download and the
+      "I have the backup" confirmation** (no `showSaveFilePicker`).
+- [ ] About → "Store listing" opens the AMO listing; right-click → Options
+      lands on #settings (a second Manager tab here is expected, `08 §9`).
+- [ ] The Manager in every language; Firefox's own locale fallback.
+
+Edge (the Chrome package, Load unpacked from `.output/chrome-mv3`):
+
+- [ ] **Signed in with sync on**: #edit loads and Merge writes — no
+      `NO_WRITABLE_ROOTS` (`08 §10`, unverified until this item is done).
+- [ ] The Chrome items above that touch roots: Favorites bar / Other
+      favorites receive what Bookmarks bar / Other bookmarks would.
+- [ ] About → "Store listing" opens the README's install section (the Edge
+      listing's address is not known until it exists).
 
 ## 6. Performance budgets (checked manually in v1)
 

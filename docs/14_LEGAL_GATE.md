@@ -89,12 +89,22 @@ its `clsx` helper and WXT's browser shim, which the build always compiled in. **
 every change clarifies or corrects a description of what was already true, or
 removes an obligation; none adds one or a data flow.
 
+**Precedent (2026-11-18, v1.3.0):** Firefox Add-ons and Microsoft Edge Add-ons
+become distribution channels. EULA clause 5 says updates come "through the
+store you installed the Extension from"; PRIVACY names all three stores and
+Firefox's data-consent declaration ("none"), and calls the settings store by
+both browsers' names; DISCLAIMER's note on dates no longer blames Chrome alone,
+and the non-affiliation line adds Microsoft and Edge. THIRD_PARTY_NOTICES (same
+day, Phase 10) corrected its description of the build tooling's licences.
+**Not a bump:** a new channel to receive the same software is not a new data
+flow from the Extension, and nothing asks more of the user.
+
 **What each `LEGAL_VERSION` means** — the text a user who accepted that number
 agreed to:
 
 | `LEGAL_VERSION` | Accepted text | Notes |
 |---|---|---|
-| 1 | The four `legal/` files as published 2026-07-26, with the clarifications of 2026-08-03 and 2026-10-29 | The clarifications are listed above; git history has each wording |
+| 1 | The four `legal/` files as published 2026-07-26, with the clarifications of 2026-08-03, 2026-10-29 and 2026-11-18 | The clarifications are listed above; git history has each wording |
 
 ### 3.2 `LICENSE`
 

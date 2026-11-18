@@ -1,6 +1,9 @@
 # 13 — Release & Store Publishing
 
-Developer account: registered & fee paid ✔.
+Chrome Web Store developer account: registered & fee paid ✔. Since v1.3.0
+there are two more stores — Firefox Add-ons (§8) and Microsoft Edge Add-ons
+(§9) — and §1b is still the procedure for every release; §8 and §9 add what
+is different there.
 
 ## 1. First-submission runbook (v1.0.0) — ✔ completed 2026-07-26
 
@@ -62,7 +65,9 @@ privacy and distribution tabs are already filled; you are replacing the package.
    `release.yml` re-runs every gate, builds, zips, verifies tag↔manifest, writes
    `SHA256SUMS.txt`, and creates the GitHub Release.
 5. Download the **Release asset**, not the CI artifact — `SHA256SUMS.txt` covers
-   the Release asset only (`12 §3`). Verify with `sha256sum -c`.
+   the Release assets only (`12 §3`). Verify with `sha256sum -c --ignore-missing
+   SHA256SUMS.txt` (since v1.3.0 it lists three files; `--ignore-missing` lets
+   you check only the one you downloaded).
 6. Dashboard → the existing item → **Package → Upload new package** → the zip.
    Do *not* create a new item.
 7. Fill the "why this update" / what-changed note. Listing text and the privacy
@@ -80,6 +85,19 @@ privacy and distribution tabs are already filled; you are replacing the package.
 Chrome auto-updates installed extensions once the new version passes review;
 users do nothing and, notably, get no prompt. That is why the upgrade test
 matters more than any other single check here.
+
+## 1c. Which file goes where (since v1.3.0)
+
+| Store | Upload | Notes |
+|---|---|---|
+| Chrome Web Store | `bookmarkmagic-X.Y.Z-chrome.zip` | §1b |
+| Microsoft Edge Add-ons | the **same** `…-chrome.zip` | §9 |
+| Firefox Add-ons | `bookmarkmagic-X.Y.Z-firefox.zip` **and** `…-sources.zip` | §8 |
+
+A store that re-signs or repackages what it receives (all three do, in some
+form) serves users a file whose hash is not the Release asset's. What
+`SHA256SUMS.txt` vouches for is that the uploaded file is the Release asset
+(`09 §5`).
 
 ## 2. Asset checklist ⚠️
 
@@ -242,6 +260,15 @@ superseding version has to pass review too.
   answers must agree with the code exactly. `npm run guard` and
   `npm run check:manifest` are the evidence that they do.
 
+### A store job failed after the Release was published (since v1.3.0)
+
+Re-run **only the failed job** from the run page. Every store refuses a
+version number it has already accepted, so re-running the whole workflow would
+turn the stores that succeeded red; and nothing before the store jobs needs
+redoing — the Release and its checksums are already published. The usual
+causes: an expired Edge API key (72 days, `12 §3`), a review hold, a token
+revoked in a store dashboard.
+
 ### A tag was pushed and the release run failed
 
 `release.yml` runs `gh release create` with no existence check, so a failure
@@ -255,3 +282,63 @@ on) leaves a published Release that a re-run cannot recreate.
   `git push --delete origin vX.Y.Z`, then re-tag. Only safe while nothing has
   consumed the assets.
 - Never move a tag that has already been announced or submitted.
+
+## 8. Firefox Add-ons (AMO) — runbook (since v1.3.0)
+
+**First version — by hand, once** (the API and `publish-browser-extension`
+can only add versions to an add-on that exists):
+
+1. The `11 §5` pass on a **real Firefox** (140 or later): about:debugging →
+   This Firefox → Load Temporary Add-on → `.output/firefox-mv3/manifest.json`
+   (or the Release's `…-firefox.zip`). Its Firefox section covers the
+   Bookmarks Menu, separators and Alt+↑/↓.
+2. addons.mozilla.org/developers → **Submit a New Add-on** → *On this site*
+   (listed) → upload `bookmarkmagic-X.Y.Z-firefox.zip` from the Release.
+3. **Compatibility: Firefox only** — untick Firefox for Android (no
+   `bookmarks` API there, `08 §9`).
+4. **Source code: yes** → upload `bookmarkmagic-X.Y.Z-sources.zip` from the same
+   Release. In *Notes to reviewer* paste the short version of `/BUILD.md`:
+   Node.js 26 and npm 11 (the sources archive drops `.nvmrc`), `npm ci`,
+   `npm run zip:firefox`, the package lands in `.output/`. Reviewers diff their
+   build against the upload, file by file.
+5. Listing: from `store/listing.<lang>.md`'s **AMO** block — name, summary
+   (≤ 250 characters), description, category *Bookmarks*, licence *GNU General
+   Public License v3.0* (the code is GPL-3.0-or-later), privacy policy
+   `https://github.com/poli0981/bookmarkmagic/blob/main/legal/PRIVACY.md`,
+   homepage the repository, support site the repository's issues. No support
+   email (`09 §6`).
+6. Submit, and record the review's outcome in `15`. The add-on's page is
+   `https://addons.mozilla.org/firefox/addon/bookmarkmagic@poli0981.dev/`
+   (AMO resolves the gecko id; the slug it picks works too).
+
+**Later versions:** by hand, the same way (*Upload New Version*), or
+automatically from `release.yml`'s `store-firefox` job once
+`firefox-add-ons` has its secrets and `AMO_AUTOPUBLISH` is `true`
+(`12 §3`) — the job uploads the package and the sources together.
+
+**Rollback:** AMO can disable a version in the Developer Hub, which sends
+users back to the previous approved one — a recall Chrome does not offer.
+Still ship the fix forward.
+
+## 9. Microsoft Edge Add-ons — runbook (since v1.3.0)
+
+**First submission — by hand, once:**
+
+1. A Partner Center developer account (no fee) — ⚠️ owner.
+2. The `11 §5` pass on a real **Edge**, including a profile **signed in with
+   sync on** — the case `08 §10` could not verify (`NO_WRITABLE_ROOTS` if
+   Edge marks syncing roots).
+3. Partner Center → Edge → **Create new extension** → upload the Release's
+   `bookmarkmagic-X.Y.Z-chrome.zip` — the Chrome package, unchanged.
+4. Listing from `store/listing.<lang>.md`'s **Edge** block (it avoids selling
+   the extension as a Chrome one, `08 §10`); category *Productivity*; privacy
+   answers as `08 §5`; privacy policy URL as above; screenshots from
+   `store/screenshots/`.
+5. Submit; record the outcome in `15`. Note the **Product ID** on the
+   extension's overview page — `EDGE_PRODUCT_ID` — and the listing URL, which
+   the About link and the README can then use (`06 §3.5`).
+
+**Later versions:** by hand (*Update* → upload the new package), or from
+`release.yml`'s `store-edge` job once `edge-add-ons` has its secrets and
+`EDGE_AUTOPUBLISH` is `true`. The API key expires every **72 days**; put the
+renewal in a calendar.
