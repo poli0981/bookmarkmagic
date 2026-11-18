@@ -1,0 +1,26 @@
+# Qodana — docs/12 §2.7. Read by .github/workflows/qodana.yml.
+#
+# qodana-js is JetBrains' JavaScript/TypeScript linter; it needs the Ultimate
+# licence that QODANA_TOKEN carries. Native mode (no Docker image): the
+# workflow installs node_modules on the runner first, with install scripts
+# off, and the analysis reads them from there.
+version: "1.0"
+linter: qodana-js
+withinDocker: false
+
+profile:
+  name: qodana.recommended
+
+# What is not code, or not ours: byte-exact browser samples (malformed on
+# purpose), build and coverage output, screenshots, store copy, prose.
+exclude:
+  - name: All
+    paths:
+      - tests/fixtures
+      - .output
+      - .wxt
+      - coverage
+      - capture
+      - store
+      - docs
+      - legal

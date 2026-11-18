@@ -39,10 +39,14 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/checkout@v7
+      # Pinned to commits, unlike the other workflows: these two run with a
+      # write token on events anyone can trigger, fork pull requests included.
+      # No `cache:` on setup-node — a cache written here could be read back by
+      # a job that trusts it.
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
-      - uses: actions/setup-node@v7
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version-file: .nvmrc
 
@@ -76,7 +80,8 @@ jobs:
           esac
           case "$live" in OPEN*) ;; *) echo "not open: $live"; exit 0 ;; esac
 
-          gh "$kind" edit "$number" --add-label "$label"
+          # Comment and close FIRST, label last: the label is what a re-run
+          # reads as "done", so it must not exist before the work it stands for.
           if [ "$action" = close ]; then
             jq -r '.comment' "$decision" > "$RUNNER_TEMP/comment.md"
             gh "$kind" comment "$number" --body-file "$RUNNER_TEMP/comment.md"
@@ -86,3 +91,4 @@ jobs:
               gh pr close "$number"
             fi
           fi
+          gh "$kind" edit "$number" --add-label "$label"

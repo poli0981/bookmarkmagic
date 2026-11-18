@@ -125,6 +125,18 @@ function positiveInt(value) {
 }
 
 /**
+ * Whether this event is the repository owner adding a label by hand.
+ * @param {Record<string, unknown>} payload
+ */
+function addedByOwner(payload) {
+  const sender = record(payload.sender).login;
+  const owner = record(record(payload.repository).owner).login;
+  return (
+    payload.action === 'labeled' && typeof sender === 'string' && sender !== '' && sender === owner
+  );
+}
+
+/**
  * @param {Record<string, unknown>} payload
  * @returns {Decision}
  */
@@ -148,14 +160,20 @@ function decideIssue(payload) {
     return { action: 'none', reason: "the owner's own issue" };
 
   const kind = kindOf(issue.body);
-  if (kind === KIND.roadmap || kind === KIND.needed) {
-    return {
-      action: 'label',
-      reason: 'in policy — for the maintainer',
-      kind: 'issue',
-      number,
-      label: LABEL.triage,
-    };
+  const forTriage = /** @type {Decision} */ ({
+    action: 'label',
+    reason: 'in policy — for the maintainer',
+    kind: 'issue',
+    number,
+    label: LABEL.triage,
+  });
+  if (kind === KIND.roadmap || kind === KIND.needed) return forTriage;
+  // No answer at all means the form was not used. Closing on that is the
+  // owner's one-touch close, so it needs the owner's own `enhancement` label;
+  // anything else (an edited body, an answer the form never offered) goes to
+  // a human rather than being closed on a guess.
+  if (kind !== KIND.fresh && !addedByOwner(payload)) {
+    return { ...forTriage, reason: 'no answer to the form, not labelled by the owner' };
   }
   return {
     action: 'close',

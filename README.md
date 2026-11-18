@@ -4,6 +4,7 @@
 [![License: GPL-3.0-or-later](https://img.shields.io/badge/license-GPL--3.0--or--later-blue.svg)](LICENSE)
 [![CI](https://github.com/poli0981/bookmarkmagic/actions/workflows/ci.yml/badge.svg)](https://github.com/poli0981/bookmarkmagic/actions/workflows/ci.yml)
 [![CodeQL](https://github.com/poli0981/bookmarkmagic/actions/workflows/codeql.yml/badge.svg)](https://github.com/poli0981/bookmarkmagic/actions/workflows/codeql.yml)
+[![Qodana](https://github.com/poli0981/bookmarkmagic/actions/workflows/qodana.yml/badge.svg)](https://github.com/poli0981/bookmarkmagic/actions/workflows/qodana.yml)
 [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=poli0981_bookmarkmagic&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=poli0981_bookmarkmagic)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=poli0981_bookmarkmagic&metric=coverage)](https://sonarcloud.io/summary/new_code?id=poli0981_bookmarkmagic)
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/eghnciphhegekmnofffpgbdfefckdhmg?label=Chrome%20Web%20Store)](https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg)
