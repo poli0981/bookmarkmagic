@@ -24,7 +24,8 @@
  * npm; this gate trusts it, as every lockfile-based checker must. It needs no
  * `node_modules` and no network, so it runs before anything is installed.
  *
- * Usage: node scripts/check-licenses.mjs — reads <repo>/package-lock.json,
+ * Usage: node scripts/check-licenses.mjs — reads <repo>/package-lock.json and
+ * <repo>/tools/publish/package-lock.json (the store-upload tool, docs/12 §3),
  * resolved from this file. Its tests call `checkLockfile(lock)` directly.
  */
 import { readFileSync } from 'node:fs';
@@ -142,10 +143,14 @@ function printable(value) {
 /**
  * Check every installed package of a v2/v3 lockfile.
  *
- * @param {unknown} lock — the parsed `package-lock.json`
+ * @param {unknown} lock - the parsed `package-lock.json`
+ * @param {{ shipsCode?: boolean }} [options] - `shipsCode: false` for a lockfile
+ *   that builds nothing into the extension (tools/publish), where the credited
+ *   packages are not expected
  * @returns {{ problems: string[], checked: number, counts: Map<string, number> }}
  */
-export function checkLockfile(lock) {
+export function checkLockfile(lock, options = {}) {
+  const shipsCode = options.shipsCode ?? true;
   /** @type {string[]} */
   const problems = [];
   /** @type {Map<string, number>} */
@@ -181,7 +186,7 @@ export function checkLockfile(lock) {
     }
   }
 
-  for (const name of CREDITED_PACKAGES) {
+  for (const name of shipsCode ? CREDITED_PACKAGES : []) {
     if (!shippedSeen.has(name)) {
       problems.push(`${printable(name)}: credited as shipping, but not in the lockfile`);
     }
@@ -189,18 +194,34 @@ export function checkLockfile(lock) {
   return { problems, checked, counts };
 }
 
+/** The lockfiles this repository installs from, and whether each builds the extension. */
+const LOCKFILES = [
+  { path: 'package-lock.json', shipsCode: true },
+  { path: 'tools/publish/package-lock.json', shipsCode: false },
+];
+
 /** @returns {number} exit code */
 function main() {
-  const lockPath = resolve(fileURLToPath(import.meta.url), '..', '..', 'package-lock.json');
-  /** @type {unknown} */
-  let lock;
-  try {
-    lock = JSON.parse(readFileSync(lockPath, 'utf8'));
-  } catch (cause) {
-    console.error(`::error::check-licenses: cannot read package-lock.json (${String(cause)})`);
-    return 1;
+  const repo = resolve(fileURLToPath(import.meta.url), '..', '..');
+  /** @type {string[]} */
+  const problems = [];
+  let checked = 0;
+  /** @type {Map<string, number>} */
+  const counts = new Map();
+  for (const { path, shipsCode } of LOCKFILES) {
+    /** @type {unknown} */
+    let lock;
+    try {
+      lock = JSON.parse(readFileSync(resolve(repo, path), 'utf8'));
+    } catch (cause) {
+      console.error(`::error::check-licenses: cannot read ${path} (${String(cause)})`);
+      return 1;
+    }
+    const result = checkLockfile(lock, { shipsCode });
+    for (const problem of result.problems) problems.push(`${path}: ${problem}`);
+    checked += result.checked;
+    for (const [license, n] of result.counts) counts.set(license, (counts.get(license) ?? 0) + n);
   }
-  const { problems, checked, counts } = checkLockfile(lock);
   if (problems.length > 0) {
     for (const problem of problems) console.error(`::error::check-licenses: ${problem}`);
     console.error(

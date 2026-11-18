@@ -1,0 +1,9 @@
+{
+  "name": "bookmarkmagic-publish",
+  "private": true,
+  "description": "The store-upload tool release.yml runs, installed apart from the dev toolchain so store credentials share a runner with four packages instead of three hundred (docs/12 §3).",
+  "license": "GPL-3.0-or-later",
+  "devDependencies": {
+    "publish-browser-extension": "6.2.0"
+  }
+}

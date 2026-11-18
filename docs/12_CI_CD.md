@@ -420,7 +420,8 @@ means "unknown", not "not done".
       posts. Unset means skipped; a reusable-workflow caller cannot use
       `continue-on-error` to absorb a failure (§2.3).
 - [x] Dependabot: npm weekly, grouped dev minor+patch, `github-actions` too —
-      `.github/dependabot.yml`. Both ecosystems have a 7-day `cooldown`
+      `.github/dependabot.yml` — and since v1.3.0 `tools/publish/` (the
+      store-upload tool's own lockfile, §3) as a third ecosystem entry. Both ecosystems have a 7-day `cooldown`
       (matching `.npmrc` `min-release-age=7`, `09 §3.1`); WXT is excluded from
       the group so every WXT bump arrives alone and gets its built-manifest
       diff; majors of the TypeScript pair and `@types/node` are ignored.
