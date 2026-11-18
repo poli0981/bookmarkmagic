@@ -12,6 +12,10 @@ version bump).
 
 ## [Unreleased]
 
+Nothing yet.
+
+## [1.3.0] — 2026-11-18
+
 Firefox and Microsoft Edge, and maintenance mode. Permissions are unchanged
 (`bookmarks` and `storage`), nothing is asked of you again, and on Chrome
 there is nothing to do — your browser updates itself. This version also
@@ -24,8 +28,11 @@ Store on its own.
   Add-ons — listing to come. The same features, the same two permissions and
   the same no-network policy, which Firefox enforces just as Chrome does.
   Firefox's **Bookmarks Menu** is a root like the others: Merge and Replace put
-  entries back where they came from, and the loose entries of a Firefox
-  export go into the menu, as Firefox itself does with them.
+  entries back where they came from. Whatever a file leaves loose at its top
+  level goes into the menu, as Firefox's own import does — the menu itself in
+  a Firefox export, but also Other's and Mobile's contents in Chrome's own
+  HTML export, which Chrome writes loose. BookmarkMagic's exports and backups
+  name every root and are not affected.
 - **Microsoft Edge Add-ons** — the Chrome package, unchanged; listing to come.
   Until then Edge installs from the Chrome Web Store.
 - **Firefox separators** show in the Edit tab as lines. Nothing acts on them:
@@ -52,6 +59,13 @@ Store on its own.
 - The project is in **maintenance mode** ([`MAINTENANCE.md`](MAINTENANCE.md)):
   fixes, accessibility, translations, security and dependency updates, and
   features that are already on the roadmap.
+
+### Fixed
+
+- Since 1.1.0, in a Chrome signed in with account bookmarks (Chrome 134 or
+  later), Replace's confirmation counted the account's own bar, Other and
+  Mobile among what it would delete. Replace has never touched them; the count
+  now covers exactly what it deletes.
 
 ### Packages
 
@@ -339,7 +353,8 @@ from 2026-08-03.
 - Parsing is bounded: 25 MB per file, 100 000 nodes, 200 levels of nesting.
 - No network access of any kind at runtime, enforced by a grep gate in CI.
 
-[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.2.1...HEAD
+[Unreleased]: https://github.com/poli0981/bookmarkmagic/compare/v1.3.0...HEAD
+[1.3.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.2.1...v1.3.0
 [1.2.1]: https://github.com/poli0981/bookmarkmagic/compare/v1.2.0...v1.2.1
 [1.2.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.1.0...v1.2.0
 [1.1.0]: https://github.com/poli0981/bookmarkmagic/compare/v1.0.1...v1.1.0
