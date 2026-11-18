@@ -117,7 +117,9 @@ same value in `package.json#license` (`01 §5`).
   MIT-licensed pieces into the package: the Svelte runtime, `clsx` (which the
   Svelte runtime imports) and WXT's one-line `browser` shim (`wxt` +
   `@wxt-dev/browser`). `wxt.config.ts` fails the build when any other package
-  would ship (`CREDITED_PACKAGES`). Through v1.0.x the About tab said "None"
+  would ship (`CREDITED_PACKAGES` — since 2026-11-18 in
+  `scripts/credited-packages.mjs`, the one list the build gate, the notices
+  test and the licence gate of `09 §3.2` all read). Through v1.0.x the About tab said "None"
   and THIRD_PARTY_NOTICES said "no third-party code" — both wrong, corrected in
   v1.1.0. The notices ship as `THIRD_PARTY_NOTICES.txt` (from `src/public/`),
   which `check:manifest` requires in every build; `legal/THIRD_PARTY_NOTICES.md`

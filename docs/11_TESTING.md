@@ -260,7 +260,10 @@ them is tested where it lives:
   v1.1.0: `guard.test.ts` (`08 §3`), `check-manifest.test.ts` (a correct build
   passes, one without the CSP fails) and `sanitize-formats.test.ts` (the
   browser JSON formats and the audit's HTML leaks, beside the older
-  `sanitize-bookmarks.test.ts` — `09 §6`).
+  `sanitize-bookmarks.test.ts` — `09 §6`). New in Phase 10:
+  `check-licenses.test.ts` (SPDX expressions, the shipped list held stricter
+  than the toolchain's, a missing or custom licence refused, the repository's
+  own lockfile passing — `09 §3.2`).
 
 ## 5. Manual QA checklist (run before every store submission)
 

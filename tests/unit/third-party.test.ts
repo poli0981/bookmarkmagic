@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { CREDITED_PACKAGES } from '../../scripts/credited-packages.mjs';
 
 /**
  * Every package the build may compile in is credited — docs/14 §5.
@@ -11,14 +12,20 @@ import { describe, expect, it } from 'vitest';
  * "none" while three packages shipped.
  */
 const read = (path: string): string => readFileSync(join(process.cwd(), path), 'utf8');
-const CONFIG = read('wxt.config.ts');
-const credited = [
-  ...(/const CREDITED_PACKAGES = \[([^\]]*)\]/.exec(CONFIG)?.[1] ?? '').matchAll(/'([^']+)'/g),
-].map((m) => m[1] ?? '');
+const credited = [...CREDITED_PACKAGES];
 
 describe('third-party notices', () => {
-  it('reads a non-empty credited list from wxt.config.ts', () => {
+  it('reads a non-empty credited list', () => {
     expect(credited).toEqual(expect.arrayContaining(['svelte', 'clsx']));
+  });
+
+  it('is the list the build gate in wxt.config.ts enforces', () => {
+    // A second, local list in the config would let the build gate and this
+    // test disagree about what ships — the shape this file used to guard by
+    // parsing the config's own source.
+    const config = read('wxt.config.ts');
+    expect(config).toContain("from './scripts/credited-packages.mjs'");
+    expect(config).not.toMatch(/const CREDITED_PACKAGES\s*=/);
   });
 
   it.each(['legal/THIRD_PARTY_NOTICES.md', 'src/public/THIRD_PARTY_NOTICES.txt'])(

@@ -45,6 +45,9 @@ jobs:
       - run: npm run knip
       - run: npm run coverage # vitest --coverage, thresholds per docs/11 §1
       - run: npm run guard # the zero-network / no-raw-HTML gate, docs/08 §3
+      # Every licence in the lockfile, shipped packages held to the stricter
+      # list (docs/09 §3.2). Reads package-lock.json only — no network.
+      - run: npm run check:licenses
 
       # Zero runtime dependencies is a public claim (README, docs/09 T5); this
       # is the check that keeps it true. Dev-only advisories are tracked by

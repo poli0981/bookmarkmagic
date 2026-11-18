@@ -86,7 +86,8 @@ which does not exist until it has run.
 Then `npm run dev` and load `.output/chrome-mv3` at `chrome://extensions` with
 Developer mode on.
 
-`npm run verify` runs lint, type-check, knip, the grep gate and the tests. It
+`npm run verify` runs lint, type-check, knip, the grep gate, the licence gate
+(`npm run check:licenses`) and the tests. It
 must be green before every commit. For anything release-bearing use
 `npm run verify:full`, which additionally runs coverage, the build, and the gate
 that inspects the *built* manifest — `verify` alone is weaker than what CI and a

@@ -70,11 +70,12 @@
     "knip": "knip",
     "guard": "node scripts/guard.mjs",        // the source gate, 08 §3
     "check:manifest": "node scripts/check-manifest.mjs",  // the built-artifact gate, 08 §3
+    "check:licenses": "node scripts/check-licenses.mjs",  // every lockfile licence, 09 §3.2
     "icons": "node scripts/gen-icons.mjs",    // regenerates the shipped icons (source of truth)
     "test": "vitest run",
     "test:watch": "vitest",
     "coverage": "vitest run --coverage",
-    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run test",
+    "verify": "npm run lint && npm run check && npm run knip && npm run guard && npm run check:licenses && npm run test",
     "verify:full": "npm run verify && npm run coverage && npm run build && npm run check:manifest"
   }
 }
