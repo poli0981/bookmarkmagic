@@ -258,6 +258,12 @@ browser_specific_settings: {
   Firefox enforces it the same way; `check:manifest` pins it in both packages.
 - **No background script** on Firefox either, so Firefox's MV3 event-page
   model never comes into it.
+- **Options can open a second Manager tab.** Chrome reuses an open Manager
+  for `options_ui` whatever its route, ignoring the `#settings` fragment
+  (`02 §5`); Firefox matches the whole address, fragment included (its
+  about:addons and `open_in_tab` code never pass `ignoreFragment`), so with a
+  Manager open on `#edit` it opens another one on `#settings`. Cosmetic: both
+  tabs work, and the write lock keeps them from writing at once (`03 §5`).
 - **Source code is part of every submission.** The bundle is minified, so AMO
   requires the sources and instructions that rebuild the same files. `wxt zip
   -b firefox` writes `…-sources.zip` beside the package (dotfiles excluded —

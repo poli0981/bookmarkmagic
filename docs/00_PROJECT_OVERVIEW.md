@@ -288,6 +288,35 @@ Derived identifiers (canonical across docs and code):
 18. ⚠️ **Native review of the new strings** — the About link label and the
     spoken position — in JA, ZH-CN and RO, with the passes in items 9 and 13.
 
+### v1.3.0 — maintenance mode, Firefox and Edge (added 2026-11-18)
+
+19. ⚠️ **Pin the maintenance announcement** (Discussions #43) — the API cannot.
+20. ⚠️ **v1.3.0 to the Chrome Web Store** instead of 1.2.1, which never went
+    up: the `11 §5` pass with the **1.2.0 → 1.3.0 upgrade over an existing
+    profile**, then the Chrome package from the Release (`13 §1b`). The CWS
+    listing text may keep its Chrome wording; it is the Chrome store.
+21. ⚠️ **The first Firefox Add-ons version, by hand** (`13 §8`): the `11 §5`
+    Firefox section on a real Firefox 140+, then the Developer Hub upload of
+    the Firefox package **and** the sources archive, desktop only, with
+    `BUILD.md` in the notes to reviewers. AMO's upload validator report is the
+    first outside check of the package.
+22. ⚠️ **The first Edge Add-ons submission, by hand** (`13 §9`): a Partner
+    Center account, the `11 §5` Edge items — above all a profile **signed in
+    with sync on** (`08 §10`, unverified) — then the Chrome package.
+23. ⚠️ **Store automation, when wanted** (`12 §3`): the three environments,
+    each with a required reviewer, deployments limited to `v*` tags, and its
+    secrets (Chrome: API v2 service
+    account; AMO: JWT pair; Edge: API key + Client ID, renewed every 72 days),
+    then the `*_AUTOPUBLISH` variables.
+24. ⚠️ **After the listings go live**: their URLs for the README and the
+    About link (`06 §3.5` — Edge's needs its listing id), and the AMO/Edge
+    badges.
+25. ⚠️ **Evidence for the Firefox fake** (`11 §4`): a sanitized `getTree()`
+    dump from a real Firefox 140+ profile, committed as a fixture the fake is
+    checked against; and a Firefox column in `11 §6`'s parse timing.
+26. ⚠️ **Native review** of the strings 1.3.0 added or changed (`07`) in JA,
+    ZH-CN and RO, and of the store-listing blocks for AMO and Edge.
+
 ## 11. Reading order
 
 For humans: this file → `15_ROADMAP.md` → the rest as needed.

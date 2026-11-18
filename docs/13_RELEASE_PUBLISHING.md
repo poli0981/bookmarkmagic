@@ -301,6 +301,9 @@ can only add versions to an add-on that exists):
    Node.js 26 and npm 11 (the sources archive drops `.nvmrc`), `npm ci`,
    `npm run zip:firefox`, the package lands in `.output/`. Reviewers diff their
    build against the upload, file by file.
+   Checked 2026-11-18: the sources archive, unpacked into an empty folder,
+   `npm ci --ignore-scripts`, `wxt prepare`, `npm run build:firefox`, rebuilt
+   every one of the package's 19 files byte for byte.
 5. Listing: from `store/listing.<lang>.md`'s **AMO** block — name, summary
    (≤ 250 characters), description, category *Bookmarks*, licence *GNU General
    Public License v3.0* (the code is GPL-3.0-or-later), privacy policy
