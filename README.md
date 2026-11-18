@@ -13,8 +13,9 @@
 Move your bookmarks between browsers the simple way: with a file. No account,
 no cloud sync, 100% offline.
 
-A Chrome (MV3) extension for importing, exporting and editing bookmarks and
-folder trees. English · Tiếng Việt · 日本語 · 简体中文 · Română.
+A browser extension (Manifest V3) for importing, exporting and editing
+bookmarks and folder trees — for Chrome and the other Chromium browsers, and,
+since 1.3.0, for Firefox. English · Tiếng Việt · 日本語 · 简体中文 · Română.
 
 ## Project status
 
@@ -72,11 +73,11 @@ This is the whole point of the project, so it is worth being precise.
 
 - **No network access at all.** Not analytics, not telemetry, not update pings.
   There is no server, and the code makes no network calls. The browser backs
-  that up: the extension's content security policy makes Chrome refuse fetch,
-  XHR, WebSocket, EventSource and beacon requests, and remote images, fonts,
-  media and frames. On top of that, `npm run check:manifest` scans the shipped
-  bundle for network APIs (WebRTC included, which no CSP directive covers) and
-  `npm run guard` scans the source.
+  that up: the extension's content security policy — the same in Chrome, Edge
+  and Firefox — makes the browser refuse fetch, XHR, WebSocket, EventSource and
+  beacon requests, and remote images, fonts, media and frames. On top of that,
+  `npm run check:manifest` scans both shipped packages for network APIs (WebRTC
+  included, which no CSP directive covers) and `npm run guard` scans the source.
 - **Exactly two permissions**: `bookmarks` and `storage`. No host permissions,
   no content scripts, no background worker. Two gates enforce it: a unit test
   over `wxt.config.ts`, and `npm run check:manifest`, which CI runs against the
@@ -98,27 +99,40 @@ Full policy: [`legal/PRIVACY.md`](legal/PRIVACY.md).
 ## Honest limitations
 
 - Favicons cannot be imported — the bookmarks API has no favicon field.
-- Imported bookmarks get today's date. Chrome does not let an extension set a
+- Imported bookmarks get today's date. Browsers do not let an extension set a
   bookmark's original creation date. Your **exported** files keep the real ones.
+- **Firefox separators are not kept.** They show in the Edit tab as lines, but
+  no file BookmarkMagic writes can hold one: exports and backups leave them out,
+  imports skip the ones a file holds and say how many, and Replace — which
+  deletes them with everything else — tells you so before it starts.
+- Firefox refuses bookmark addresses longer than 65,536 characters (they are
+  skipped, and counted) and shortens titles longer than 4,096.
 - CSV is a flattened view: empty folders and "which folder is the toolbar" are
   not preserved. Use HTML or JSON for a faithful backup.
 - Markdown is share-only — BookmarkMagic cannot read it back.
 
 ## Install
 
-From the Chrome Web Store: [here](https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg)
+| Browser | Where | Requires |
+|---|---|---|
+| Chrome, Brave, Vivaldi, Opera | [Chrome Web Store](https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg) | Chrome 136 or later (April 2025), or a Chromium browser of the same vintage |
+| Microsoft Edge | Edge Add-ons — **not listed yet**; until it is, Edge installs from the Chrome Web Store link above | Edge 136 or later |
+| Firefox (desktop) | Firefox Add-ons — **not listed yet**; the link will be here when it is | Firefox 140 or later. Firefox for Android has no bookmarks API for extensions |
 
-Requires Chrome 136 or later (April 2025), or any Chromium browser of the same
-vintage — Edge, Brave, Vivaldi, Opera. On an older browser the store keeps the
-version you already have and simply stops updating it.
+On an older browser the store keeps the version you already have and simply
+stops updating it.
 
-From source (Node.js 26):
+Each [GitHub Release](https://github.com/poli0981/bookmarkmagic/releases) carries
+the exact packages sent to the stores, with `SHA256SUMS.txt`. Firefox only
+installs add-ons Mozilla has signed, so its `-firefox.zip` there is for
+checking the store build, not for installing.
+
+From source (Node.js 26) — [`BUILD.md`](BUILD.md) has the details:
 
 ```bash
-npm ci && npm run build
+npm ci && npm run build            # Chromium: load .output/chrome-mv3/ at chrome://extensions (Developer mode)
+npm run build:firefox              # Firefox: about:debugging → Load Temporary Add-on → .output/firefox-mv3/manifest.json
 ```
-
-Then load `.output/chrome-mv3/` at `chrome://extensions` with Developer mode on.
 
 ## Development
 
@@ -205,5 +219,5 @@ questions: copyright@poli0981.dev.
 The BookmarkMagic name and icon identify this project. The GPL lets anyone fork
 the code; it does not let a fork present itself as this project.
 
-Not affiliated with or endorsed by Google, Chrome, Mozilla, Firefox or any
-browser vendor. Browser names are trademarks of their respective owners.
+Not affiliated with or endorsed by Google, Chrome, Mozilla, Firefox,
+Microsoft, Edge or any browser vendor. Browser names are trademarks of their respective owners.

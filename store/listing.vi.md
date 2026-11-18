@@ -55,3 +55,32 @@ https://github.com/poli0981/bookmarkmagic
 
 Lưu ý: các tài liệu pháp lý chỉ có bản tiếng Anh (`docs/14`), nên URL chính sách
 riêng tư giống hệt bản EN.
+
+## Firefox Add-ons và Microsoft Edge Add-ons (từ v1.3.0)
+
+Dùng phần mô tả ở trên, thay hai gạch đầu dòng có nhắc Chrome bằng hai dòng sau — trên Firefox và Edge, viết như cũ sẽ không đúng (Edge cũng từ chối listing tự giới thiệu là tiện ích Chrome):
+
+```
+• Nhập tệp bookmark (HTML, JSON, CSV) — kể cả tệp "Bookmarks" trong thư mục
+  hồ sơ của trình duyệt Chromium (Chrome, Edge, Brave…) và bản sao lưu JSON
+  của Firefox — và xem trước đầy đủ trước khi ghi bất cứ thứ gì: số lượng,
+  thư mục và mục trùng lặp.
+```
+
+```
+• Bookmark được nhập vào sẽ mang ngày hôm nay — trình duyệt không cho phép tiện
+  ích đặt lại ngày tạo gốc của một bookmark. Các tệp bạn xuất ra vẫn giữ ngày thật.
+```
+
+Riêng Firefox Add-ons, thêm vào phần GIỚI HẠN:
+
+```
+• Đường phân cách của Firefox không được giữ: tệp xuất và bản sao lưu bỏ qua
+  chúng, và chế độ Thay thế sẽ xóa chúng (có báo trước).
+```
+
+**Firefox Add-ons:** tóm tắt = phần tóm tắt ở trên · danh mục *Bookmarks* ·
+giấy phép *GNU General Public License v3.0* · chỉ Firefox (máy tính) · cùng
+URL chính sách quyền riêng tư.
+
+**Edge Add-ons:** danh mục *Productivity* · cùng URL chính sách quyền riêng tư.

@@ -4,13 +4,13 @@
 
 | Version | Supported |
 |---|---|
-| The latest version published on the Chrome Web Store | ✅ |
+| The latest version published on the Chrome Web Store, Firefox Add-ons or Microsoft Edge Add-ons | ✅ |
 | Anything older | ❌ |
 
 There is no back-porting, and there is nothing for you to do to stay current:
-Chrome auto-updates extensions once a new version passes store review. You can
-see which version you are running in the extension's **About** tab, or on
-`chrome://extensions`.
+your browser updates extensions once a new version passes store review. You
+can see which version you are running in the extension's **About** tab, on
+`chrome://extensions`, or on `about:addons` in Firefox.
 
 ## Reporting a vulnerability
 

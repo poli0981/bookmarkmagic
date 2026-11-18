@@ -12,7 +12,53 @@ version bump).
 
 ## [Unreleased]
 
-Nothing yet.
+Firefox and Microsoft Edge, and maintenance mode. Permissions are unchanged
+(`bookmarks` and `storage`), nothing is asked of you again, and on Chrome
+there is nothing to do — your browser updates itself. This version also
+carries everything listed under 1.2.1, which never reached the Chrome Web
+Store on its own.
+
+### Added
+
+- **Firefox** (desktop, 140 or later), with a package of its own for Firefox
+  Add-ons — listing to come. The same features, the same two permissions and
+  the same no-network policy, which Firefox enforces just as Chrome does.
+  Firefox's **Bookmarks Menu** is a root like the others: Merge and Replace put
+  entries back where they came from, and the loose entries of a Firefox
+  export go into the menu, as Firefox itself does with them.
+- **Microsoft Edge Add-ons** — the Chrome package, unchanged; listing to come.
+  Until then Edge installs from the Chrome Web Store.
+- **Firefox separators** show in the Edit tab as lines. Nothing acts on them:
+  they are not focused, searched, counted, sorted across, or offered as
+  duplicates of each other. Sort A→Z sorts each run between two separators on
+  its own.
+- Replace on Firefox says how many separators it will delete — no file
+  BookmarkMagic writes can keep one, so they do not come back with the backup.
+- An import says how many separators the file held, and on Firefox skips — and
+  counts — any address longer than the 65,536 characters Firefox accepts,
+  before anything is written.
+
+### Changed
+
+- The About tab's store link is now **"Store listing"** and opens the store
+  your copy came from: the Chrome Web Store for the Chrome Web Store's copy,
+  Firefox Add-ons in Firefox, and otherwise the README's list of stores.
+- Sentences that blamed Chrome for what every browser does now say "the
+  browser" — "The browser does not let an extension set a bookmark's original
+  date" — in all five languages; the note about skipped Firefox smart
+  bookmarks no longer calls them dead links.
+- Copy diagnostics names the browser and its version (`"browser": "Firefox
+  160"`) instead of only Chrome's.
+- The project is in **maintenance mode** ([`MAINTENANCE.md`](MAINTENANCE.md)):
+  fixes, accessibility, translations, security and dependency updates, and
+  features that are already on the roadmap.
+
+### Packages
+
+Each GitHub Release now carries three files: `…-chrome.zip` (the Chrome Web
+Store and Edge Add-ons), `…-firefox.zip` and `…-sources.zip` (what Firefox
+Add-ons reviews), with `SHA256SUMS.txt` over all three. [`BUILD.md`](BUILD.md)
+explains how to rebuild them.
 
 ## [1.2.1] — 2026-11-10
 

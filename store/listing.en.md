@@ -56,3 +56,33 @@ https://github.com/poli0981/bookmarkmagic
 `https://github.com/poli0981/bookmarkmagic/blob/main/legal/PRIVACY.md`
 
 **Distribution:** Public, all regions.
+
+## Firefox Add-ons and Microsoft Edge Add-ons (since v1.3.0)
+
+The description above, with the two bullets that name Chrome replaced by these — on Firefox and Edge they would not be true as written (Edge also refuses a listing that sells itself as a Chrome extension):
+
+```
+• Import bookmark files (HTML, JSON, CSV) — including the "Bookmarks" file
+  from the profile folder of a Chromium browser (Chrome, Edge, Brave…) and
+  Firefox JSON backups — with a full preview before anything is written:
+  counts, folders and duplicates first.
+```
+
+```
+• Imported bookmarks get today's date — browsers don't let extensions set a
+  bookmark's original creation date. Your exported files keep the real dates.
+```
+
+On Firefox Add-ons only, add to LIMITATIONS:
+
+```
+• Firefox separators are not kept: exports and backups leave them out, and
+  Replace deletes them (it tells you first).
+```
+
+**Firefox Add-ons:** summary = the summary above (AMO allows 250 characters) ·
+category *Bookmarks* · licence *GNU General Public License v3.0* · Firefox
+(desktop) only — not Android · the same privacy-policy URL · support site: the
+repository's issues.
+
+**Edge Add-ons:** category *Productivity* · the same privacy-policy URL.

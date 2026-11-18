@@ -66,3 +66,34 @@ https://github.com/poli0981/bookmarkmagic
 
 Documentele juridice există doar în limba engleză (`docs/14`); URL-ul politicii
 de confidențialitate este același ca în versiunea în engleză.
+
+## Firefox Add-ons și Microsoft Edge Add-ons (din v1.3.0)
+
+Descrierea de mai sus, cu cele două puncte care numesc Chrome înlocuite de acestea — în Firefox și Edge n-ar fi adevărate așa cum sunt scrise (iar Edge refuză o pagină care se prezintă drept extensie Chrome):
+
+```
+• Importă fișiere de marcaje (HTML, JSON, CSV) — inclusiv fișierul „Bookmarks”
+  din dosarul profilului unui browser Chromium (Chrome, Edge, Brave…) și copiile
+  de rezervă JSON din Firefox — cu o previzualizare completă înainte de a scrie
+  ceva: numărul de marcaje, dosarele și duplicatele, de la început.
+```
+
+```
+• Marcajele importate primesc data de azi — browserele nu permit extensiilor să
+  seteze data originală de creare a unui marcaj. Fișierele exportate păstrează
+  datele reale.
+```
+
+Doar pentru Firefox Add-ons, adăugați la LIMITĂRI:
+
+```
+• Separatoarele din Firefox nu se păstrează: exporturile și copiile de rezervă le
+  omit, iar înlocuirea le șterge (vă anunță înainte).
+```
+
+**Firefox Add-ons:** rezumat = rezumatul de mai sus · categoria *Bookmarks* ·
+licența *GNU General Public License v3.0* · doar Firefox (desktop) · același
+URL al politicii de confidențialitate.
+
+**Edge Add-ons:** categoria *Productivity* · același URL al politicii de
+confidențialitate.
