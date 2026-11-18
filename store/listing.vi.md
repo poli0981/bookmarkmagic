@@ -56,9 +56,9 @@ https://github.com/poli0981/bookmarkmagic
 Lưu ý: các tài liệu pháp lý chỉ có bản tiếng Anh (`docs/14`), nên URL chính sách
 riêng tư giống hệt bản EN.
 
-## Firefox Add-ons và Microsoft Edge Add-ons (từ v1.3.0)
+## Firefox Add-ons (từ v1.3.0)
 
-Dùng phần mô tả ở trên, thay hai gạch đầu dòng có nhắc Chrome bằng hai dòng sau — trên Firefox và Edge, viết như cũ sẽ không đúng (Edge cũng từ chối listing tự giới thiệu là tiện ích Chrome):
+Dùng phần mô tả ở trên, thay hai gạch đầu dòng có nhắc Chrome bằng hai dòng sau — trên Firefox, viết như cũ sẽ không đúng:
 
 ```
 • Nhập tệp bookmark (HTML, JSON, CSV) — kể cả tệp "Bookmarks" trong thư mục
@@ -82,5 +82,55 @@ Riêng Firefox Add-ons, thêm vào phần GIỚI HẠN:
 **Firefox Add-ons:** tóm tắt = phần tóm tắt ở trên · danh mục *Bookmarks* ·
 giấy phép *GNU General Public License v3.0* · chỉ Firefox (máy tính) · cùng
 URL chính sách quyền riêng tư.
+
+## Microsoft Edge Add-ons (từ v1.3.0)
+
+Một bản mô tả riêng, dán nguyên khối. Chính sách nhà phát triển của Edge (1.1.2)
+không cho listing nhắc đến trình duyệt khác, và Partner Center cảnh báo khi mô
+tả có tên trình duyệt nào — ngày 2026-11-18 nó đã báo vì chữ "Firefox". Vì vậy
+bản này không nêu tên trình duyệt nào ngoài Edge: gạch về nhập tệp mô tả tệp
+theo đúng bản chất của nó, gạch về xuất tệp ghi "mọi trình duyệt phổ biến" thay
+cho danh sách bảy cái tên. `tests/unit/store-listing.test.ts` báo lỗi nếu một
+cái tên quay lại.
+
+```
+Chuyển bookmark giữa các trình duyệt theo cách đơn giản nhất: bằng một tệp.
+Không tài khoản. Không đồng bộ đám mây. Hoàn toàn offline.
+
+TIỆN ÍCH NÀY LÀM GÌ
+• Nhập tệp bookmark (HTML, JSON, CSV) — kể cả tệp "Bookmarks" mà Edge và các
+  trình duyệt tương tự lưu trong thư mục hồ sơ, cùng bản sao lưu bookmark dạng
+  JSON — và xem trước đầy đủ trước khi ghi bất cứ thứ gì: số lượng, thư mục
+  và mục trùng lặp.
+• Chọn cách nhập: vào một thư mục mới theo ngày (mặc định an toàn), gộp vào
+  các thư mục bạn đã có, hoặc thay thế toàn bộ (cho biết chính xác những gì
+  sẽ bị xóa và lưu bản sao lưu an toàn trước).
+• Có thể bỏ qua các liên kết bạn đã có.
+• Xuất toàn bộ — hoặc chỉ những thư mục bạn chọn — ra HTML (tệp bookmark
+  chuẩn mà mọi trình duyệt phổ biến đều nhập được), JSON, CSV hoặc Markdown.
+• Chỉnh sửa cây bookmark: tìm kiếm, đổi tên, kéo thả để di chuyển hoặc đổi
+  thứ tự, sắp xếp thư mục A→Z, tạo thư mục, xoá và tìm liên kết trùng lặp.
+
+RIÊNG TƯ NGAY TỪ THIẾT KẾ
+• Chạy hoàn toàn trên máy bạn. Không máy chủ, không phân tích, không theo dõi.
+• Chỉ hai quyền: "bookmarks" (chính là mục đích của tiện ích) và "storage"
+  (thiết lập của bạn). Không gì khác.
+• Miễn phí & mã nguồn mở (GPL-3.0) — bạn có thể đọc mã trên GitHub.
+
+NGÔN NGỮ
+English · Tiếng Việt · 日本語 · 简体中文 · Română
+
+GIỚI HẠN (NÓI THẲNG)
+• Không thể nhập favicon — API bookmark của trình duyệt không có trường
+  favicon.
+• Bookmark được nhập vào sẽ mang ngày hôm nay — trình duyệt không cho phép tiện
+  ích đặt lại ngày tạo gốc của một bookmark. Các tệp bạn xuất ra vẫn giữ ngày
+  thật.
+• CSV là dạng phẳng: thư mục rỗng và thông tin "thư mục nào là thanh bookmark"
+  sẽ không được giữ lại. Hãy dùng HTML hoặc JSON nếu muốn sao lưu trung thực.
+
+Mã nguồn, nơi báo lỗi & chính sách riêng tư:
+https://github.com/poli0981/bookmarkmagic
+```
 
 **Edge Add-ons:** danh mục *Productivity* · cùng URL chính sách quyền riêng tư.

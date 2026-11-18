@@ -67,9 +67,9 @@ https://github.com/poli0981/bookmarkmagic
 Documentele juridice există doar în limba engleză (`docs/14`); URL-ul politicii
 de confidențialitate este același ca în versiunea în engleză.
 
-## Firefox Add-ons și Microsoft Edge Add-ons (din v1.3.0)
+## Firefox Add-ons (din v1.3.0)
 
-Descrierea de mai sus, cu cele două puncte care numesc Chrome înlocuite de acestea — în Firefox și Edge n-ar fi adevărate așa cum sunt scrise (iar Edge refuză o pagină care se prezintă drept extensie Chrome):
+Descrierea de mai sus, cu cele două puncte care numesc Chrome înlocuite de acestea — în Firefox n-ar fi adevărate așa cum sunt scrise:
 
 ```
 • Importă fișiere de marcaje (HTML, JSON, CSV) — inclusiv fișierul „Bookmarks”
@@ -94,6 +94,60 @@ Doar pentru Firefox Add-ons, adăugați la LIMITĂRI:
 **Firefox Add-ons:** rezumat = rezumatul de mai sus · categoria *Bookmarks* ·
 licența *GNU General Public License v3.0* · doar Firefox (desktop) · același
 URL al politicii de confidențialitate.
+
+## Microsoft Edge Add-ons (din v1.3.0)
+
+O descriere proprie, lipită întreagă. Politica pentru dezvoltatori a Edge (1.1.2)
+nu permite ca o listare să menționeze alte browsere, iar Partner Center
+avertizează la orice nume de browser din descriere (a făcut-o pe 2026-11-18,
+pentru „Firefox”). Așadar textul acesta nu numește niciun browser în afară de
+Edge; `tests/unit/store-listing.test.ts` eșuează dacă un nume revine.
+
+```
+Mutați marcajele între browsere în cel mai simplu mod: cu un fișier. Fără cont.
+Fără sincronizare în cloud. 100% offline.
+
+CE FACE
+• Importă fișiere de marcaje (HTML, JSON, CSV) — inclusiv fișierul „Bookmarks”
+  pe care Edge și browserele similare îl păstrează în dosarul profilului, precum
+  și copiile de rezervă JSON ale marcajelor — cu o previzualizare completă
+  înainte de a scrie ceva: numărul de marcaje, dosarele și duplicatele, de la
+  început.
+• Alegeți cum se face importul: într-un dosar nou cu dată (varianta sigură,
+  implicită), prin îmbinare cu dosarele pe care le aveți deja sau prin
+  înlocuirea completă (arată exact ce se va șterge și salvează mai întâi o
+  copie de rezervă de siguranță).
+• Poate omite linkurile pe care le aveți deja.
+• Exportă tot — sau doar dosarele alese — în HTML (fișierul standard de
+  marcaje, pe care îl importă toate browserele principale), JSON, CSV sau
+  Markdown.
+• Editează arborele de marcaje: căutare, redenumire, mutare și reordonare
+  prin tragere, sortarea unui dosar A→Z, dosare noi, ștergere și găsirea
+  linkurilor duplicate.
+
+CONFIDENȚIALITATE PRIN DESIGN
+• Funcționează în întregime pe dispozitivul dumneavoastră. Fără servere, fără
+  statistici, fără urmărire.
+• Doar două permisiuni: „bookmarks” (rostul extensiei) și „storage” (setările
+  dumneavoastră). Nimic altceva.
+• Gratuit și open source (GPL-3.0) — puteți citi codul pe GitHub.
+
+LIMBI
+English · Tiếng Việt · 日本語 · 简体中文 · Română
+
+LIMITĂRI (CU SINCERITATE)
+• Pictogramele site-urilor nu pot fi importate — API-ul pentru marcaje al
+  extensiilor nu are un câmp pentru ele.
+• Marcajele importate primesc data de azi — browserele nu permit extensiilor să
+  seteze data originală de creare a unui marcaj. Fișierele exportate păstrează
+  datele reale.
+• CSV este o vedere aplatizată: dosarele goale și „care dosar este bara de
+  marcaje” nu se păstrează. Pentru o copie de rezervă fidelă, folosiți HTML sau
+  JSON.
+
+Cod sursă, raportarea problemelor și politica de confidențialitate:
+https://github.com/poli0981/bookmarkmagic
+```
 
 **Edge Add-ons:** categoria *Productivity* · același URL al politicii de
 confidențialitate.

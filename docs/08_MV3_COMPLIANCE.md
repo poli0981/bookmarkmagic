@@ -281,9 +281,18 @@ browser_specific_settings: {
   `minimum_chrome_version` included (Edge versions follow Chromium's, so
   136 means Edge 136). The zip uploaded to Edge is the same Release asset as
   the Chrome one, with the same checksum.
-- Partner Center rejects a listing whose name or description sells it as a
-  Chrome extension; the Edge listing copy (`13 §3`) is reworded to name
-  Chromium-based browsers where it has to mention Chrome's file format.
+- **The listing names no other browser.** Edge's developer policy (1.1.2)
+  says an extension "must not reference other browsers", and Partner Center
+  warns on any browser name in a description — on 2026-11-18 it flagged
+  "Firefox" in the first Edge copy, which was the Chrome Web Store
+  description with two bullets swapped and still listed seven browsers. The
+  Edge copy in `store/listing.*.md` is now a complete description of its own:
+  the profile `Bookmarks` file is the one "Edge and similar browsers keep",
+  HTML export is the file "every major browser can import", and
+  `tests/unit/store-listing.test.ts` fails on a name pasted back in. The same
+  policy (1.5.2) asks that the privacy policy refer "primarily" to Edge;
+  `legal/PRIVACY.md` names all three stores. That is a *should*, so it is left
+  as it is unless review raises it.
 - Edge's bookmarks API is Chromium's: the same roots ("Favorites bar", "Other
   favorites"), `folderType` included. Whether Edge marks the roots of a
   signed-in, syncing profile with `syncing: true` — which would leave no

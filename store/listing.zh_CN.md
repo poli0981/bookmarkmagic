@@ -55,9 +55,9 @@ https://github.com/poli0981/bookmarkmagic
 
 法律文件仅有英文版本（`docs/14`），隐私政策 URL 与英文版相同。
 
-## Firefox Add-ons 与 Microsoft Edge Add-ons（v1.3.0 起）
+## Firefox Add-ons（v1.3.0 起）
 
-使用上面的描述，并把提到 Chrome 的两条换成下面两条——原文在 Firefox 和 Edge 上并不成立（Edge 也不接受把自己介绍为 Chrome 扩展程序的页面）：
+使用上面的描述，并把提到 Chrome 的两条换成下面两条——原文在 Firefox 上并不成立：
 
 ```
 • 导入书签文件（HTML、JSON、CSV）——包括 Chromium 内核浏览器（Chrome、Edge、
@@ -79,5 +79,48 @@ https://github.com/poli0981/bookmarkmagic
 
 **Firefox Add-ons：** 摘要 = 上面的摘要 · 类别 *Bookmarks* · 许可证
 *GNU General Public License v3.0* · 仅限 Firefox（桌面版）· 相同的隐私政策 URL。
+
+## Microsoft Edge Add-ons（v1.3.0 起）
+
+使用一份单独的完整描述，整段粘贴。Edge 的开发者政策（1.1.2）规定商品页面不得提及
+其他浏览器，描述中出现浏览器名称时 Partner Center 也会发出警告（2026-11-18 曾因
+“Firefox”而警告）。因此这份描述除 Edge 外不提任何浏览器；若有名称被加回，
+`tests/unit/store-listing.test.ts` 会失败。
+
+```
+在浏览器之间转移书签，最简单的方式就是用一个文件。无需账户，没有云同步，
+100% 离线运行。
+
+功能
+• 导入书签文件（HTML、JSON、CSV）——包括 Edge 等浏览器保存在个人资料文件夹中的
+  “Bookmarks”文件，以及 JSON 格式的书签备份。写入任何内容之前都会先完整预览：
+  数量、文件夹和重复项一目了然。
+• 自选导入方式：放入一个带日期的新文件夹（安全的默认选项）、合并到您已有的
+  文件夹，或全部替换（会准确显示将删除的内容，并先保存一份安全备份）。
+• 可以跳过您已有的链接。
+• 导出全部书签，或只导出您选择的文件夹，格式可选 HTML（各主流浏览器都能导入的
+  标准书签文件）、JSON、CSV 或 Markdown。
+• 编辑书签树：搜索、重命名、拖动以移动或重新排序、将文件夹按 A→Z 排序、
+  新建文件夹、删除，以及查找重复的链接。
+
+隐私至上的设计
+• 完全在您的设备上运行。没有服务器，没有分析，没有跟踪。
+• 只有两项权限：“bookmarks”（核心功能）和“storage”（保存您的设置）。
+  仅此而已。
+• 免费且开源（GPL-3.0）——可在 GitHub 上查看代码。
+
+语言
+English · Tiếng Việt · 日本語 · 简体中文 · Română
+
+局限（坦诚说明）
+• 无法导入网站图标——扩展程序的书签 API 没有网站图标字段。
+• 导入的书签日期为今天——浏览器不允许扩展程序设置书签的原始创建日期。
+  您导出的文件会保留真实日期。
+• CSV 是扁平化的视图：空文件夹以及“哪个文件夹是书签栏”都不会保留。
+  如需完整备份，请使用 HTML 或 JSON。
+
+源代码、问题跟踪和隐私政策：
+https://github.com/poli0981/bookmarkmagic
+```
 
 **Edge Add-ons：** 类别 *Productivity* · 相同的隐私政策 URL。

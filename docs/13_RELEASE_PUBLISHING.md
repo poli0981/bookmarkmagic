@@ -333,10 +333,11 @@ Still ship the fix forward.
    Edge marks syncing roots).
 3. Partner Center → Edge → **Create new extension** → upload the Release's
    `bookmarkmagic-X.Y.Z-chrome.zip` — the Chrome package, unchanged.
-4. Listing from `store/listing.<lang>.md`'s **Edge** block (it avoids selling
-   the extension as a Chrome one, `08 §10`); category *Productivity*; privacy
-   answers as `08 §5`; privacy policy URL as above; screenshots from
-   `store/screenshots/`.
+4. Listing from `store/listing.<lang>.md`'s **Microsoft Edge Add-ons**
+   section: a complete description of its own, pasted whole, that names no
+   browser but Edge (Edge's policy 1.1.2 — Partner Center warns on any other
+   browser's name, `08 §10`); category *Productivity*; privacy answers as
+   `08 §5`; privacy policy URL as above; screenshots from `store/screenshots/`.
 5. Submit; record the outcome in `15`. Note the **Product ID** on the
    extension's overview page — `EDGE_PRODUCT_ID` — and the listing URL, which
    the About link and the README can then use (`06 §3.5`).
