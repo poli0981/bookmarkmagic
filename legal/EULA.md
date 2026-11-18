@@ -1,6 +1,6 @@
 # End User License Agreement — BookmarkMagic
 
-Terms version 1 · Effective 2026-07-26 · Last updated 2026-10-29
+Terms version 1 · Effective 2026-07-26 · Last updated 2026-11-18
 
 Copyright © 2026 skullmute ([poli0981](https://github.com/poli0981)).
 
@@ -17,8 +17,9 @@ Copyright © 2026 skullmute ([poli0981](https://github.com/poli0981)).
    allow one, and your rights under the GPL do not depend on it.
 4. **Your data.** The software processes bookmark data locally on your device
    only, and sends nothing anywhere (see PRIVACY.md).
-5. **Updates.** Updates are delivered via the Chrome Web Store and may change
-   functionality. Material legal changes trigger re-acceptance in-app.
+5. **Updates.** Updates are delivered through the store you installed the
+   Extension from — the Chrome Web Store, Firefox Add-ons or Microsoft Edge
+   Add-ons — and may change functionality. Material legal changes trigger re-acceptance in-app.
 6. **Contact.** Questions about these terms: **legal@poli0981.dev**. Formal
    copyright infringement (DMCA) notices: **dmca@poli0981.dev**.
 

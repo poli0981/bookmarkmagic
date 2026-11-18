@@ -84,6 +84,16 @@ winning:
 | Bookmarks Bar | `PERSONAL_TOOLBAR_FOLDER="true"` | every browser |
 | Other Bookmarks | `UNFILED_BOOKMARKS_FOLDER="true"` | Firefox (its own exporter writes it), and us |
 | Mobile Bookmarks | `MOBILE_BOOKMARKS_FOLDER="true"` | us — importers ignore attributes they do not know |
+| Bookmarks Menu (Firefox) | *none* — its contents are written **loose at the top level** | every browser, the way Firefox's own exporter writes it (since v1.3.0) |
+
+The Bookmarks Menu has no attribute of its own in Firefox's format: Firefox
+exports the menu's entries as the file's top level and imports loose
+top-level entries back into the menu. A BM JSON `root: "menu"` folder (§2)
+is therefore written to HTML by unwrapping it — its children appear at the
+top level, before the marked roots — and reading that file in Firefox puts
+them back where they were (`03 §1`). Chromium has no menu root, so in Chrome
+or Edge those entries land in Other Bookmarks, as they do from Firefox's own
+export.
 
 ### 1.2 Parse tolerance (import)
 
@@ -116,7 +126,11 @@ Must accept, with a warning where noted:
   space in the host) → skipped, `INVALID_URL`, because `chrome.bookmarks.create`
   rejects it mid-write, after a Replace has already cleared the tree; Firefox
   `place:` smart bookmarks → skipped, `PLACE_QUERIES_SKIPPED` (Chrome's own
-  importer drops them too; in Chrome they are dead links). `javascript:`,
+  importer drops them too; in Chrome they are dead links, and on Firefox
+  BookmarkMagic still does not write them — the notice says "skipped", not
+  "dead", since v1.3.0). On Firefox, an address longer than 65 536 characters
+  → skipped before planning, `URL_TOO_LONG` (applied after parsing, with the
+  limit the browser layer passes in, so every format is covered by one rule). `javascript:`,
   `data:` and `file:` addresses are kept verbatim (`09` T3). Fixture:
   `weird/invalid-urls.html`.
 - **Empty titles are kept empty** (since v1.1.0), counted as `EMPTY_TITLE`.
@@ -146,8 +160,11 @@ Must accept, with a warning where noted:
   The older `chrome-131-export.html` wraps them in an `Other bookmarks` folder
   that Chrome itself never writes; it is kept as a third-party shape, not as a
   record of Chrome.
-- `<HR>` separator elements (Firefox) → skipped, no warning. These are
-  *elements*, so "unknown attributes ignored" does not cover them.
+- `<HR>` separator elements (Firefox) → skipped and **counted**,
+  `SEPARATORS_SKIPPED` (no warning until v1.3.0; once Firefox users could
+  import, a silent loss stopped being acceptable). These are *elements*, so
+  "unknown attributes ignored" does not cover them. The file model has no
+  separator: none of the four formats BookmarkMagic writes carries one.
 - Empty folders → preserved.
 - **Root list selection.** Do **not** pick a single root `<DL>` —
   `document.querySelector('dl')` and "the outermost `<DL>`" are both lossy.
@@ -214,9 +231,9 @@ not an anomaly, and must not raise a warning (`05 §4`).
   omit `children` (⇒ empty). Unknown extra keys are ignored on import
   (forward compatibility); `version > 1` → warning "newer file, best-effort";
   an absent `version` is read as 1.
-- `"root": "other" | "mobile"` (since v1.1.0, folders only, never beside
-  `"toolbar"`) marks a folder that IS that browser root — the JSON form of
-  §1.1's markers. Additive: v1 readers ignore unknown keys, so the version stays
+- `"root": "other" | "mobile" | "menu"` (since v1.1.0; `"menu"`, Firefox's
+  Bookmarks Menu, since v1.3.0; folders only, never beside `"toolbar"`) marks a
+  folder that IS that browser root — the JSON form of §1.1's markers. Additive: v1 readers ignore unknown keys, so the version stays
   1, and a 1.0.x reader simply nests as before.
 - **Legacy backups.** A 1.0.x safety backup has exactly the shape of a Chromium
   profile — `generator` `BookmarkMagic 1.0.x`, no `root` keys, three top-level
@@ -309,7 +326,9 @@ item — `15`). One line of `JSON.stringify` output:
 ```
 
 - Nodes: `type` `text/x-moz-place` (bookmark: `title`, `uri`), `…-container`
-  (folder: `title`, `children`), `…-separator` (skipped silently, as `<HR>` is).
+  (folder: `title`, `children`), `…-separator` (skipped and counted,
+  `SEPARATORS_SKIPPED`, as `<HR>` is — so a backup and its HTML twin still
+  give the same result, which the parity rule requires).
   A node with no `type` falls back to `typeCode` 1/2/3. Dates are **PRTime** —
   integer microseconds since the Unix epoch — converted explicitly and
   truncated, as Firefox's own HTML export does (`microsToSeconds`).

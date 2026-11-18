@@ -68,8 +68,10 @@ Three jobs. The two whose names branch protection requires (§5) are
   `a11y_*` checks a gate, `10 §3` — then the TS 7 `tsc`), `knip`, `coverage` (`11 §1` thresholds),
   `guard` (`08 §3`), `check:licenses` (every licence in the lockfile, `09 §3.2`),
   `npm audit --omit=dev --audit-level=low` (the
-  zero-runtime-dependencies claim, `09 T5`), `build`, `check:manifest`. The last
-  two exist because the unit test over `wxt.config.ts` proves what we *asked*
+  zero-runtime-dependencies claim, `09 T5`), `build`, `check:manifest`, and since
+  v1.3.0 `build:firefox` + `check:manifest -- --browser firefox` — the second
+  package, held to its own key set (`08 §1`, `08 §9`). The build/check pairs
+  exist because the unit test over `wxt.config.ts` proves what we *asked*
   for and only the built manifest proves what WXT *emitted* — a dev build of
   the same config carries `tabs`/`scripting`/`host_permissions`.
 - **`windows` — "Windows smoke (guard + unit tests)".** Not required. The owner
@@ -116,13 +118,14 @@ Standalone, **not** the ops reusable: the reusable's `release` job only does
 by `09 §5`), performs no store submission, and exposes no `outputs:`, so a
 caller cannot reference the zip it built.
 
-Four jobs, least privilege first (split 2026-10-28):
+Jobs, least privilege first (split 2026-10-28; the store job became three in
+v1.3.0):
 
 | Job | Token | Does |
 |---|---|---|
-| `build` "Gate + package" | `contents: read` | install, **every CI gate again** (a tag skips the branch triggers, and must never ship what a PR would have blocked), `zip`, `check:manifest`, the tag ↔ manifest version check, `SHA256SUMS.txt`; copies both files into a plain `dist/` and uploads that as the artifact `release-<tag>` — `upload-artifact` skips hidden paths such as `.output/` by default, which failed the first v1.1.0 tag run before any Release existed |
+| `build` "Gate + package" | `contents: read` | install, **every CI gate again** (a tag skips the branch triggers, and must never ship what a PR would have blocked), `zip` and (since v1.3.0) `zip:firefox` — the Chrome/Edge package, the Firefox package and its sources archive — `check:manifest` on both packages, the tag ↔ manifest version check on both, `SHA256SUMS.txt` over all three files, each staged by its exact name so a missing one fails the run (a glob would pass with one of three); copies both files into a plain `dist/` and uploads that as the artifact `release-<tag>` — `upload-artifact` skips hidden paths such as `.output/` by default, which failed the first v1.1.0 tag run before any Release existed |
 | `publish` "GitHub Release" | `contents: write` | downloads the artifact, `sha256sum -c` it, creates the Release with `--verify-tag` (or re-uploads to an existing one). Installs nothing and runs no repository code — the only job that ever holds a write token |
-| `store` "Publish to Chrome Web Store" | `contents: read` | only when the repo variable `CWS_AUTOPUBLISH` is `'true'`: `./node_modules/.bin/wxt submit` with the Release asset — the local binary, never `npx wxt`, which may fetch an unpinned package into an environment holding the four `CHROME_*` secrets (SonarCloud S6505/S8543) |
+| `store-chrome`, `store-firefox`, `store-edge` | `contents: read` | since v1.3.0, one job per store, each only when its own repo variable is `'true'` (`CWS_AUTOPUBLISH`, `AMO_AUTOPUBLISH`, `EDGE_AUTOPUBLISH`) and each in its own GitHub **Environment** holding only that store's secrets (§3). They install `tools/publish/` — `publish-browser-extension` and its three dependencies, from their own lockfile, scripts off — instead of the whole dev toolchain, check the downloaded files against `SHA256SUMS.txt`, and run its `publish-extension` binary. Before v1.3.0 a single `store` job ran `wxt submit` after a full `npm ci`: four Chrome secrets shared a runner with ~320 packages |
 | `announce` | `contents: read` | Discord, only when `DISCORD_ANNOUNCE` is `'true'` |
 
 Before the split, one job ran `npm ci` — every dependency's install script plus
@@ -297,23 +300,52 @@ pull requests, a weekly schedule and `workflow_dispatch`. Configuration is
   defect and switched off, with its reason, when it is a convention; it is
   never left standing to be ignored.
 
-## 3. Chrome Web Store publishing automation
+## 3. Store publishing automation (Chrome Web Store, Firefox Add-ons, Edge Add-ons)
 
-WXT ships publishing built-in: **`wxt submit`** (wrapping
-`publish-browser-extension`). One-time local setup: `npx wxt submit init`
-→ walks through creating the Google Cloud OAuth client + refresh token →
-produces the four values above → store as **repo Actions secrets**.
+Since v1.3.0 the release workflow can submit to all three stores, each step
+**off until its owner switches it on** with a repo variable. Uploaded builds
+still go through each store's review; automation removes the clicking, not the
+review.
 
-**Gating policy:**
+| Job | Gate (repo variable) | Environment | Secrets in that environment | Uploads |
+|---|---|---|---|---|
+| `store-chrome` | `CWS_AUTOPUBLISH=true` | `chrome-web-store` | `CHROME_PUBLISHER_ID`, `CHROME_EXTENSION_ID` (= the item id, `00 §9`), `CHROME_SERVICE_ACCOUNT_CLIENT_EMAIL`, `CHROME_SERVICE_ACCOUNT_PRIVATE_KEY` | the Chrome package |
+| `store-firefox` | `AMO_AUTOPUBLISH=true` | `firefox-add-ons` | `FIREFOX_EXTENSION_ID` (= the gecko id), `FIREFOX_JWT_ISSUER`, `FIREFOX_JWT_SECRET` | the Firefox package and its sources, `listed`, Firefox desktop only |
+| `store-edge` | `EDGE_AUTOPUBLISH=true` | `edge-add-ons` | `EDGE_PRODUCT_ID`, `EDGE_CLIENT_ID`, `EDGE_API_KEY` | the Chrome package |
+
+- **The tool is `publish-browser-extension`** (6.2.0 — what `wxt submit`
+  wraps), installed from `tools/publish/`'s own lockfile: four packages, not
+  the dev toolchain. A job's secrets are readable by everything on its runner
+  for the whole job (§2.5), and these can push an update to every user.
+- **One job per store**, so a store's credentials never share a runner with
+  another's, and one store refusing an upload does not stop the others.
+- **Environments** carry the secrets, not the repository, so nothing else in
+  any workflow can read them; give each one a required reviewer (the owner) to
+  approve every upload.
+- **Chrome Web Store API v2.** v1.1 — what the old `store` job's
+  client-id/secret/refresh-token secrets used — was shut down on 2026-10-15;
+  that job would have failed the day `CWS_AUTOPUBLISH` was set. v2 takes a
+  publisher id and a Google Cloud **service account** (`CHROME_API_VERSION=v2`
+  is set by the job, never left to the tool's default).
+- **AMO: the first version must be created by hand.** The API (and the tool)
+  can add a version to an add-on that exists, not create one; `13 §8`. AMO
+  JWT credentials come from addons.mozilla.org/developers/addon/api/key/.
+- **Edge: the first submission is made in Partner Center**, by hand (`13 §9`).
+  API keys (v1.1, with a Client ID) **expire every 72 days** — a scheduled
+  chore, not an incident; until rotated, `store-edge` fails and the others do
+  not.
+- **No re-run of a store job that succeeded**: every store refuses a version
+  number it has seen. Re-run only the failed job (`13 §7`).
 
 | Version | Method |
 |---|---|
-| v1.0.x | **Manual**, per the `13 §1b` runbook: download the zip from the GitHub Release (not the CI artifact — the Release asset is the one `SHA256SUMS.txt` covers) → Dashboard → Package → upload new package → submit. The original rationale was "first reviews often ask questions"; in the event the first review asked nothing. It stays manual because none of the four `CHROME_*` secrets exists yet and `CWS_AUTOPUBLISH` is unset. |
-| v1.1+ | **Automated**: the `Publish to Chrome Web Store` step in §2.3 runs after the Release succeeds, gated on the repo variable `CWS_AUTOPUBLISH=true` so it can be flipped off instantly if a review dispute is ongoing. |
+| v1.0.x–v1.2.x | Chrome Web Store by hand (`13 §1b`) — the `CHROME_*` secrets never existed. |
+| v1.3.0 | The first AMO and Edge versions **must** be uploaded by hand (`13 §8`, `13 §9`); the Chrome one by hand until the owner sets up §3's environment. |
+| later | Each store automated once its environment has its secrets and its variable is `true`; switch a variable off to stop submitting there instantly (a review dispute, a rollout to watch). |
 
-Notes: uploaded builds still go through CWS review before rollout (automation
-removes the clicking, not the review). Consider Dashboard "staged rollout"
-manually for risky releases.
+Consider a staged (percentage) rollout on the Chrome Web Store for anything
+touching the write paths — `CHROME_DEPLOY_PERCENTAGE` for the automated job,
+the dashboard otherwise.
 
 ## 4. Branch/version flow
 
@@ -359,9 +391,13 @@ means "unknown", not "not done".
 - [x] CodeQL **Default setup DISABLED** (Settings → Advanced Security) —
       confirmed 2026-07-26; `codeql.yml` uploads SARIF cleanly, which is only
       possible with it off (§2.2).
-- [ ] ⚠️ Actions secrets: the four `CHROME_*` values (after `wxt submit init`).
-      `CHROME_EXTENSION_ID` is already known — it is the published item id in
-      `00 §9`. Required before `CWS_AUTOPUBLISH` can be flipped for v1.1.
+- [ ] ⚠️ Store environments (§3), each with the owner as required reviewer and
+      only its own secrets: `chrome-web-store` (the four API v2 values;
+      `CHROME_EXTENSION_ID` is the item id in `00 §9`), `firefox-add-ons`
+      (`FIREFOX_EXTENSION_ID` = `bookmarkmagic@poli0981.dev` and the AMO JWT
+      pair), `edge-add-ons` (product id, Client ID, API key — rotate every 72
+      days). GitHub creates an environment the first time a job names it, with
+      no protection; add the reviewer and secrets in Settings → Environments.
 - [x] Actions secrets for Discord notifications — **present as of 2026-10-28:**
       `DISCORD_CI_WEBHOOK`, `RELEASES_WEBHOOK`, `REPO_WEBHOOK` (the last two under
       names the reusable does not read; `release.yml` maps them, §2.3).
@@ -374,7 +410,8 @@ means "unknown", not "not done".
       scan errors out. The owner agreed to switch it off on 2026-10-28.
 - [x] Private vulnerability reporting **enabled** (verified 2026-10-28 via the
       API) — `SECURITY.md` and the issue chooser send reporters there first.
-- [ ] ⚠️ Repo variable `CWS_AUTOPUBLISH=false` initially. Note that when the
+- [ ] ⚠️ Repo variables `CWS_AUTOPUBLISH`, `AMO_AUTOPUBLISH`,
+      `EDGE_AUTOPUBLISH` — unset, so no store job runs. Note that when a
       variable does not exist the expression is simply false, so "not configured"
       and "configured off" are indistinguishable from a run's output.
 - [ ] ⚠️ Repo variables `DISCORD_ANNOUNCE` and `DISCORD_CI_NOTIFY` — both still

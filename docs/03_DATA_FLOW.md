@@ -45,7 +45,12 @@
 
 - Steps 1–7 touch nothing in the browser. The first write happens at step 8.
 - Replace = delete children of Bookmarks Bar + Other Bookmarks (+ Mobile if
-  present), then write. Roots themselves are never deleted (API forbids it).
+  present, + the Bookmarks Menu on Firefox), then write. Roots themselves are
+  never deleted (API forbids it). On Firefox the deletion includes the
+  **separators** in those roots, and nothing restores them — no format
+  BookmarkMagic writes keeps one — so the confirmation says how many will go
+  (`import.replace.separators`, shown only when there are any). The counts in
+  that confirmation never include separators among the bookmarks.
 - **Root routing** (`core/route.ts`), top-level nodes only — deeper, markers
   are data. A folder that *is* a browser root is **unwrapped**: its children go
   into that root and the folder itself is never written.
@@ -55,7 +60,15 @@
     the order;
   - `root: "mobile"` folder → its children into Mobile Bookmarks; a profile
     with no Mobile root keeps it as an ordinary folder under Other;
-  - everything else → Other Bookmarks.
+  - `root: "menu"` folder (since v1.3.0) → its children into Firefox's
+    Bookmarks Menu; every Chromium browser, which has no menu root, keeps it
+    as an ordinary folder under Other;
+  - everything else → the **Bookmarks Menu on Firefox**, Other Bookmarks
+    everywhere else. Firefox's own HTML export leaves the menu's contents loose
+    at the top level, and Firefox's own import puts loose entries back into
+    the menu; doing the same is what makes a Firefox file round-trip in
+    Firefox. New-folder mode is not routing and stays the same on every
+    browser: `Other Bookmarks/Imported <date>/…`.
 
   The markers come from our own exports and backups (`04 §1.1`, §2), from
   Firefox's HTML export (`UNFILED_BOOKMARKS_FOLDER`), and from the two browser
@@ -65,6 +78,13 @@
   the whole tree, root folders included, goes under
   `Other Bookmarks/Imported <date>/…` (markers recorded in the preview as
   informational).
+- **What Firefox refuses is dropped before planning** (since v1.3.0): an
+  address longer than 65 536 characters (`URL_TOO_LONG`, counted; the limit
+  comes from the browser layer, and Chromium has none). Firefox also shortens
+  titles past 4 096 characters on its own; that is a documented limit, not a
+  warning. Separators a file holds — `<HR>` in HTML, separator entries in a
+  Firefox JSON backup — are counted as `SEPARATORS_SKIPPED`: the file model has
+  no separator, on any browser.
 - **Merge reuses folders** (`core/merge.ts`, `05 §5`). Below each destination
   root, a file folder with the exact, case-sensitive title of a writable child
   folder of the live folder its parent matched is reused — never created,
@@ -193,14 +213,31 @@ tree key was ignored.
 | Move | drag & drop onto a row — before, after or into (`planDrop`, `05 §10`) → `bookmarks.move(id, { parentId, index })`, or `{ parentId }` alone into a folder; "Move to…" (row button, menu key / Shift+F10) → modal folder list with a filter → `bookmarks.move(id, { parentId })`, appended; **Alt+↑ / Alt+↓** on the tree (since v1.2.1) → `nudgeTarget` picks the sibling shown above or below, then the same `planDrop` (before / after) and the same `moveTo` as a drag — no second write path. One move at a time. The command reports the row's new place among the siblings on screen — the same "n of m" as its `aria-posinset` — which the tab speaks (`06 §5`) |
 | Delete | Del or the row button → confirm dialog (folder shows descendant count) → `removeTree` / `remove`; when the deleted row had focus, focus moves to the next row, else the previous. A copy deleted from the duplicate panel leaves the tree's focus where it was |
 | New folder | toolbar button → `bookmarks.create({ parentId, title })` in the focused folder, beside a focused bookmark, else in the first writable root → inserted at once unless its live event got there first (Chrome fires `onCreated` before `create` resolves, so either may win), a search that would hide it cleared, and every folder above it opened as the user's own — so clearing the search cannot close them again → inline rename |
-| Sort A→Z | toolbar (the focused folder, or the focused bookmark's folder) or a folder row's button → `planSort` (`05 §10`) → confirm stating how many items move → one awaited `bookmarks.move(id, { parentId, index })` per planned move, yielding every 25, under the write lock (§5). Refused part-way → "moved d of t" and a re-read: there is no undo |
+| Sort A→Z | toolbar (the focused folder, or the focused bookmark's folder) or a folder row's button → `planSort` (`05 §10`; on Firefox each run between two separators is sorted on its own, and separators stay where they are) → confirm stating how many items move → one awaited `bookmarks.move(id, { parentId, index })` per planned move, yielding every 25, under the write lock (§5). Refused part-way → "moved d of t" and a re-read: there is no undo |
 | Open bookmark | Enter, double-click, or the row's Open button → `tabs.create({ url })` for `http:`/`https:` only (`09` T3); anything else is refused with a toast |
 | Copy link | the row button, or Ctrl/⌘+C on the focused row → `navigator.clipboard.writeText` (`09` T8) |
 | Duplicate finder | toolbar toggles the panel → groups by normalized URL, computed **only while the panel or its confirmation is showing**, policy-managed copies left out (the browser refuses to delete them) → per-copy delete, or "keep first in each group" (confirm with the exact count) under the write lock; stopped part-way → "deleted d of t" and a re-read |
 
+**Separators (Firefox, since v1.3.0)** are rows of their own in the tree: a
+line at the depth of its siblings, outside the accessibility tree
+(`aria-hidden`), never focused, matched, counted, opened, renamed, deleted,
+dragged or dropped into — and never offered as a duplicate of each other,
+which their shared `data:` address would otherwise make them. They are still
+siblings, so positions stay the browser's: a drag lands where it was dropped,
+and Alt+↑ above a separator moves the row past it, one place.
+
+**The move index is the browser's own rule.** `planDrop` computes a target
+twice (`05 §10`): Chromium's `bookmarks.move` counts a move to the right as if
+the node were still in place (`position.api`), Firefox's counts after removing
+it (`position.local`). The adapter sends the one its browser expects, and the
+move's own reply (the node's new `index`) is checked against `position.local`:
+a mismatch re-reads the tree rather than leave it disagreeing with the browser.
+
 **Live sync** (`edit/live-sync.ts`, `05 §11`). `#edit` subscribes on enter and
 unsubscribes on leave: `bookmarks.onCreated/onRemoved/onChanged/onMoved`, plus
-`onChildrenReordered` and Chrome's own importer's `onImportBegan/onImportEnded`.
+`onChildrenReordered` and Chrome's own importer's `onImportBegan/onImportEnded`
+where the browser has them (Firefox has neither; its own sort and import send
+one `onMoved`/`onCreated` per node, which the burst rule below absorbs).
 Events are queued and applied together **once per animation frame**, in arrival
 order. An import running in another tab sends one `onCreated` per node — 1.0.x
 patched the tree, and rescanned it for duplicates, on every one — so past 500

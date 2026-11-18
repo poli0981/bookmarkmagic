@@ -1,6 +1,6 @@
 # Privacy Policy — BookmarkMagic
 
-Terms version 1 · Effective 2026-07-26 · Last updated 2026-10-29
+Terms version 1 · Effective 2026-07-26 · Last updated 2026-11-18
 
 BookmarkMagic ("the Extension") is designed to work entirely on your device.
 
@@ -16,9 +16,10 @@ contains no analytics, telemetry, or crash reporting.
   device.
 - **Local settings** (permission: `storage`): your language, theme,
   preferences, and the date you accepted these terms are stored locally via
-  `chrome.storage.local`. They are not transmitted anywhere and are removed by
-  Chrome when you uninstall the Extension. The Extension does not use
-  `chrome.storage.sync`, so even your settings stay off any vendor cloud.
+  `chrome.storage.local` (Firefox calls the same store `browser.storage.local`).
+  They are not transmitted anywhere and are removed by the browser when you
+  uninstall the Extension. The Extension does not use `storage.sync`, so even
+  your settings stay off any vendor cloud.
 
 The Extension requests no other permissions. It has no host permissions, no
 content scripts, and no background service worker. It contains no code that
@@ -48,10 +49,12 @@ see THIRD_PARTY_NOTICES.md) contain no network code.
 
 Two things happen outside the Extension and are worth knowing:
 
-- **The Chrome Web Store** (Google) distributes the Extension and its updates.
-  Installing and updating it are governed by Google's own privacy policy, not
-  this one, and Google gives the developer only aggregate counts such as the
-  number of users.
+- **The store you install it from** — the Chrome Web Store (Google), Firefox
+  Add-ons (Mozilla) or Microsoft Edge Add-ons (Microsoft) — distributes the
+  Extension and its updates. Installing and updating it are governed by that
+  store's own privacy policy, not this one, and each gives the developer only
+  aggregate counts such as the number of users. On Firefox the Extension
+  declares that it collects no data, in Firefox's own data-consent system.
 - **Opening a bookmark.** When you open a bookmark from the Edit tab, your
   browser loads that page exactly as when you click any link: the request is
   the browser's, made on your instruction, to the site you chose. The
@@ -84,6 +87,10 @@ inside the Extension.
 of practice: it describes handling of material you choose to send us, which was
 never part of what the Extension itself collects — which remains nothing. No
 re-acceptance was requested.*
+
+*Clarified on 2026-11-18: the Extension is also distributed through Firefox
+Add-ons and Microsoft Edge Add-ons. That adds no data flow — the Extension
+still collects nothing — so no re-acceptance is requested (`docs/14 §3.1`).*
 
 *Clarified on 2026-10-29: the diagnostics log, the Chrome Web Store, opening a
 bookmark, and what the build compiles in are now described, and the contact

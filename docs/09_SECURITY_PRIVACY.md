@@ -177,8 +177,13 @@ a **minor-version** event at minimum.
   CRC32. The archives' SHA-256 hashes still differ, because `wxt zip` records
   file mtimes and nothing normalizes them (there is no `SOURCE_DATE_EPOCH`
   support). Do not claim byte-identical rebuilds.
-- GitHub Releases attach the exact zip uploaded to CWS + `SHA256SUMS.txt`
-  so users can verify store build ↔ source correspondence. That works on the
+- GitHub Releases attach the exact zips uploaded to the stores + `SHA256SUMS.txt`
+  (since v1.3.0: the Chrome package, which is also what Edge Add-ons receives,
+  the Firefox package and its sources archive) so users can verify store build
+  ↔ source correspondence. The stores re-sign or repackage what they receive
+  (Chrome and Edge into a signed CRX, AMO signs the XPI), so a file installed
+  from a store does not hash like the Release asset; the checksum vouches for
+  what was uploaded. That works on the
   released artifact itself, which is the same file in both places — it is not a
   claim that a third party can rebuild the same hash.
 - Tags are signed (GPG) — consistent with the tracker-repo signing practice.

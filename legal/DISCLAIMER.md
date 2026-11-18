@@ -1,6 +1,6 @@
 # Disclaimer — BookmarkMagic
 
-Terms version 1 · Effective 2026-07-26 · Last updated 2026-10-29
+Terms version 1 · Effective 2026-07-26 · Last updated 2026-11-18
 
 - Provided "AS IS", without warranty of any kind (see LICENSE §15–16).
 - Bookmark operations modify your browser's bookmark data. The "Replace
@@ -10,14 +10,14 @@ Terms version 1 · Effective 2026-07-26 · Last updated 2026-10-29
   Extension could read back. If the browser stops part-way, what was already
   deleted can be restored by importing that backup. You remain responsible for
   keeping backups of data you care about.
-- Imported bookmarks are created with the current date and time. Chrome's
-  extension API does not allow an extension to set a bookmark's original
-  creation date, so original dates are preserved in your exported *files* but
+- Imported bookmarks are created with the current date and time. The
+  browsers' extension APIs do not allow an extension to set a bookmark's
+  original creation date, so original dates are preserved in your exported *files* but
   not when writing back into the browser.
 - Import files come from outside this Extension; verify you trust their source.
   Bookmarked URLs are stored as-is and are not vetted by the Extension.
 - This project is not affiliated with or endorsed by Google, Chrome, Mozilla,
-  Firefox or any browser vendor. Browser names are trademarks of their
+  Firefox, Microsoft, Edge or any browser vendor. Browser names are trademarks of their
   respective owners.
 - The BookmarkMagic name and icon identify this project, published by skullmute
   (poli0981). The GPL lets anyone fork the code; it does not let a fork present
