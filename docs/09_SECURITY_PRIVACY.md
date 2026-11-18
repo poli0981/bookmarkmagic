@@ -114,12 +114,19 @@ four of them sat under, and Vite 8 bundles with rolldown rather than esbuild.
 None of the six packages was in the lockfile — and a stale override is worse
 than none, because the day the package returns it silently pins it.
 
-State after the v1.1.0 toolchain pass (Node 26, Vitest 5, Vite 8.3, WXT 0.21.4):
+State on 2026-11-18 (Node 26, Vitest 5.1, Vite 8.3, WXT 0.21.5):
 
 | Check | Result |
 |---|---|
 | `npm audit --omit=dev` | **0** — nothing third-party is a runtime dependency (CI runs this, `12 §2.1`) |
-| `npm audit` (dev included) | 3 low, one root cause: **`deepmerge`** (GHSA-gcqx-w48m-w2h4, prototype poisoning in `mergeObject`), reached through `@sveltejs/vite-plugin-svelte`. **No fixed version exists.** It merges the build's own plugin options at dev/build time — never user data, never in the shipped extension — so it is accepted and recorded rather than overridden. Re-check when the plugin drops or bumps it. |
+| `npm audit` (dev included) | **14 high, one root cause: `picomatch`** — GHSA-fc5q-39xc-vjpf (CVE-2026-112366), a ReDoS through single-branch repeated extglobs. **Every version up to 4.0.7 is affected and no fixed version exists**, so there is nothing to upgrade or override to. It is the glob engine of the whole toolchain (WXT, Vite, Vitest, knip, svelte-check, unplugin, tinyglobby, fdir — the other 13 entries are those parents), and it matches patterns this repository writes into its own config files, at build and test time only: never user data, never in the shipped extension. Recorded rather than worked around. Dependabot opens a security PR the day a fixed release exists, and `MAINTENANCE.md` makes that PR urgent. |
+| Retired | The `deepmerge` advisory recorded here until v1.2.1 (GHSA-gcqx-w48m-w2h4, low, via `@sveltejs/vite-plugin-svelte`) was **withdrawn** by GitHub on 2026-11-16. `deepmerge` 4.3.1 is still in the tree; nothing else needs doing. |
+
+The maintenance policy's rule for advisories (`MAINTENANCE.md`): a **high or
+critical** one is fixed as soon as a fixed version exists — through the
+Dependabot security PR, or a lockfile update when a parent's range already
+allows the fix. When no fix exists, the advisory goes in the table above with
+why it cannot reach a user, and the row stays until the fix lands.
 
 How new advisories are kept out:
 

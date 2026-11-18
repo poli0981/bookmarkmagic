@@ -1,6 +1,6 @@
 # 01 — Tech Stack
 
-> Versions verified against npm/official sources on **2026-11-10** (first pass
+> Versions verified against npm/official sources on **2026-11-18** (first pass
 > 2026-07-25).
 > Rule: latest stable or LTS only, with any deliberate exception stated inline.
 > Re-verify minor/patch at scaffold time (`npm outdated`), but do NOT jump
@@ -25,11 +25,11 @@
 | **Svelte** | **^5.57.3** | UI, runes mode only (`$state`, `$derived`, `$effect`, `$props`). The compiled runtime ships in the bundle (MIT — `legal/THIRD_PARTY_NOTICES.md`). |
 | @sveltejs/vite-plugin-svelte | ^7.3.1 | Compiles `.svelte` and the runes in `.svelte.ts` stores for Vitest (`vitest.config.ts`). Its `deepmerge` dependency carries the one advisory with no fix (`09 §3.1`). |
 | @wxt-dev/module-svelte | ^2.0.5 | WXT ↔ Svelte integration. |
-| **Biome** | **2.6.4 (pinned exact)** | Lint + format (replaces ESLint + Prettier). Install with `npm i -D -E @biomejs/biome` per Biome guidance. 2.6 started formatting Markdown and YAML; both are excluded in `biome.json` so docs and workflows keep their hand layout (`10 §3`). The `$schema` URL in `biome.json` names the same version and moves with the pin — Dependabot bumps the package and leaves the URL behind. |
+| **Biome** | **2.6.6 (pinned exact)** | Lint + format (replaces ESLint + Prettier). Install with `npm i -D -E @biomejs/biome` per Biome guidance. 2.6 started formatting Markdown and YAML; both are excluded in `biome.json` so docs and workflows keep their hand layout (`10 §3`). The `$schema` URL in `biome.json` names the same version and moves with the pin — Dependabot bumps the package and leaves the URL behind. |
 | svelte-check | ^4.7.8 | Type/template authority for `.svelte` files. Runs on the TS 6 API (see TypeScript above). |
 | **@types/node** | **^26** (matches the Node major) | Types for `node:fs`, `node:path`, `node:child_process` and `process`, which the test suite and `scripts/*.mjs` genuinely use. **Declared explicitly since 2026-08-03** — it used to arrive transitively, and WXT 0.21 stopped providing it. Types only: erased at build, so hard rule 2 (zero *runtime* dependencies) is untouched. |
-| jsdom | **^30.1** (was ^29 through v1.0.0) | Test DOM. Not interchangeable — `02 §3` picks jsdom over happy-dom because the Netscape walk depends on parse5's implied-end-tag behaviour. A major bump runs `tests/unit/dom-environment.test.ts` first; if that canary fails, pin rather than loosen the test. |
-| **Knip** | **^6** (6.44.1 as of 2026-11) | Dead code: unused files, exports, dependencies. Requires Node ≥ 20.19. v6 swapped the TypeScript backend for oxc-parser — confirm `compilers.svelte` is still the supported `.svelte` hook before scaffold (`10 §4`). |
+| jsdom | **^31.0** (was ^30 through v1.2.1, ^29 through v1.0.0) | Test DOM. Not interchangeable — `02 §3` picks jsdom over happy-dom because the Netscape walk depends on parse5's implied-end-tag behaviour. A major bump runs `tests/unit/dom-environment.test.ts` first; if that canary fails, pin rather than loosen the test. |
+| **Knip** | **^6** (6.44.2 as of 2026-11-18) | Dead code: unused files, exports, dependencies. Requires Node ≥ 20.19. v6 swapped the TypeScript backend for oxc-parser — confirm `compilers.svelte` is still the supported `.svelte` hook before scaffold (`10 §4`). |
 | **Vitest** | **^5.1.0** (was ^4 through v1.0.1) | Unit tests. 5.0 changed `clearMocks` to default `true`, requires `vi.mock` at top level and fails unawaited async assertions; the suite needed no changes. Requires Node ≥ 22.12. |
 | @vitest/coverage-v8 | match Vitest | Coverage reporting (`text` + `lcov` for SonarCloud, `12 §2.5`). |
 
