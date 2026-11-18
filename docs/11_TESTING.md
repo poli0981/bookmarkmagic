@@ -450,15 +450,19 @@ failure mode that would hit every installed user at once.
 ### Measured 2026-07-26 — Phase 5
 
 A generated 100 000-node Netscape file (11.2 MB, 99 000 bookmarks in 1 000
-folders), timed **under jsdom 29**:
+folders), timed under jsdom — one column per jsdom major, never overwritten:
 
-| Stage | Time |
-|---|---|
-| `detectFormat` | 0 ms |
-| `parseNetscapeHtml` | **2 869 ms** |
-| `buildUrlIndex` | 42 ms |
-| `diffAgainstBrowser` | 53 ms |
-| `serializeNetscapeHtml` | 72 ms |
+| Stage | jsdom 29 (2026-07-26) | jsdom 31 (2026-11-18) |
+|---|---|---|
+| `detectFormat` (now `sniffFormat`) | 0 ms | 0 ms |
+| `parseNetscapeHtml` | **2 869 ms** | **2 484 ms** (median of 3 runs, 2 416–2 733) |
+| `buildUrlIndex` | 42 ms | not re-run (pure JS) |
+| `diffAgainstBrowser` | 53 ms | not re-run (pure JS) |
+| `serializeNetscapeHtml` | 72 ms | not re-run (pure JS) |
+
+The jsdom 31 column: Node 26.13, Windows 11, Intel i7-14700KF, the file from
+`gen-fixture.mjs --nodes 100000`. The jsdom 30 bump (2026-08-03) added no
+column, so there is no jsdom 30 figure.
 
 ⚠️ **This does not settle the 2 s budget either way.** Everything except the
 parse is pure JS and comfortably fast; the parse is dominated by `DOMParser`,
