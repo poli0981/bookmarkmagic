@@ -138,6 +138,8 @@ not shipped; a Traditional Chinese browser on "Automatic" gets English.
   `ICON` attributes are tolerated on parse and dropped — documented limitation).
 - ❌ Dead-link checking (requires host permissions — deferred, see Roadmap).
 - ❌ Firefox/Safari *store* releases (WXT keeps the door open; see Roadmap).
+  *Firefox and Edge became goals on 2026-11-18 (v1.3, `15`); Safari stays
+  out.*
 - ❌ Editing browser-native root folders themselves (Bookmarks Bar / Other
   Bookmarks cannot be deleted/renamed — enforced by API anyway).
 
