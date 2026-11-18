@@ -278,6 +278,11 @@ them is tested where it lives:
   and the issue chooser; every key `tree-keyboard.ts` switches on has a row;
   it states a goal and an untested list, and it is dated. It cannot tell
   whether a sentence is *true* — that is `§5`'s last item.
+- **`store-listing.test.ts`** (2026-11-18, after v1.3.0) — the Edge Add-ons
+  copy in every `store/listing.*.md`: one complete description under the Edge
+  heading, 250 to 5,000 characters (Partner Center's range), naming no browser
+  but Edge (`08 §10`, `13 §9`). The same pattern has to find the browsers the
+  Chrome Web Store copy lists, so it cannot pass by matching nothing.
 - **`tests/unit/scripts/`** — the repo's own gates, tested like code. New in
   v1.1.0: `guard.test.ts` (`08 §3`), `check-manifest.test.ts` (a correct build
   passes, one without the CSP fails) and `sanitize-formats.test.ts` (the

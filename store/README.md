@@ -23,6 +23,12 @@ same spelling as `src/public/_locales/`. Adding a language: `docs/07 §6` and
 `docs/13 §4` — the `LANGUAGES` paragraph inside *every* description lists the
 languages, so all of them are re-pasted when one is added.
 
+Since v1.3.0 each file also carries the **Firefox Add-ons** and **Microsoft
+Edge Add-ons** copy, under headings of their own. The Edge description is
+complete and is pasted whole: Edge's policy forbids naming other browsers, so
+it is the one description that never says Chrome or Firefox (`docs/13 §9`,
+checked by `tests/unit/store-listing.test.ts`).
+
 The summary field is capped at **132 characters** by the dashboard. Each file
 records its own count; re-check after any edit, because the limit is enforced at
 submission time and a rejection there costs a round trip.
