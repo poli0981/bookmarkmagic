@@ -20,6 +20,27 @@ import { CREDITED_PACKAGES } from './scripts/credited-packages.mjs';
 const CHROME_FLOOR = 136;
 
 /**
+ * Firefox's floor (docs/08 §9): the first Firefox that accepts
+ * `data_collection_permissions`, which AMO requires of every new extension;
+ * every ES2025 built-in is older (`RegExp.escape` and `Promise.try`, 134).
+ */
+const FIREFOX_FLOOR = 140;
+
+/**
+ * Firefox's block — docs/08 §9. The id is permanent once the add-on is on AMO;
+ * "none" is Firefox's own declaration that nothing is collected, the same
+ * answer as the Chrome Web Store privacy tab. `check:manifest --browser
+ * firefox` pins all of it in the built package.
+ */
+const FIREFOX_SETTINGS = {
+  gecko: {
+    id: 'bookmarkmagic@poli0981.dev',
+    strict_min_version: `${FIREFOX_FLOOR}.0`,
+    data_collection_permissions: { required: ['none'] },
+  },
+};
+
+/**
  * The zero-network promise, enforced by the browser — docs/08 §3.
  *
  * MV3's default extension-page CSP restricts code execution only; it has no
@@ -101,10 +122,15 @@ const thirdPartyGate = {
 
 export default defineConfig({
   srcDir: 'src',
-  vite: () => ({
+  // MV3 for every target. WXT builds Firefox as MV2 unless told otherwise, and
+  // this project's manifest, CSP and review story are MV3 (docs/08 §1).
+  manifestVersion: 3,
+  vite: (env) => ({
     plugins: [thirdPartyGate],
     build: {
-      target: `chrome${CHROME_FLOOR}`,
+      // The floor the package states, so the compiler never emits syntax the
+      // oldest allowed browser cannot run.
+      target: env.browser === 'firefox' ? `firefox${FIREFOX_FLOOR}` : `chrome${CHROME_FLOOR}`,
       // Vite's modulepreload polyfill is a network call (it fetches each chunk
       // ahead of time) for browsers without native `<link rel=modulepreload>`.
       // Every Chrome at or above the floor has it, so the polyfill is dead code
@@ -118,11 +144,14 @@ export default defineConfig({
   // refuses to load the extension (missing __MSG_appName__ and icons).
   publicDir: 'src/public',
   modules: ['@wxt-dev/module-svelte'],
-  manifest: ({ command }) => ({
+  manifest: ({ browser, command }) => ({
     name: '__MSG_appName__',
     description: '__MSG_appDesc__',
     default_locale: 'en',
-    minimum_chrome_version: String(CHROME_FLOOR),
+    // The one key that differs between the two packages (docs/08 §1).
+    ...(browser === 'firefox'
+      ? { browser_specific_settings: FIREFOX_SETTINGS }
+      : { minimum_chrome_version: String(CHROME_FLOOR) }),
     permissions: ['bookmarks', 'storage'],
     // Deep-link lands on #settings only when no Manager tab is open — with
     // open_in_tab Chrome matches the singleton tab ignoring the fragment,
@@ -139,4 +168,18 @@ export default defineConfig({
       content_security_policy: { extension_pages: EXTENSION_PAGE_CSP },
     }),
   }),
+  // The sources archive `wxt zip -b firefox` writes for AMO's reviewers
+  // (docs/08 §9): what rebuilds the package — the source, the configs, the
+  // lockfile, the scripts the build imports — and nothing that is not.
+  zip: {
+    excludeSources: [
+      'coverage/**',
+      'capture/**',
+      'store/**',
+      'docs/**',
+      'tests/**',
+      'tools/**',
+      'stats.html',
+    ],
+  },
 });
