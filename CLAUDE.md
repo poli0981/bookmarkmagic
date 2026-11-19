@@ -11,8 +11,10 @@ This file is the entry point; the `docs/` suite is the specification.
 > (v1.0.0 live by 2026-08-03; v1.0.1 live, confirmed on the listing
 > 2026-10-28; v1.1.0 live, confirmed on the listing 2026-11-06; v1.2.0 live,
 > confirmed on the listing 2026-11-10; v1.2.1 released on GitHub 2026-11-10,
-> ⚠️ not yet submitted; v1.3.0 — Firefox and Edge, 1.2.1 included — released
-> on GitHub 2026-11-18, ⚠️ not yet submitted to any of the three stores).
+> never submitted on its own; v1.3.0 — Firefox and Edge, 1.2.1 included —
+> released on GitHub and submitted to all three stores 2026-11-18, **live on
+> Edge Add-ons 2026-11-19**, ⚠️ in review on the Chrome Web Store and Firefox
+> Add-ons).
 > Phases 0–9 are complete; since 2026-11-18 the project is in **maintenance
 > mode** — `/MAINTENANCE.md` is the policy (Phase 10 below).
 > That changes the rules of the game:
@@ -237,6 +239,9 @@ Human-only ⚠️ (`00 §10` items 19–26): the `11 §5` passes — Chrome with
 signed in with sync on — then the Chrome Web Store upload of 1.3.0 in place
 of 1.2.1, the first Firefox Add-ons version and the first Edge submission by
 hand, the store environments if automation is wanted, and native review.
+The three uploads went up 2026-11-18; Edge approved 2026-11-19, the other two
+are in review. **An Edge copy's About link is chosen by its CRX ID**
+(`links.ts`), so the listing ids in `00 §9` are code, not trivia.
 
 ## Working style
 

@@ -8,6 +8,7 @@
 [![Quality gate](https://sonarcloud.io/api/project_badges/measure?project=poli0981_bookmarkmagic&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=poli0981_bookmarkmagic)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=poli0981_bookmarkmagic&metric=coverage)](https://sonarcloud.io/summary/new_code?id=poli0981_bookmarkmagic)
 [![Chrome Web Store](https://img.shields.io/chrome-web-store/v/eghnciphhegekmnofffpgbdfefckdhmg?label=Chrome%20Web%20Store)](https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg)
+[![Edge Add-ons](https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2Fmicrosoftedge.microsoft.com%2Faddons%2Fgetproductdetailsbycrxid%2Fnchfchjnlihbifggooggpmmacighmdjg&query=%24.version&prefix=v&label=Edge%20Add-ons)](https://microsoftedge.microsoft.com/addons/detail/nchfchjnlihbifggooggpmmacighmdjg)
 [![Runtime dependencies: 0](https://img.shields.io/badge/runtime%20dependencies-0-brightgreen.svg)](#privacy)
 
 Move your bookmarks between browsers the simple way: with a file. No account,
@@ -120,7 +121,7 @@ Full policy: [`legal/PRIVACY.md`](legal/PRIVACY.md).
 | Browser | Where | Requires |
 |---|---|---|
 | Chrome, Brave, Vivaldi, Opera | [Chrome Web Store](https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg) | Chrome 136 or later (April 2025), or a Chromium browser of the same vintage |
-| Microsoft Edge | Edge Add-ons — **not listed yet**; until it is, Edge installs from the Chrome Web Store link above | Edge 136 or later |
+| Microsoft Edge | [Edge Add-ons](https://microsoftedge.microsoft.com/addons/detail/nchfchjnlihbifggooggpmmacighmdjg) | Edge 136 or later |
 | Firefox (desktop) | Firefox Add-ons — **not listed yet**; the link will be here when it is | Firefox 140 or later. Firefox for Android has no bookmarks API for extensions |
 
 On an older browser the store keeps the version you already have and simply

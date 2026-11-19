@@ -340,7 +340,11 @@ Still ship the fix forward.
    `08 §5`; privacy policy URL as above; screenshots from `store/screenshots/`.
 5. Submit; record the outcome in `15`. Note the **Product ID** on the
    extension's overview page — `EDGE_PRODUCT_ID` — and the listing URL, which
-   the About link and the README can then use (`06 §3.5`).
+   the About link and the README can then use (`06 §3.5`). The About link
+   matches the **CRX ID** (the `runtime.id` an install reports), not the
+   Product ID.
+   Done for 1.3.0: submitted 2026-11-18, live 2026-11-19 — ids and listing
+   in `00 §9`.
 
 **Later versions:** by hand (*Update* → upload the new package), or from
 `release.yml`'s `store-edge` job once `edge-add-ons` has its secrets and
