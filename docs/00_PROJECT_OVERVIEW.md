@@ -26,23 +26,25 @@
 >
 > **v1.2.0 is PUBLISHED.** Tagged and released 2026-11-06 (signed tag on
 > `e2f36bc`); the listing was observed showing **version 1.2.0** (`Updated:
-> November 7, 2026`, 5 languages) on 2026-11-10. Installed users are on 1.2.0.
+> November 7, 2026`, 5 languages) on 2026-11-10. It was the store's version
+> until 1.3.0 replaced it on 2026-11-19.
 >
 > **v1.2.1 — accessibility — is RELEASED on GitHub, never on a store on its
 > own.** Tagged and released 2026-11-10 (signed tag on `d61318a`,
 > checksum-verified zip): an accessibility statement (`/ACCESSIBILITY.md`) and
 > the fixes an audit found (`06 §5`). 1.3.0 carries all of it and went to the
-> Chrome Web Store in its place (submitted 2026-11-18); until that clears
-> review, Chrome users stay on 1.2.0.
+> Chrome Web Store in its place (submitted 2026-11-18, live 2026-11-19).
 >
-> **v1.3.0 — Firefox and Edge — is RELEASED, and LIVE on Edge Add-ons.**
-> Tagged and released 2026-11-18 (signed tag on `80c7190`, three
-> checksum-verified packages): a Firefox package (desktop, 140 or later), and
-> the Chrome package for Edge Add-ons as well, with 1.2.1 inside. The owner
-> submitted it to all three stores on 2026-11-18. **Edge Add-ons approved it
-> on 2026-11-19** — the first Edge version, live in five languages (§9 has the
-> listing). ⚠️ The Chrome Web Store update (in place of 1.2.1) and the first
-> Firefox Add-ons version are still in review (§10 items 20–21).
+> **v1.3.0 — Firefox and Edge — is RELEASED, and LIVE on the Chrome Web
+> Store and Edge Add-ons.** Tagged and released 2026-11-18 (signed tag on
+> `80c7190`, three checksum-verified packages): a Firefox package (desktop,
+> 140 or later), and the Chrome package for Edge Add-ons as well, with 1.2.1
+> inside. The owner submitted it to all three stores on 2026-11-18. **Edge
+> Add-ons approved it on 2026-11-19** — the first Edge version, live in five
+> languages (§9 has the listing). **The Chrome Web Store approved it the same
+> day**: the listing shows version 1.3.0 (`Updated: November 19, 2026`, 4
+> users), so installed Chrome users move from 1.2.0 to 1.3.0 by themselves.
+> ⚠️ The first Firefox Add-ons version is still in review (§10 item 21).
 >
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
@@ -305,11 +307,13 @@ Derived identifiers (canonical across docs and code):
 ### v1.3.0 — maintenance mode, Firefox and Edge (added 2026-11-18)
 
 19. ⚠️ **Pin the maintenance announcement** (Discussions #43) — the API cannot.
-20. ⚠️ **v1.3.0 to the Chrome Web Store** instead of 1.2.1, which never went
-    up — **submitted 2026-11-18, in review**. The `11 §5` pass with the
-    **1.2.0 → 1.3.0 upgrade over an existing profile**, then the Chrome
-    package from the Release (`13 §1b`). The CWS
-    listing text may keep its Chrome wording; it is the Chrome store.
+20. ✔ **v1.3.0 to the Chrome Web Store** instead of 1.2.1, which never went
+    up — submitted 2026-11-18, **live 2026-11-19** (the listing shows version
+    1.3.0). The CWS listing text may keep its Chrome wording; it is the
+    Chrome store. ⚠️ Still open: the `11 §5` pass with the **1.2.0 → 1.3.0
+    upgrade over an existing profile** has no recorded result — installed
+    users are taking that upgrade now — and neither has `13 §1b` step 10, the
+    published build on a clean profile.
 21. ⚠️ **The first Firefox Add-ons version, by hand** (`13 §8`) — **submitted
     2026-11-18, in review**. The `11 §5` Firefox section on a real Firefox
     140+, then the Developer Hub upload of
@@ -328,6 +332,15 @@ Derived identifiers (canonical across docs and code):
     secrets (Chrome: API v2 service
     account; AMO: JWT pair; Edge: API key + Client ID, renewed every 72 days),
     then the `*_AUTOPUBLISH` variables.
+    **State on 2026-11-19:** all three `*_AUTOPUBLISH` variables are `true`,
+    so **a pushed `v*` tag is now a store submission**.
+    - `chrome-web-store` and `edge-add-ons` exist, with their secrets and the
+      `v*` tag rule, but ⚠️ with **no required reviewer**. A tag therefore
+      uploads to both stores with no approval step.
+    - ⚠️ `firefox-add-ons` does not exist and has no secrets. The next tag's
+      `store-firefox` job would fail, and GitHub would create the environment
+      with no rules. Until the JWT pair is in place, either create the
+      environment with its secrets or set `AMO_AUTOPUBLISH` to `false`.
 24. ⚠️ **After the listings go live**: their URLs for the README and the
     About link (`06 §3.5` — Edge's needs its listing id), and the AMO/Edge
     badges. **Edge ✔ 2026-11-19**: README install table and badge, and the
