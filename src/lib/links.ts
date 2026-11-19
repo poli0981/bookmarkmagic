@@ -34,6 +34,22 @@ const CWS_ITEM_ID = 'eghnciphhegekmnofffpgbdfefckdhmg';
 const CWS_URL = `https://chromewebstore.google.com/detail/bookmarkmagic/${CWS_ITEM_ID}`;
 
 /**
+ * The Edge Add-ons item id — Partner Center's "CRX ID", and the `runtime.id`
+ * of every copy installed from Edge Add-ons (docs/00 §9). Not the Product ID,
+ * which is what the `EDGE_PRODUCT_ID` secret needs.
+ */
+const EDGE_ITEM_ID = 'nchfchjnlihbifggooggpmmacighmdjg';
+
+/** The published Edge Add-ons listing (live since 2026-11-19). */
+const EDGE_URL = `https://microsoftedge.microsoft.com/addons/detail/${EDGE_ITEM_ID}`;
+
+/** Each Chromium store's item id → its listing. */
+const CHROMIUM_LISTINGS: ReadonlyMap<string, string> = new Map([
+  [CWS_ITEM_ID, CWS_URL],
+  [EDGE_ITEM_ID, EDGE_URL],
+]);
+
+/**
  * The Firefox Add-ons listing, addressed by the gecko id, which AMO resolves
  * (docs/13 §8). The "@" is percent-encoded on purpose: AMO decodes it, and the
  * source then holds nothing that reads as an email address (see below).
@@ -49,8 +65,9 @@ const INSTALL_URL = `${REPO_URL}#install`;
  * The only route from inside the product to rating or reviewing it, which
  * docs/13 §6 lists as a post-launch channel. One Chromium package serves the
  * Chrome Web Store and Edge Add-ons, so the Chromium choice is made at run
- * time, by extension id: the Chrome Web Store's own id gets its listing, any
- * other (an Edge Add-ons install, an unpacked build) the install section.
+ * time, by extension id: each store's own id gets its listing (an Edge user
+ * who installed from the Chrome Web Store has that store's id, and gets that
+ * listing), any other id (an unpacked build) the install section.
  *
  * There is deliberately **no support email here.** Putting an address on an
  * in-product surface invites users to mail their real bookmarks file, which is
@@ -61,7 +78,7 @@ const INSTALL_URL = `${REPO_URL}#install`;
  */
 export function storeUrlFor(install: { firefox: boolean; extensionId: string }): string {
   if (install.firefox) return AMO_URL;
-  return install.extensionId === CWS_ITEM_ID ? CWS_URL : INSTALL_URL;
+  return CHROMIUM_LISTINGS.get(install.extensionId) ?? INSTALL_URL;
 }
 
 export interface LabelledLink {

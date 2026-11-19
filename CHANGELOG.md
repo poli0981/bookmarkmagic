@@ -12,7 +12,11 @@ version bump).
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+
+- **About → Store listing** on a copy installed from Microsoft Edge Add-ons now
+  opens BookmarkMagic's Edge Add-ons page, live since 2026-11-19. Until now it
+  opened the install section of the project's README.
 
 ## [1.3.0] — 2026-11-18
 

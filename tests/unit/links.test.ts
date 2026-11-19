@@ -116,8 +116,13 @@ describe('store listing', () => {
     const amo = storeUrlFor({ firefox: true, extensionId: 'anything' });
     expect(amo).toBe('https://addons.mozilla.org/firefox/addon/bookmarkmagic%40poli0981.dev/');
     expect(decodeURIComponent(amo)).toContain('bookmarkmagic@poli0981.dev');
-    // A Chromium copy with any other id — Edge Add-ons assigns its own, an
-    // unpacked build gets a random one — goes to the list of every store.
+    // Edge Add-ons assigns its own id — Partner Center's "CRX ID", not the
+    // Product ID — and an install from there gets the Edge listing.
+    expect(storeUrlFor({ firefox: false, extensionId: 'nchfchjnlihbifggooggpmmacighmdjg' })).toBe(
+      'https://microsoftedge.microsoft.com/addons/detail/nchfchjnlihbifggooggpmmacighmdjg',
+    );
+    // A Chromium copy with any other id — an unpacked build gets a random
+    // one — goes to the list of every store.
     expect(storeUrlFor({ firefox: false, extensionId: 'abcdefghijklmnopabcdefghijklmnop' })).toBe(
       `${REPO_URL}#install`,
     );
