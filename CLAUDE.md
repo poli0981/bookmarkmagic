@@ -13,7 +13,7 @@ This file is the entry point; the `docs/` suite is the specification.
 > confirmed on the listing 2026-11-10; v1.2.1 released on GitHub 2026-11-10,
 > never submitted on its own; v1.3.0 — Firefox and Edge, 1.2.1 included —
 > released on GitHub and submitted to all three stores 2026-11-18, **live on
-> Edge Add-ons 2026-11-19**, ⚠️ in review on the Chrome Web Store and Firefox
+> Edge Add-ons and the Chrome Web Store 2026-11-19**, ⚠️ in review on Firefox
 > Add-ons).
 > Phases 0–9 are complete; since 2026-11-18 the project is in **maintenance
 > mode** — `/MAINTENANCE.md` is the policy (Phase 10 below).
@@ -239,9 +239,14 @@ Human-only ⚠️ (`00 §10` items 19–26): the `11 §5` passes — Chrome with
 signed in with sync on — then the Chrome Web Store upload of 1.3.0 in place
 of 1.2.1, the first Firefox Add-ons version and the first Edge submission by
 hand, the store environments if automation is wanted, and native review.
-The three uploads went up 2026-11-18; Edge approved 2026-11-19, the other two
-are in review. **An Edge copy's About link is chosen by its CRX ID**
-(`links.ts`), so the listing ids in `00 §9` are code, not trivia.
+The three uploads went up 2026-11-18; Edge and the Chrome Web Store approved
+2026-11-19, Firefox Add-ons is in review. **An Edge copy's About link is chosen
+by its CRX ID** (`links.ts`), so the listing ids in `00 §9` are code, not
+trivia. And **since 2026-11-19 a pushed `v*` tag is a store submission**:
+every `*_AUTOPUBLISH` variable is `true`, and no store environment has a
+required reviewer yet (`00 §10` item 23 has the state). Treat a tag as an
+upload to users' browsers, and have the owner's go for that release before
+pushing one.
 
 ## Working style
 
