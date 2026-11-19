@@ -2,8 +2,8 @@
 
 > **Project:** BookmarkMagic
 > **Type:** MV3 browser extension for Chromium browsers and, since v1.3.0,
-> Firefox (open source; Chrome Web Store — Firefox Add-ons and Edge Add-ons
-> pending their first review)
+> Firefox (open source; Chrome Web Store and, since 2026-11-19, Microsoft Edge
+> Add-ons — Firefox Add-ons pending its first review)
 > **Owner:** poli0981 (GitHub) / SkullMute
 > **Repo:** `poli0981/bookmarkmagic` ✔
 > **License:** GPL-3.0-or-later
@@ -28,20 +28,21 @@
 > `e2f36bc`); the listing was observed showing **version 1.2.0** (`Updated:
 > November 7, 2026`, 5 languages) on 2026-11-10. Installed users are on 1.2.0.
 >
-> **v1.2.1 — accessibility — is RELEASED on GitHub, not yet on the store.**
-> Tagged and released 2026-11-10 (signed tag on `d61318a`, checksum-verified
-> zip): an accessibility statement (`/ACCESSIBILITY.md`) and the fixes an
-> audit found (`06 §5`). ⚠️ It still needs the owner's manual pass, including
-> the 1.2.0 → 1.2.1 upgrade over an existing profile, and a hand upload to
-> the store (`13 §1b`); until it clears review, installed users stay on 1.2.0.
+> **v1.2.1 — accessibility — is RELEASED on GitHub, never on a store on its
+> own.** Tagged and released 2026-11-10 (signed tag on `d61318a`,
+> checksum-verified zip): an accessibility statement (`/ACCESSIBILITY.md`) and
+> the fixes an audit found (`06 §5`). 1.3.0 carries all of it and went to the
+> Chrome Web Store in its place (submitted 2026-11-18); until that clears
+> review, Chrome users stay on 1.2.0.
 >
-> **v1.3.0 — Firefox and Edge — is RELEASED on GitHub, not yet on any store.**
+> **v1.3.0 — Firefox and Edge — is RELEASED, and LIVE on Edge Add-ons.**
 > Tagged and released 2026-11-18 (signed tag on `80c7190`, three
 > checksum-verified packages): a Firefox package (desktop, 140 or later), and
-> the Chrome package for Edge Add-ons as well, with 1.2.1 inside. ⚠️ Nothing
-> is submitted yet: the Chrome Web Store upload (in place of 1.2.1), the first
-> Firefox Add-ons version and the first Edge Add-ons submission are by hand,
-> after the owner's `11 §5` passes (§10 items 20–22).
+> the Chrome package for Edge Add-ons as well, with 1.2.1 inside. The owner
+> submitted it to all three stores on 2026-11-18. **Edge Add-ons approved it
+> on 2026-11-19** — the first Edge version, live in five languages (§9 has the
+> listing). ⚠️ The Chrome Web Store update (in place of 1.2.1) and the first
+> Firefox Add-ons version are still in review (§10 items 20–21).
 >
 > The project is now in **maintenance**, not construction: every change from
 > here reaches installed users through a store review, so it needs a version
@@ -193,6 +194,9 @@ Derived identifiers (canonical across docs and code):
 | Safety-backup filename | `bookmarkmagic-backup-YYYYMMDD-HHmm.json` |
 | Chrome Web Store item id | `eghnciphhegekmnofffpgbdfefckdhmg` (also the value `CHROME_EXTENSION_ID` needs — `12 §3`) |
 | Store listing URL | `https://chromewebstore.google.com/detail/bookmarkmagic/eghnciphhegekmnofffpgbdfefckdhmg` |
+| Edge Add-ons item id ("CRX ID") | `nchfchjnlihbifggooggpmmacighmdjg` — the `runtime.id` of an install from Edge Add-ons, mapped in `links.ts` (`06 §3.5`) |
+| Edge Add-ons Product ID | `3bf2e086-99ee-4f8b-a8db-e13827f04ca1` (the value `EDGE_PRODUCT_ID` needs — `12 §3`) · Store ID `0RDCKC9LZ41P` |
+| Edge Add-ons listing URL | `https://microsoftedge.microsoft.com/addons/detail/nchfchjnlihbifggooggpmmacighmdjg` (live 2026-11-19) |
 
 ## 10. Manual action items (human-only) ⚠️
 
@@ -302,17 +306,23 @@ Derived identifiers (canonical across docs and code):
 
 19. ⚠️ **Pin the maintenance announcement** (Discussions #43) — the API cannot.
 20. ⚠️ **v1.3.0 to the Chrome Web Store** instead of 1.2.1, which never went
-    up: the `11 §5` pass with the **1.2.0 → 1.3.0 upgrade over an existing
-    profile**, then the Chrome package from the Release (`13 §1b`). The CWS
+    up — **submitted 2026-11-18, in review**. The `11 §5` pass with the
+    **1.2.0 → 1.3.0 upgrade over an existing profile**, then the Chrome
+    package from the Release (`13 §1b`). The CWS
     listing text may keep its Chrome wording; it is the Chrome store.
-21. ⚠️ **The first Firefox Add-ons version, by hand** (`13 §8`): the `11 §5`
-    Firefox section on a real Firefox 140+, then the Developer Hub upload of
+21. ⚠️ **The first Firefox Add-ons version, by hand** (`13 §8`) — **submitted
+    2026-11-18, in review**. The `11 §5` Firefox section on a real Firefox
+    140+, then the Developer Hub upload of
     the Firefox package **and** the sources archive, desktop only, with
     `BUILD.md` in the notes to reviewers. AMO's upload validator report is the
     first outside check of the package.
-22. ⚠️ **The first Edge Add-ons submission, by hand** (`13 §9`): a Partner
-    Center account, the `11 §5` Edge items — above all a profile **signed in
-    with sync on** (`08 §10`, unverified) — then the Chrome package.
+22. ✔ **The first Edge Add-ons submission, by hand** (`13 §9`) — submitted
+    2026-11-18, **approved and live 2026-11-19** (§9). Partner Center flagged
+    the first description for naming another browser; the Edge copy now names
+    none (PR #47, `08 §10`). ⚠️ Still open: the `11 §5` Edge items have no
+    recorded result — above all a profile **signed in with sync on**
+    (`08 §10`, unverified). An Edge user who meets `NO_WRITABLE_ROOTS` would be
+    the first sign.
 23. ⚠️ **Store automation, when wanted** (`12 §3`): the three environments,
     each with a required reviewer, deployments limited to `v*` tags, and its
     secrets (Chrome: API v2 service
@@ -320,7 +330,10 @@ Derived identifiers (canonical across docs and code):
     then the `*_AUTOPUBLISH` variables.
 24. ⚠️ **After the listings go live**: their URLs for the README and the
     About link (`06 §3.5` — Edge's needs its listing id), and the AMO/Edge
-    badges.
+    badges. **Edge ✔ 2026-11-19**: README install table and badge, and the
+    About link's mapping (ships with the next release — CHANGELOG
+    `[Unreleased]`). AMO still to come: its About link is already the gecko-id
+    URL, so only the README row and a badge remain.
 25. ⚠️ **Evidence for the Firefox fake** (`11 §4`): a sanitized `getTree()`
     dump from a real Firefox 140+ profile, committed as a fixture the fake is
     checked against; and a Firefox column in `11 §6`'s parse timing.
